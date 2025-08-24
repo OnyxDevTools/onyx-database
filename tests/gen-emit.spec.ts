@@ -14,7 +14,7 @@ describe('emitTypes', () => {
       ],
     };
     const out = emitTypes(schema);
-    expect(out).toContain('[key: string]: unknown;');
+    expect(out).toContain('[key: string]: any;');
   });
 
   it('emits EmbeddedObject attributes as any', () => {
