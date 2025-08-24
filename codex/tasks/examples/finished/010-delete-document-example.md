@@ -8,4 +8,4 @@ Create an example demonstrating how to remove a document using `deleteDocument`.
 3. Include a note about idempotency or non-existent documents.
 
 ## Acceptance Criteria
-- [ ] An example under `examples/` shows deleting a document with `deleteDocument`.
+- [x] An example under `examples/` shows deleting a document with `deleteDocument`.
