@@ -21,18 +21,18 @@ describe('QueryBuilder', () => {
   it('builds queries and executes operations', async () => {
     const exec = makeExec();
     const qb = new QueryBuilder(exec as any, null);
-    const other = new ConditionBuilderImpl({ field: 'f', operator: '=', value: 6 });
+    const other = new ConditionBuilderImpl({ field: 'f', operator: 'EQUAL', value: 6 });
     qb.from('users')
       .selectFields(['id'])
       .selectFields([])
       .resolve('rel1')
       .resolve(['rel2'])
-      .where({ field: 'a', operator: '=', value: 1 })
-      .where({ field: 'b', operator: '=', value: 2 })
-      .and({ field: 'c', operator: '=', value: 3 })
-      .and({ field: 'd', operator: '=', value: 4 })
+      .where({ field: 'a', operator: 'EQUAL', value: 1 })
+      .where({ field: 'b', operator: 'EQUAL', value: 2 })
+      .and({ field: 'c', operator: 'EQUAL', value: 3 })
+      .and({ field: 'd', operator: 'EQUAL', value: 4 })
       .and(other)
-      .or({ field: 'e', operator: '=', value: 5 })
+      .or({ field: 'e', operator: 'EQUAL', value: 5 })
       .orderBy({ field: 'id', direction: 'asc' })
       .groupBy('role')
       .groupBy()
@@ -57,16 +57,16 @@ describe('QueryBuilder', () => {
   it('covers and/or branches', () => {
     const exec = makeExec();
     const a = new QueryBuilder(exec as any, 't');
-    a.and({ field: 'x', operator: '=', value: 1 });
-    a.and({ field: 'y', operator: '=', value: 2 });
-    a.and({ field: 'z', operator: '=', value: 3 });
+    a.and({ field: 'x', operator: 'EQUAL', value: 1 });
+    a.and({ field: 'y', operator: 'EQUAL', value: 2 });
+    a.and({ field: 'z', operator: 'EQUAL', value: 3 });
 
     const b = new QueryBuilder(exec as any, 't');
-    b.or({ field: 'x', operator: '=', value: 1 });
-    b.or({ field: 'y', operator: '=', value: 2 });
-    b.or({ field: 'z', operator: '=', value: 3 });
+    b.or({ field: 'x', operator: 'EQUAL', value: 1 });
+    b.or({ field: 'y', operator: 'EQUAL', value: 2 });
+    b.or({ field: 'z', operator: 'EQUAL', value: 3 });
     const c = new QueryBuilder(exec as any, 't');
-    c.where({ field: 'x', operator: '=', value: 1 }).or({ field: 'y', operator: '=', value: 2 });
+    c.where({ field: 'x', operator: 'EQUAL', value: 1 }).or({ field: 'y', operator: 'EQUAL', value: 2 });
   });
 
   it('handles defaults and undefined branches', async () => {
@@ -92,13 +92,13 @@ describe('QueryBuilder', () => {
       stream: vi.fn(),
     };
     const qb = new QueryBuilder(exec as any, 'users');
-    qb.where({ field: 'id', operator: '=', value: 1 });
+    qb.where({ field: 'id', operator: 'EQUAL', value: 1 });
     expect(await qb.firstOrNull()).toEqual({ id: 1 });
     expect(exec.queryPage.mock.calls[0][1].limit).toBe(1);
     expect(await qb.firstOrNull()).toBeNull();
 
     const qbAlias = new QueryBuilder(exec as any, 'users');
-    qbAlias.where({ field: 'id', operator: '=', value: 2 });
+    qbAlias.where({ field: 'id', operator: 'EQUAL', value: 2 });
     exec.queryPage.mockResolvedValueOnce({ records: [{ id: 2 }] });
     expect(await qbAlias.one()).toEqual({ id: 2 });
   });
@@ -119,7 +119,7 @@ describe('QueryBuilder', () => {
   it('covers implementation builder firstOrNull', async () => {
     const db = onyx.init({ baseUrl: 'http://x', databaseId: 'd', apiKey: 'k', apiSecret: 's', fetch: vi.fn() as any });
     (db as any)._queryPage = vi.fn().mockResolvedValueOnce({ records: [{ id: 1 }], nextPage: null });
-    const res = await db.from('User').where({ field: 'id', operator: '=', value: 1 }).firstOrNull();
+    const res = await db.from('User').where({ field: 'id', operator: 'EQUAL', value: 1 }).firstOrNull();
     expect(res).toEqual({ id: 1 });
 
     const qb = db.from('User');
