@@ -1,27 +1,28 @@
 // filename: src/config/chain.ts
+import process from 'node:process';
 import { DEFAULT_BASE_URL, sanitizeBaseUrl } from './defaults';
 import { OnyxConfigError } from '../errors/config-error';
 import type { OnyxConfig } from '../types/public';
 import type { FetchImpl } from '../types/common';
 
-export type ResolvedConfig = {
+export interface ResolvedConfig {
   baseUrl: string;
   databaseId: string;
   apiKey: string;
   apiSecret: string;
   fetch: FetchImpl;
-};
+}
 
-const isNode = typeof process !== 'undefined' && !!(process as any).versions?.node;
+const isNode = typeof process !== 'undefined' && !!process.versions?.node;
 
 // Optional debug logger — enable with ONYX_DEBUG=1
 const dbg = (...args: unknown[]) => {
-  if (isNode && (process as any).env?.ONYX_DEBUG) {
-    console.error('[onyx-config]', ...args);
+  if (isNode && process.env?.ONYX_DEBUG) {
+    process.stderr.write(`[onyx-config] ${args.map(String).join(' ')}\n`);
   }
 };
 
-function dropUndefined<T extends Record<string, unknown>>(obj: Partial<T> | undefined): Partial<T> {
+function dropUndefined<T extends object>(obj: Partial<T> | undefined): Partial<T> {
   if (!obj) return {};
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -32,7 +33,7 @@ function dropUndefined<T extends Record<string, unknown>>(obj: Partial<T> | unde
 
 function readEnv(): Partial<OnyxConfig> {
   if (!isNode) return {};
-  const env = (process as any).env ?? {};
+  const env = process.env ?? {};
   const pick = (...keys: string[]): string | undefined => {
     for (const k of keys) {
       const v = env[k];
@@ -87,8 +88,9 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
       const json = dropUndefined<OnyxConfig>(JSON.parse(txt) as Partial<OnyxConfig>);
       dbg('home profile used:', p, '→', mask(json));
       return json;
-    } catch (e: any) {
-      throw new OnyxConfigError(`Failed to read ${p}: ${e?.message ?? String(e)}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new OnyxConfigError(`Failed to read ${p}: ${msg}`);
     }
   };
 
@@ -163,14 +165,14 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   const databaseId = merged.databaseId ?? '';
   const apiKey = merged.apiKey ?? '';
   const apiSecret = merged.apiSecret ?? '';
-  const gfetch = (globalThis as any).fetch as undefined | ((...a: any[]) => any);
+  const gfetch = (globalThis as { fetch?: FetchImpl }).fetch;
   const fetchImpl: FetchImpl =
-    (merged.fetch as FetchImpl) ??
+    merged.fetch ??
     (typeof gfetch === 'function'
-      ? ((u, i) => gfetch(u, i)) as FetchImpl
-      : (async () => {
+      ? (u, i) => gfetch(u, i)
+      : async () => {
           throw new OnyxConfigError('No fetch available; provide OnyxConfig.fetch');
-        }) as unknown as FetchImpl);
+        });
 
   const missing: string[] = [];
   if (!databaseId) missing.push('databaseId');
@@ -191,10 +193,10 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
 }
 
 // Redacts secrets for debug logging
-function mask<T extends Record<string, unknown>>(obj: T | undefined): T | undefined {
+function mask<T extends object>(obj: T | undefined): T | undefined {
   if (!obj) return obj;
-  const clone: Record<string, unknown> = { ...obj };
+  const clone = { ...(obj as Record<string, unknown>) } as Record<string, unknown>;
   if (typeof clone.apiKey === 'string') clone.apiKey = '***';
   if (typeof clone.apiSecret === 'string') clone.apiSecret = '***';
-  return clone as T;
+  return clone as unknown as T;
 }

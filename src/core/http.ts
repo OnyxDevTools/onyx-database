@@ -6,18 +6,18 @@ export function parseJsonAllowNaN(txt: string): unknown {
   try {
     return JSON.parse(txt);
   } catch {
-    const fixed = txt.replace(/(:\s*)(NaN|Infinity|-Infinity)(\s*[,\}])/g, '$1null$3');
+    const fixed = txt.replace(/(:\s*)(NaN|Infinity|-Infinity)(\s*[,}])/g, '$1null$3');
     return JSON.parse(fixed);
   }
 }
 
-export type HttpClientOptions = {
+export interface HttpClientOptions {
   baseUrl: string;
   apiKey: string;
   apiSecret: string;
   fetchImpl?: FetchImpl;
   defaultHeaders?: Record<string, string>;
-};
+}
 
 export class HttpClient {
   private readonly baseUrl: string;
@@ -30,11 +30,11 @@ export class HttpClient {
     this.baseUrl = opts.baseUrl.replace(/\/+$/, '');
     this.apiKey = opts.apiKey;
     this.apiSecret = opts.apiSecret;
-    const gfetch = (globalThis as any).fetch as undefined | ((...a: any[]) => any);
+    const gfetch = (globalThis as { fetch?: FetchImpl }).fetch;
     if (opts.fetchImpl) {
       this.fetchImpl = opts.fetchImpl;
     } else if (typeof gfetch === 'function') {
-      this.fetchImpl = ((url, init) => gfetch(url, init)) as FetchImpl;
+      this.fetchImpl = (url, init) => gfetch(url, init);
     } else {
       throw new Error('global fetch is not available; provide OnyxConfig.fetch');
     }
@@ -69,9 +69,12 @@ export class HttpClient {
     const data = contentType.includes('application/json') ? parseJsonAllowNaN(raw) : raw;
     if (!res.ok) {
       const msg =
-        (typeof data === 'object' && data !== null && (data as any).error?.message) ?
-        String((data as any).error.message) :
-        `${res.status} ${res.statusText}`;
+        typeof data === 'object' &&
+        data !== null &&
+        'error' in data &&
+        typeof (data as { error?: { message?: unknown } }).error?.message === 'string'
+          ? String((data as { error: { message: unknown } }).error.message)
+          : `${res.status} ${res.statusText}`;
       throw new OnyxHttpError(msg, res.status, res.statusText, data);
     }
     return data as T;
