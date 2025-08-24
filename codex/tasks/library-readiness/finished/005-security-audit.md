@@ -16,5 +16,5 @@ Baseline security posture.
 4. Link `SECURITY.md` from `README.md`.
 
 ## Acceptance Criteria
-- [ ] Dependabot opens PRs for outdated deps.
-- [ ] `SECURITY.md` present and linked in README.
+- [x] Dependabot opens PRs for outdated deps.
+- [x] `SECURITY.md` present and linked in README.
