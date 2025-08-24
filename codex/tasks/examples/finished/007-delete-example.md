@@ -8,4 +8,4 @@ Create an example demonstrating how to remove a record using `delete`.
 3. Include notes on cascading or dependent records if applicable.
 
 ## Acceptance Criteria
-- [ ] An example under `examples/` shows deleting a record with `delete`.
+- [x] An example under `examples/` shows deleting a record with `delete`.
