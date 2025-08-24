@@ -8,4 +8,4 @@ Create an example demonstrating how to fetch a document using `getDocument`.
 3. Show handling when the document is missing.
 
 ## Acceptance Criteria
-- [ ] An example under `examples/` shows retrieving a document with `getDocument`.
+- [x] An example under `examples/` shows retrieving a document with `getDocument`.

@@ -13,5 +13,11 @@
     "noEmit": false,
     "baseUrl": "."
   },
-  "include": ["query/**/*.ts", "generated/**/*.ts"]
+  "include": [
+    "query/**/*.ts",
+    "save/**/*.ts",
+    "delete/**/*.ts",
+    "document/**/*.ts",
+    "onyx/**/*.ts"
+  ]
 }
