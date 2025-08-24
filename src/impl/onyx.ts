@@ -9,6 +9,7 @@ import type {
   ISaveBuilder,
   ICascadeBuilder,
   IConditionBuilder,
+  ICascadeRelationshipBuilder,
 } from '../types/builders';
 import type {
   QueryCriteria,
@@ -18,6 +19,7 @@ import type {
   QueryPage,
 } from '../types/protocol';
 import type { Sort, StreamAction, OnyxDocument, FetchImpl } from '../types/common';
+import { CascadeRelationshipBuilder } from '../builders/cascade-relationship-builder';
 
 /** -------------------------
  * Internal helpers
@@ -117,6 +119,10 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   cascade(...relationships: string[]): ICascadeBuilder<Schema> {
     const cb = new CascadeBuilderImpl<Schema>(this);
     return cb.cascade(...relationships);
+  }
+
+  cascadeBuilder(): ICascadeRelationshipBuilder {
+    return new CascadeRelationshipBuilder();
   }
 
   // Overload: builder form

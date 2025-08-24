@@ -6,7 +6,7 @@
 
 # Interface: OnyxFacade
 
-Defined in: types/public.ts:45
+Defined in: types/public.ts:51
 
 ## Methods
 
@@ -14,7 +14,7 @@ Defined in: types/public.ts:45
 
 > **init**\<`Schema`\>(`config?`): [`IOnyxDatabase`](IOnyxDatabase.md)\<`Schema`\>
 
-Defined in: types/public.ts:46
+Defined in: types/public.ts:52
 
 #### Type Parameters
 
