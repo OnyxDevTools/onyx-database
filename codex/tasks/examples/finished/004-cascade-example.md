@@ -8,4 +8,4 @@ Create an example demonstrating the use of `cascade` to include related records.
 3. Output parent and related records to confirm loading behavior.
 
 ## Acceptance Criteria
-- [ ] An example under `examples/` shows chaining `cascade` to load relationships.
+- [x] An example under `examples/` shows chaining `cascade` to load relationships.
