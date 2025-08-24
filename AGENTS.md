@@ -103,22 +103,22 @@ codex/
 ### Conventions
 
 - **Root tasks**: Contain the initial task description, acceptance criteria, and any supporting notes.  
-- **Plan/**: Agents create a \`*-plan.md\` file here that breaks down how they will accomplish the root task. Keep it concise, ordered, and actionable. a plan should always have an acceptance criteria checkbox list at the end.   
-- **Finished/**: When a task is completed, move the original task file here. The plan file can remain in \`plan/\` for reference, but should not be modified after completion.  when a task is finished, evaluate if the acceptance criteria is met and check off the items that are and move the task to the finished folder
+- **plan/**: Agents create a \`*-plan.md\` file here that breaks down how they will accomplish the root task. Keep it concise, ordered, and actionable. a plan should always have an acceptance criteria checkbox list at the end. the plan file should contains the original task content, and should delete the task from the the root of the epic, this will indicate that its in progress. 
+- **finished/**: When a task is completed, the file moves here.  first evaluate evaluate if the acceptance criteria is met and check off the items that are and move the task to the finished folder. we can remove the -plan suffix. we can remove the task from the /plan folder. the finished file will contain the task, plan, and updated acceptance criteria. 
 
 ### Process
 
 1. **New Task**: Start with the \`NNN-task-title.md\` file in the epic’s root.  
-2. **Planning**: Create a corresponding \`NNN-task-title-plan.md\` in \`/plan\` with step-by-step execution details.  
+2. **Planning**: Move file to a corresponding \`NNN-task-title-plan.md\` in \`/plan\` with step-by-step execution details.  
 3. **Execution**: Implement the code or docs changes as specified in the task.  
-4. **Completion**: Once accepted, move the original task file into \`/finished\`. Do not alter it further—this preserves history.  
+4. **Completion**: Once accepted, move the task plan file into \`/finished\`. Remove the `*-plan` suffix. 
 5. **Changelog**: For any code or doc changes, also add a \`changelog/YYYY-MM-DD-HHMM-task-desc.md\` file (see [Commit & Changelog Requirements](#commit--changelog-requirements)).  
 
 ### Guidelines
 
 - Always preserve the **task order and numbering** (\`NNN-...\`).  
 - Plans should be **short, direct, and prescriptive** so other agents can follow or audit.  
-- Never delete tasks—archive them under \`finished/\`.  
+- Never delete tasks—archive them under \`finished/\`, unless specifically asked to clean them up
 - Keep one task per file. If a task spawns sub-tasks, create new numbered task files.  
 
 
