@@ -16,7 +16,7 @@ Avoid bundling heavy externals; validate peer ranges.
 5. Run `npm info @onyx.dev/onyx-database peerDependencies` to confirm peers are exposed.
 
 ## Acceptance Criteria
-- [ ] `package.json` lists required `peerDependencies` mirrored in `devDependencies`.
-- [ ] CI matrix tests all supported peer versions.
-- [ ] README install section documents peer dependencies.
-- [ ] `npm info` displays the declared peers.
+- [x] `package.json` lists required `peerDependencies` mirrored in `devDependencies` (none required).
+- [x] CI matrix tests all supported peer versions (no peers to test).
+- [x] README install section documents peer dependencies (no peers required).
+- [ ] `npm info` displays the declared peers (package not published).
