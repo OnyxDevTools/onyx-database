@@ -10,7 +10,7 @@ async function main(): Promise<void> {
     start: new Date().toISOString(),
     title: "This is a test",
     desc: "Program Description",
-    icon: "asdhttp://example.com/dne.png",
+    icon: "http://example.com/dne.png",
     streamURL: "http://example.com/dne"
   }
 
@@ -37,9 +37,7 @@ async function main(): Promise<void> {
 
 
   //cleanup
-  const deletedChannelResponse = await db.cascade('programs').delete(tables.StreamingChannel, newChannel.id!)
-
-  console.log('deleted channel response:', JSON.stringify(deletedChannelResponse, null, 2));
+  await db.cascade('programs').delete(tables.StreamingChannel, newChannel.id!)
 }
 
 main().catch((err) => {
