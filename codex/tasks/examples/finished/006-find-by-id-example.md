@@ -8,4 +8,4 @@ Create an example demonstrating how to retrieve a record by its primary key usin
 3. Illustrate error handling when no record is found.
 
 ## Acceptance Criteria
-- [ ] An example under `examples/` shows fetching a record with `findById`.
+- [x] An example under `examples/` shows fetching a record with `findById`.
