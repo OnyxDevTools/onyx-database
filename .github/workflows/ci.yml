@@ -38,6 +38,9 @@ jobs:
       - run: npm run audit
       - run: npm run lint
       - run: npm test -- --coverage
+      - uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
       - run: npm run build
       - run: npm run size
 
