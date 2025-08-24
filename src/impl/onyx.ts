@@ -33,6 +33,7 @@ function resolveConfigWithCache(config?: OnyxConfig): Promise<ResolvedConfig> {
     return cachedCfg.promise;
   }
   const { ttl: _ttl, ...rest } = config ?? {};
+  void _ttl;
   const promise = resolveConfig(rest);
   cachedCfg = { promise, expires: now + ttl };
   return promise;

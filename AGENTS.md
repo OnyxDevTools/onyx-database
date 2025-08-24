@@ -279,6 +279,7 @@ If adjusting codegen behavior, keep CLI flags backward‑compatible and update R
 
 ## Quality Checklist (pre‑PR)
 
+- [ ] **Lint clean**: `npm run lint` and fix warnings/errors
 - [ ] **Types compile**: `npm run typecheck`
 - [ ] **Build passes**: `npm run build`
 - [ ] **No runtime deps added**
