@@ -1,3 +1,7 @@
+**@onyx.dev/onyx-database**
+
+***
+
 # @onyx.dev/onyx-database
 
 TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-typed, builder-pattern API for querying and persisting data in Onyx from Node.js or modern bundlers. Ships ESM & CJS, includes a credential resolver, and an optional **schema code generator** that produces table-safe types and a `tables` enum.
