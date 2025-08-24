@@ -32,7 +32,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "audit": "npm audit --audit-level=high",
-    "test": "vitest run",
+    "test": "vitest run --exclude tests/smoke.spec.ts",
     "test:watch": "vitest",
     "test:smoke": "vitest run tests/smoke.spec.ts --coverage=false",
     "prepublishOnly": "npm run build && npm run typecheck",
