@@ -29,7 +29,7 @@ Thanks for your interest in contributing! This project is a **zero-dependency**,
 
 ## Code of conduct
 
-Be respectful and constructive. We welcome issues and PRs that improve the SDK, developer experience, or documentation.
+Be respectful and constructive. We welcome issues and PRs that improve the SDK, developer experience, or documentation. See the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for full guidelines.
 
 ---
 
