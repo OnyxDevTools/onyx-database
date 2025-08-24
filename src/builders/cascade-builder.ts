@@ -30,9 +30,12 @@ export class CascadeBuilder<Schema = Record<string, unknown>> implements ICascad
     );
   }
 
-  delete(table: string, primaryKey: string): Promise<unknown> {
+  delete<Table extends keyof Schema & string>(
+    table: Table,
+    primaryKey: string,
+  ): Promise<Schema[Table]> {
     const opts = this.relationships.length ? { relationships: this.relationships } : undefined;
-    return this.db.delete(String(table), primaryKey, opts);
+    return this.db.delete(table, primaryKey, opts);
   }
 }
 
