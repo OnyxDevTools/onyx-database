@@ -87,6 +87,7 @@ describe('HttpClient', () => {
         'x-onyx-key': creds.apiKey,
         'x-onyx-secret': creds.apiSecret,
         Accept: 'application/json',
+        'Content-Type': 'application/json',
         Prefer: 'return=representation'
       },
       body: undefined
