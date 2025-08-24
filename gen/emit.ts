@@ -82,7 +82,7 @@ function tsTypeFor(
     case 'EmbeddedList':
       return 'any[]';
     case 'EmbeddedObject':
-      return 'Record<string, any>';
+      return 'any';
     default:
       return 'any';
   }
