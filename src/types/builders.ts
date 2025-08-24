@@ -26,6 +26,8 @@ export interface IQueryBuilder<T = unknown> {
 
   count(): Promise<number>;
   list(options?: { pageSize?: number; nextPage?: string }): Promise<T[]>;
+  firstOrNull(): Promise<T | null>;
+  one(): Promise<T | null>;
   page(options?: { pageSize?: number; nextPage?: string }): Promise<{ records: T[]; nextPage?: string | null }>;
 
   setUpdates(updates: Partial<T>): IQueryBuilder<T>;

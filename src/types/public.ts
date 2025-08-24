@@ -21,6 +21,14 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
    *
    * @example
    * ```ts
+   * const maybeUser = await db
+   *   .from('User')
+   *   .where(eq('email', 'a@b.com'))
+   *   .firstOrNull(); // or .one()
+   * ```
+   *
+   * @example
+   * ```ts
    * const users = await db
    *   .select('id', 'email')
    *   .from('User')
