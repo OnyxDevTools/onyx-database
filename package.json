@@ -2,6 +2,11 @@
   "name": "@onyx.dev/onyx-database",
   "version": "0.1.0",
   "description": "TypeScript client SDK for Onyx Database",
+  "keywords": [
+    "database",
+    "sdk",
+    "onyx"
+  ],
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -17,7 +22,9 @@
     "onyx-gen": "./dist/gen/cli/generate.cjs"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "sideEffects": false,
   "scripts": {
@@ -33,6 +40,11 @@
     "release": "changeset publish"
   },
   "repository": "github:OnyxDevTools/onyx-database",
+  "bugs": {
+    "url": "https://github.com/OnyxDevTools/onyx-database/issues"
+  },
+  "homepage": "https://github.com/OnyxDevTools/onyx-database#readme",
+  "author": "Onyx DevTools",
   "publishConfig": {
     "access": "public"
   },
