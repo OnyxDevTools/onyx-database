@@ -8,4 +8,4 @@ Create an example demonstrating how to store a document using `saveDocument`.
 3. Log the stored document metadata to confirm success.
 
 ## Acceptance Criteria
-- [ ] An example under `examples/` shows saving a document with `saveDocument`.
+- [x] An example under `examples/` shows saving a document with `saveDocument`.
