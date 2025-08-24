@@ -36,15 +36,21 @@ Defined in: types/builders.ts:49
 
 ### delete()
 
-> **delete**(`table`, `primaryKey`): `Promise`\<`unknown`\>
+> **delete**\<`Table`\>(`table`, `primaryKey`): `Promise`\<`Schema`\[`Table`\]\>
 
 Defined in: types/builders.ts:54
+
+#### Type Parameters
+
+##### Table
+
+`Table` *extends* `string`
 
 #### Parameters
 
 ##### table
 
-`string`
+`Table`
 
 ##### primaryKey
 
@@ -52,7 +58,7 @@ Defined in: types/builders.ts:54
 
 #### Returns
 
-`Promise`\<`unknown`\>
+`Promise`\<`Schema`\[`Table`\]\>
 
 ***
 

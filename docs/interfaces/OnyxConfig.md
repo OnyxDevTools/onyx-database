@@ -6,7 +6,7 @@
 
 # Interface: OnyxConfig
 
-Defined in: types/public.ts:5
+Defined in: types/public.ts:10
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: types/public.ts:5
 
 > `optional` **apiKey**: `string`
 
-Defined in: types/public.ts:8
+Defined in: types/public.ts:13
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: types/public.ts:8
 
 > `optional` **apiSecret**: `string`
 
-Defined in: types/public.ts:9
+Defined in: types/public.ts:14
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: types/public.ts:9
 
 > `optional` **baseUrl**: `string`
 
-Defined in: types/public.ts:6
+Defined in: types/public.ts:11
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: types/public.ts:6
 
 > `optional` **databaseId**: `string`
 
-Defined in: types/public.ts:7
+Defined in: types/public.ts:12
 
 ***
 
@@ -46,4 +46,4 @@ Defined in: types/public.ts:7
 
 > `optional` **fetch**: [`FetchImpl`](../type-aliases/FetchImpl.md)
 
-Defined in: types/public.ts:10
+Defined in: types/public.ts:15

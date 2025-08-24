@@ -56,3 +56,9 @@ export interface ICascadeBuilder<Schema = Record<string, unknown>> {
     primaryKey: string,
   ): Promise<Schema[Table]>;
 }
+export interface ICascadeRelationshipBuilder {
+  graph(name: string): ICascadeRelationshipBuilder;
+  graphType(type: string): ICascadeRelationshipBuilder;
+  targetField(field: string): ICascadeRelationshipBuilder;
+  sourceField(field: string): string;
+}
