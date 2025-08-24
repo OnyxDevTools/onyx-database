@@ -37,6 +37,19 @@ function toCondition(input: IConditionBuilder | QueryCriteria): QueryCondition {
   throw new Error('Invalid condition passed to builder.');
 }
 
+function serializeDates(value: unknown): unknown {
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(serializeDates);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = serializeDates(v);
+    }
+    return out;
+  }
+  return value;
+}
+
 /** -------------------------
  * Onyx Database Implementation
  * --------------------------*/
@@ -162,7 +175,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async saveDocument(doc: OnyxDocument): Promise<unknown> {
     const { http, databaseId } = await this.ensureClient();
     const path = `/data/${encodeURIComponent(databaseId)}/document`;
-    return http.request('PUT', path, doc);
+    return http.request('PUT', path, serializeDates(doc));
   }
 
   async getDocument(
@@ -208,7 +221,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/query/count/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request<number>('PUT', path, select);
+    return http.request<number>('PUT', path, serializeDates(select));
   }
 
   async _queryPage<T>(
@@ -224,7 +237,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/query/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request<QueryPage<T>>('PUT', path, select);
+    return http.request<QueryPage<T>>('PUT', path, serializeDates(select));
   }
 
   async _update(table: string, update: UpdateQuery, partition?: string): Promise<unknown> {
@@ -234,7 +247,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/query/update/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request('PUT', path, update);
+    return http.request('PUT', path, serializeDates(update));
   }
 
   async _deleteByQuery(table: string, select: SelectQuery, partition?: string): Promise<unknown> {
@@ -244,7 +257,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/query/delete/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request('PUT', path, select);
+    return http.request('PUT', path, serializeDates(select));
   }
 
   async _stream<T>(
@@ -270,7 +283,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const handle = await openJsonLinesStream<T>(
       fetchImpl,
       url,
-      { method: 'PUT', headers: http.headers(), body: JSON.stringify(select) },
+      { method: 'PUT', headers: http.headers(), body: JSON.stringify(serializeDates(select)) },
       handlers,
     );
     return this.registerStream(handle);
@@ -289,7 +302,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/${encodeURIComponent(table)}${
       params.toString() ? `?${params.toString()}` : ''
     }`;
-    return http.request('PUT', path, entityOrEntities);
+    return http.request('PUT', path, serializeDates(entityOrEntities));
   }
 }
 

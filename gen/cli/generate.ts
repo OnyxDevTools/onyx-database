@@ -155,7 +155,7 @@ Source selection:
   --schema <path>                  Path to schema JSON when --source=file (or to force local)
 
 Type emission:
-  --timestamps <string|date|number>  Timestamp representation in types (default: string)
+  --timestamps <string|date|number>  Timestamp representation in types (default: date)
   --name, --schemaTypeName <T>       Exported schema type name (default: OnyxSchema)
   --prefix <Prefix>                  Prefix to prepend to generated model names (default: none)
   --optional <non-null|nullable|none>

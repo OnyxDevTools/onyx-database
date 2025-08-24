@@ -27,7 +27,7 @@ export type OptionalStrategy = 'non-null' | 'nullable' | 'none';
 export type EmitOptions = Readonly<{
   /** Exported schema mapping type name. */
   schemaTypeName?: string;
-  /** How to represent Timestamp attributes. Default: 'string'. */
+  /** How to represent Timestamp attributes. Default: 'date'. */
   timestampMode?: 'string' | 'date' | 'number';
   /** Prefix added to each generated model/interface name. Example: 'Onyx' -> OnyxVodItem */
   modelNamePrefix?: string;
@@ -42,7 +42,7 @@ export type EmitOptions = Readonly<{
 
 const DEFAULTS: Required<EmitOptions> = {
   schemaTypeName: 'OnyxSchema',
-  timestampMode: 'string',
+  timestampMode: 'date',
   modelNamePrefix: '',
   optionalStrategy: 'non-null',
 };
