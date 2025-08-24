@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   changes:
@@ -23,7 +24,7 @@ jobs:
 
   ci:
     needs: changes
-    if: needs.changes.outputs.src == 'true'
+    if: needs.changes.outputs.src == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -47,7 +48,7 @@ jobs:
 
   test:
     needs: changes
-    if: needs.changes.outputs.src == 'true' || needs.changes.outputs.tests == 'true'
+    if: needs.changes.outputs.src == 'true' || needs.changes.outputs.tests == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       matrix:
