@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 // filename: gen/cli/generate.ts
-/* eslint-disable no-console */
 import { generateTypes, type GenerateOptions } from '../generate';
 
 function isTypesFilePath(p?: string): boolean {
