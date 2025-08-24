@@ -13,6 +13,10 @@ export interface OnyxConfig {
   apiKey?: string;
   apiSecret?: string;
   fetch?: FetchImpl;
+  /**
+   * Milliseconds to cache resolved credentials; defaults to 5 minutes.
+   */
+  ttl?: number;
 }
 
 export interface IOnyxDatabase<Schema = Record<string, unknown>> {
@@ -247,6 +251,12 @@ export interface OnyxFacade {
   * pooling is rarely necessary.
   */
   init<Schema = Record<string, unknown>>(config?: OnyxConfig): IOnyxDatabase<Schema>;
+
+  /**
+   * Clear cached configuration so the next {@link init} call re-resolves
+   * credentials immediately.
+   */
+  clearCacheConfig(): void;
 }
 
 export * from './common';
