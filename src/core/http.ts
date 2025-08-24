@@ -1,5 +1,6 @@
 // filename: src/core/http.ts
 import { OnyxHttpError } from '../errors/http-error';
+import { OnyxConfigError } from '../errors/config-error';
 import type { FetchImpl } from '../types/common';
 
 export function parseJsonAllowNaN(txt: string): unknown {
@@ -27,6 +28,15 @@ export class HttpClient {
   private readonly defaults: Record<string, string>;
 
   constructor(opts: HttpClientOptions) {
+    if (!opts.baseUrl || opts.baseUrl.trim() === '') {
+      throw new OnyxConfigError('baseUrl is required');
+    }
+    try {
+      // ensure baseUrl has protocol; URL constructor will throw otherwise
+      new URL(opts.baseUrl);
+    } catch {
+      throw new OnyxConfigError('baseUrl must include protocol, e.g. https://');
+    }
     this.baseUrl = opts.baseUrl.replace(/\/+$/, '');
     this.apiKey = opts.apiKey;
     this.apiSecret = opts.apiSecret;
@@ -61,6 +71,9 @@ export class HttpClient {
     body?: unknown,
     extraHeaders?: Record<string, string>
   ): Promise<T> {
+    if (!path.startsWith('/')) {
+      throw new OnyxConfigError('path must start with /');
+    }
     const url = `${this.baseUrl}${path}`;
     const headers = this.headers({
       ...(method === 'DELETE' ? { Prefer: 'return=representation' } : {}),
