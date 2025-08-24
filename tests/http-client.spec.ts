@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { HttpClient, parseJsonAllowNaN } from '../src/core/http';
-import { OnyxHttpError } from '../src/errors/http-error';
 
 // filename: tests/http-client.spec.ts
 
@@ -79,7 +78,7 @@ describe('HttpClient', () => {
 
   it('throws when no fetch implementation is available', () => {
     const original = globalThis.fetch;
-    // @ts-ignore
+      // @ts-expect-error - simulate missing global fetch
     delete (globalThis as any).fetch;
     expect(() => new HttpClient({ baseUrl: base, ...creds })).toThrow(
       'global fetch is not available; provide OnyxConfig.fetch'

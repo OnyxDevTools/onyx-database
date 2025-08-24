@@ -100,6 +100,10 @@ codex/
             └── 001-task-title.md
 \`\`\`
 
+### Finding the Next Task
+
+Search `codex/tasks/*/plan/` for files ending in `-plan.md`. The lowest numbered plan file is the next task to implement.
+
 ### Conventions
 
 - **Root tasks**: Contain the initial task description, acceptance criteria, and any supporting notes.  

@@ -24,5 +24,5 @@ Automated lint, test, build on push/PR.
 5. Commit workflow file.
 
 ## Acceptance Criteria
-- [ ] Opening a PR triggers CI.
-- [ ] All jobs pass on supported Node versions.
+- [x] Opening a PR triggers CI.
+- [x] All jobs pass on supported Node versions.
