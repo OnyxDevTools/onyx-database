@@ -227,9 +227,9 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
 
 export interface OnyxFacade {
   /**
-   * Initialize a database client.
-   *
-   * @example
+  * Initialize a database client.
+  *
+  * @example
    * ```ts
    * const db = onyx.init({
    *   baseUrl: 'https://api.onyx.dev',
@@ -238,11 +238,14 @@ export interface OnyxFacade {
    *   apiSecret: 'secret'
    * });
    * ```
-   * Initialize the client. Pass a database ID to target a specific database.
    *
-   * @param dbOrConfig Database ID or connection settings.
-   * @param config Optional settings when providing a database ID.
-   */
+   * @param config Connection settings and optional custom fetch.
+   * @remarks
+   * Each `db` instance resolves configuration once and holds a single internal
+   * HTTP client. Requests leverage Node's built-in `fetch`, which reuses and
+   * pools connections for keep-alive, so additional connection caching or
+   * pooling is rarely necessary.
+  */
   init<Schema = Record<string, unknown>>(
     dbOrConfig?: string | OnyxConfig,
     config?: OnyxConfig,

@@ -31,3 +31,9 @@ Defined in: types/public.ts:52
 #### Returns
 
 [`IOnyxDatabase`](IOnyxDatabase.md)\<`Schema`\>
+
+#### Remarks
+
+Each returned client resolves configuration once and maintains a single internal
+HTTP handler. Requests use Node's `fetch`, which keeps connections alive and
+pools them, so extra connection caching is rarely required.
