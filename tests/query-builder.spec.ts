@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { QueryBuilder } from '../src/builders/query-builder';
 import { ConditionBuilderImpl } from '../src/builders/condition-builder';
+import { OnyxError } from '../src/errors/onyx-error';
+import { onyx } from '../src/impl/onyx';
 
 function makeExec() {
   return {
@@ -76,6 +78,56 @@ describe('QueryBuilder', () => {
     const qbUpd = new QueryBuilder(exec as any, 't');
     qbUpd.setUpdates(undefined as any);
     await qbUpd.update();
+  });
+
+  it('fetches first record or null and aliases one()', async () => {
+    const exec = {
+      count: vi.fn(),
+      queryPage: vi
+        .fn()
+        .mockResolvedValueOnce({ records: [{ id: 1 }] })
+        .mockResolvedValueOnce({ records: [] }),
+      update: vi.fn(),
+      deleteByQuery: vi.fn(),
+      stream: vi.fn(),
+    };
+    const qb = new QueryBuilder(exec as any, 'users');
+    qb.where({ field: 'id', operator: '=', value: 1 });
+    expect(await qb.firstOrNull()).toEqual({ id: 1 });
+    expect(exec.queryPage.mock.calls[0][1].limit).toBe(1);
+    expect(await qb.firstOrNull()).toBeNull();
+
+    const qbAlias = new QueryBuilder(exec as any, 'users');
+    qbAlias.where({ field: 'id', operator: '=', value: 2 });
+    exec.queryPage.mockResolvedValueOnce({ records: [{ id: 2 }] });
+    expect(await qbAlias.one()).toEqual({ id: 2 });
+  });
+
+  it('requires a where clause for firstOrNull', async () => {
+    const exec = makeExec();
+    const qb = new QueryBuilder(exec as any, 'users');
+    await expect(qb.firstOrNull()).rejects.toBeInstanceOf(OnyxError);
+  });
+
+  it('disallows firstOrNull in update mode', async () => {
+    const exec = makeExec();
+    const qb = new QueryBuilder(exec as any, 'users');
+    qb.setUpdates({});
+    await expect(qb.firstOrNull()).rejects.toThrow('Cannot call firstOrNull() in update mode.');
+  });
+
+  it('covers implementation builder firstOrNull', async () => {
+    const db = onyx.init({ baseUrl: 'http://x', databaseId: 'd', apiKey: 'k', apiSecret: 's', fetch: vi.fn() as any });
+    (db as any)._queryPage = vi.fn().mockResolvedValueOnce({ records: [{ id: 1 }], nextPage: null });
+    const res = await db.from('User').where({ field: 'id', operator: '=', value: 1 }).firstOrNull();
+    expect(res).toEqual({ id: 1 });
+
+    const qb = db.from('User');
+    await expect(qb.firstOrNull()).rejects.toBeInstanceOf(OnyxError);
+
+    const qbUpd = db.from('User');
+    qbUpd.setUpdates({});
+    await expect(qbUpd.firstOrNull()).rejects.toThrow('Cannot call firstOrNull() in update mode.');
   });
 
   it('throws on improper usage', async () => {
