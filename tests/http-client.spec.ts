@@ -148,6 +148,25 @@ describe('HttpClient', () => {
     (globalThis as any).fetch = original;
   });
 
+  it('throws on empty baseUrl', () => {
+    expect(() => new HttpClient({ baseUrl: '', ...creds, fetchImpl: vi.fn() })).toThrow(
+      'baseUrl is required'
+    );
+  });
+
+  it('throws when baseUrl lacks protocol', () => {
+    expect(() =>
+      new HttpClient({ baseUrl: 'api.test', ...creds, fetchImpl: vi.fn() })
+    ).toThrow('baseUrl must include protocol');
+  });
+
+  it('rejects request paths without leading slash', async () => {
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: vi.fn() });
+    await expect(client.request('GET', 'oops')).rejects.toThrow(
+      'path must start with /'
+    );
+  });
+
   it('throws OnyxHttpError on non-ok responses', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ error: { message: 'bad' } }), {
