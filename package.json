@@ -24,6 +24,7 @@
     "build": "tsup",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
+    "audit": "npm audit --audit-level=high",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm run typecheck",
