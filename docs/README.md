@@ -103,8 +103,12 @@ The package ships a small codegen CLI that emits per-table interfaces, a `tables
 Generate directly from the API (using the same credential resolver as `init()`):
 
 ```bash
-npx onyx-gen --source api --out ./src/onyx/types.ts --name OnyxSchema --timestamps string
+npx onyx-gen --source api --out ./src/onyx/types.ts --name OnyxSchema
 ```
+
+Timestamp attributes are emitted as `Date` fields by default. When saving,
+`Date` values are automatically serialized to ISO timestamp strings. Pass
+`--timestamps string` to keep timestamps as ISO strings in generated types.
 
 Or from a local schema file you export from the console:
 

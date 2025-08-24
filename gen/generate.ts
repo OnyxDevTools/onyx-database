@@ -44,7 +44,7 @@ export interface GenerateOptions {
   /** Overwrite existing files. Default: true. */
   overwrite?: boolean;
 
-  /** Timestamp representation for TS types. Default: "string". */
+  /** Timestamp representation for TS types. Default: "date". */
   timestampMode?: EmitOptions['timestampMode'];
 
   /** Exported schema type name. Default: "OnyxSchema". */
@@ -85,7 +85,7 @@ const DEFAULTS: Required<
   outBaseName: 'onyx.schema',
   emitJson: false,
   overwrite: true,
-  timestampMode: 'string',
+  timestampMode: 'date',
   schemaTypeName: 'OnyxSchema',
   optional: 'non-null',
   quiet: false,
