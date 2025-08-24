@@ -28,11 +28,11 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
     options?: { partition?: string; resolvers?: string[] }
   ): Promise<T>;
 
-  delete(
-    table: string,
+  delete<Table extends keyof Schema & string, T = Schema[Table]>(
+    table: Table,
     primaryKey: string,
     options?: { partition?: string; relationships?: string[] }
-  ): Promise<unknown>;
+  ): Promise<T>;
 
   saveDocument(doc: OnyxDocument): Promise<unknown>;
   getDocument(documentId: string, options?: { width?: number; height?: number }): Promise<unknown>;

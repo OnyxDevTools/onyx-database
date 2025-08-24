@@ -209,11 +209,12 @@ await db.cascade('User.Role').save('User', {
 import { onyx } from '@onyx.dev/onyx-database';
 const db = onyx.init();
 
-// Simple delete
-await db.delete('User', 'user_125');
+// Simple delete returns the removed record
+const removed = await db.delete('User', 'user_125');
 
 // Delete cascading relationships (example)
-await db.delete('Role', 'role_temp', { relationships: ['Role.Permission'] });
+const role = await db.delete('Role', 'role_temp', { relationships: ['Role.Permission'] });
+// role includes cascaded relationships
 ```
 
 ### 4) Documents API (binary assets)
