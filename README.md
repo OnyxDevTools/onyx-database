@@ -97,7 +97,7 @@ const db = onyx.init({
 
 ## Optional: generate TypeScript types from your schema
 
-The package ships a small codegen CLI that emits per-table interfaces, a `tables` enum, and a `Schema` mapping for compile-time safety and IntelliSense.
+The package ships a small codegen CLI that emits per-table interfaces, a `tables` enum, and a `Schema` mapping for compile-time safety and IntelliSense. Each generated interface also includes an index signature so extra properties (for graph attachments in cascade saves) don't trigger type errors.
 
 Generate directly from the API (using the same credential resolver as `init()`):
 
