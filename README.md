@@ -296,6 +296,15 @@ Works in Node 18+ and modern bundlers (Vite, esbuild, Webpack). For TypeScript, 
   }
 }
 ```
+---
+
+## Release workflow
+
+This repository uses [Changesets](https://github.com/changesets/changesets) for versioning and publishing.
+
+1. Run `npm run changeset` to create a changeset entry.
+2. Push to `main` and the **Release** workflow opens a version PR.
+3. Tag the release to trigger `npm run release -- --dry-run` in CI.
 
 ---
 
