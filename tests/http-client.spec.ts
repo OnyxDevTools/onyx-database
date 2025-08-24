@@ -19,6 +19,16 @@ describe('HttpClient', () => {
   const base = 'https://api.test';
   const creds = { apiKey: 'k', apiSecret: 's' };
 
+  it('returns default headers without extras', () => {
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: vi.fn() });
+    expect(client.headers()).toEqual({
+      'x-onyx-key': creds.apiKey,
+      'x-onyx-secret': creds.apiSecret,
+      Accept: 'application/json',
+      'Content-Type': 'application/json'
+    });
+  });
+
   it('uses provided fetch and returns parsed JSON', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
@@ -77,7 +87,8 @@ describe('HttpClient', () => {
         'x-onyx-key': creds.apiKey,
         'x-onyx-secret': creds.apiSecret,
         Accept: 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
       },
       body: undefined
     });
