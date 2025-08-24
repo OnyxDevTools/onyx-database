@@ -19,4 +19,4 @@ Accurate metadata and clean publish.
 5. Commit updates to `package.json`.
 
 ## Acceptance Criteria
-- [ ] `npm pack --dry-run` shows only intended files (dist, src if desired, docs if desired, root meta).
+- [x] `npm pack --dry-run` shows only intended files (dist, src if desired, docs if desired, root meta).
