@@ -151,7 +151,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const params = new URLSearchParams();
     if (options?.partition) params.append('partition', options.partition);
     if (options?.relationships?.length) {
-      params.append('relationships', options.relationships.join(','));
+      params.append('relationships', options.relationships.map(encodeURIComponent).join(','));
     }
     const path = `/data/${encodeURIComponent(databaseId)}/${encodeURIComponent(
       table,
@@ -284,7 +284,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
     if (options?.relationships?.length) {
-      params.append('relationships', options.relationships.join(','));
+      params.append('relationships', options.relationships.map(encodeURIComponent).join(','));
     }
     const path = `/data/${encodeURIComponent(databaseId)}/${encodeURIComponent(table)}${
       params.toString() ? `?${params.toString()}` : ''
