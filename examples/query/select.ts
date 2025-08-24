@@ -7,8 +7,9 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const items = await db
+    .select('title', 'year')
     .from(tables.VodItem)
-    .select(['id', 'title'])
+    .limit(5)
     .list();
 
   console.log(items);
