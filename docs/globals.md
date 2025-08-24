@@ -8,6 +8,7 @@
 
 - [FetchResponse](interfaces/FetchResponse.md)
 - [ICascadeBuilder](interfaces/ICascadeBuilder.md)
+- [ICascadeRelationshipBuilder](interfaces/ICascadeRelationshipBuilder.md)
 - [IConditionBuilder](interfaces/IConditionBuilder.md)
 - [IOnyxDatabase](interfaces/IOnyxDatabase.md)
 - [IQueryBuilder](interfaces/IQueryBuilder.md)

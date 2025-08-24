@@ -6,7 +6,7 @@
 
 # Interface: IOnyxDatabase\<Schema\>
 
-Defined in: types/public.ts:13
+Defined in: types/public.ts:18
 
 ## Type Parameters
 
@@ -20,7 +20,7 @@ Defined in: types/public.ts:13
 
 > **cascade**(...`relationships`): [`ICascadeBuilder`](ICascadeBuilder.md)\<`Schema`\>
 
-Defined in: types/public.ts:16
+Defined in: types/public.ts:21
 
 #### Parameters
 
@@ -34,11 +34,23 @@ Defined in: types/public.ts:16
 
 ***
 
+### cascadeBuilder()
+
+> **cascadeBuilder**(): [`ICascadeRelationshipBuilder`](ICascadeRelationshipBuilder.md)
+
+Defined in: types/public.ts:22
+
+#### Returns
+
+[`ICascadeRelationshipBuilder`](ICascadeRelationshipBuilder.md)
+
+***
+
 ### close()
 
 > **close**(): `void`
 
-Defined in: types/public.ts:42
+Defined in: types/public.ts:48
 
 Cancels active streams; safe to call multiple times
 
@@ -50,15 +62,25 @@ Cancels active streams; safe to call multiple times
 
 ### delete()
 
-> **delete**(`table`, `primaryKey`, `options?`): `Promise`\<`unknown`\>
+> **delete**\<`Table`, `T`\>(`table`, `primaryKey`, `options?`): `Promise`\<`T`\>
 
-Defined in: types/public.ts:31
+Defined in: types/public.ts:37
+
+#### Type Parameters
+
+##### Table
+
+`Table` *extends* `string`
+
+##### T
+
+`T` = `Schema`\[`Table`\]
 
 #### Parameters
 
 ##### table
 
-`string`
+`Table`
 
 ##### primaryKey
 
@@ -76,7 +98,7 @@ Defined in: types/public.ts:31
 
 #### Returns
 
-`Promise`\<`unknown`\>
+`Promise`\<`T`\>
 
 ***
 
@@ -84,7 +106,7 @@ Defined in: types/public.ts:31
 
 > **deleteDocument**(`documentId`): `Promise`\<`unknown`\>
 
-Defined in: types/public.ts:39
+Defined in: types/public.ts:45
 
 #### Parameters
 
@@ -102,7 +124,7 @@ Defined in: types/public.ts:39
 
 > **findById**\<`Table`, `T`\>(`table`, `primaryKey`, `options?`): `Promise`\<`T`\>
 
-Defined in: types/public.ts:25
+Defined in: types/public.ts:31
 
 #### Type Parameters
 
@@ -144,7 +166,7 @@ Defined in: types/public.ts:25
 
 > **from**\<`Table`\>(`table`): [`IQueryBuilder`](IQueryBuilder.md)\<`Schema`\[`Table`\]\>
 
-Defined in: types/public.ts:14
+Defined in: types/public.ts:19
 
 #### Type Parameters
 
@@ -168,7 +190,7 @@ Defined in: types/public.ts:14
 
 > **getDocument**(`documentId`, `options?`): `Promise`\<`unknown`\>
 
-Defined in: types/public.ts:38
+Defined in: types/public.ts:44
 
 #### Parameters
 
@@ -198,7 +220,7 @@ Defined in: types/public.ts:38
 
 > **save**\<`Table`\>(`table`): [`ISaveBuilder`](ISaveBuilder.md)\<`Schema`\[`Table`\]\>
 
-Defined in: types/public.ts:18
+Defined in: types/public.ts:24
 
 ##### Type Parameters
 
@@ -220,7 +242,7 @@ Defined in: types/public.ts:18
 
 > **save**\<`Table`\>(`table`, `entityOrEntities`, `options?`): `Promise`\<`unknown`\>
 
-Defined in: types/public.ts:19
+Defined in: types/public.ts:25
 
 ##### Type Parameters
 
@@ -254,7 +276,7 @@ Defined in: types/public.ts:19
 
 > **saveDocument**(`doc`): `Promise`\<`unknown`\>
 
-Defined in: types/public.ts:37
+Defined in: types/public.ts:43
 
 #### Parameters
 
@@ -272,7 +294,7 @@ Defined in: types/public.ts:37
 
 > **select**(...`fields`): [`IQueryBuilder`](IQueryBuilder.md)\<`Record`\<`string`, `unknown`\>\>
 
-Defined in: types/public.ts:15
+Defined in: types/public.ts:20
 
 #### Parameters
 
