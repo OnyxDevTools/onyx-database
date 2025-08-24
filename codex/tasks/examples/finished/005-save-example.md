@@ -8,4 +8,4 @@ Create an example demonstrating how to persist data using `save`.
 3. Include comments describing required fields.
 
 ## Acceptance Criteria
-- [ ] An example under `examples/` shows saving data with `save`.
+- [x] An example under `examples/` shows saving data with `save`.
