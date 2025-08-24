@@ -10,6 +10,6 @@
     "tsx": "^4.20.5"
   },
   "scripts": {
-    "gen:onyx": "onyx-gen --source file --schema ./onyx.schema.json --out ./onyx/types.ts --timestamps string --name OnyxSchema"
+    "gen:onyx": "onyx-gen --source file --schema ./onyx.schema.json --out ./onyx/types.ts --name OnyxSchema"
   }
 }

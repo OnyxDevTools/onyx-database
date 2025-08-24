@@ -7,7 +7,7 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const program: StreamingProgram  = {
-    start: new Date().toISOString(),
+    start: new Date(),
     title: "This is a test",
     desc: "Program Description",
     icon: "http://example.com/dne.png",
@@ -20,7 +20,7 @@ async function main(): Promise<void> {
       id: 'news_003',
       category: 'news',
       name: 'News 24',
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date(),
       programs: [program]
   }) as StreamingChannel;
 
