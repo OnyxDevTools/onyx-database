@@ -1,17 +1,17 @@
 // filename: src/types/protocol.ts
 import type { Sort, LogicalOperator, QueryCriteriaOperator } from './common';
 
-export type QueryCriteria = {
+export interface QueryCriteria {
   field: string;
   operator: QueryCriteriaOperator;
   value?: unknown;
-};
+}
 
 export type QueryCondition =
   | { conditionType: 'SingleCondition'; criteria: QueryCriteria }
   | { conditionType: 'CompoundCondition'; operator: LogicalOperator; conditions: QueryCondition[] };
 
-export type SelectQuery = {
+export interface SelectQuery {
   type: 'SelectQuery';
   fields?: string[] | null;
   conditions?: QueryCondition | null;
@@ -21,18 +21,18 @@ export type SelectQuery = {
   groupBy?: string[] | null;
   partition?: string | null;
   resolvers?: string[] | null;
-};
+}
 
-export type UpdateQuery = {
+export interface UpdateQuery {
   type: 'UpdateQuery';
   conditions?: QueryCondition | null;
   updates: Record<string, unknown>;
   sort?: Sort[] | null;
   limit?: number | null;
   partition?: string | null;
-};
+}
 
-export type QueryPage<T> = {
+export interface QueryPage<T> {
   records: T[];
   nextPage?: string | null;
-};
+}

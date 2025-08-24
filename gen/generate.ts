@@ -1,10 +1,10 @@
 // filename: gen/generate.ts
+import process from 'node:process';
 import { resolveConfig } from '../src/config/chain';
 import { HttpClient } from '../src/core/http';
-import type { OnyxIntrospection, EmitOptions, OptionalStrategy } from './emit';
-import { emitTypes } from './emit';
+import { emitTypes, type OnyxIntrospection, type EmitOptions, type OptionalStrategy } from './emit';
 
-export type GenerateOptions = {
+export interface GenerateOptions {
   /** Where to read schema from. */
   source?: 'auto' | 'api' | 'file';
   /** When source=file, filesystem path to schema JSON. */
@@ -67,7 +67,7 @@ export type GenerateOptions = {
 
   /** @deprecated Legacy single outDir; still accepted to avoid breaking scripts. */
   outDir?: string;
-};
+}
 
 const DEFAULTS: Required<
   Omit<
@@ -116,7 +116,7 @@ async function writeFile(path: string, data: string, overwrite: boolean): Promis
 }
 
 function isIntrospection(x: unknown): x is OnyxIntrospection {
-  return !!x && typeof x === 'object' && Array.isArray((x as any).tables);
+  return !!x && typeof x === 'object' && Array.isArray((x as { tables?: unknown }).tables);
 }
 
 async function fetchSchemaFromApi(
@@ -165,7 +165,8 @@ export async function generateTypes(
 
   if (opts.source === 'file' || (opts.source === 'auto' && opts.schemaPath)) {
     if (!opts.schemaPath) throw new Error('schemaPath is required when source="file"');
-    if (!opts.quiet) console.error(`[onyx-gen] reading schema from file: ${opts.schemaPath}`);
+    if (!opts.quiet)
+      process.stderr.write(`[onyx-gen] reading schema from file: ${opts.schemaPath}\n`);
     schema = await readFileJson<OnyxIntrospection>(opts.schemaPath);
   }
 
@@ -179,7 +180,7 @@ export async function generateTypes(
       fetchImpl: cfg.fetch,
     });
     if (!opts.quiet)
-      console.error(`[onyx-gen] fetching schema from API for db ${cfg.databaseId}`);
+      process.stderr.write(`[onyx-gen] fetching schema from API for db ${cfg.databaseId}\n`);
     schema = await fetchSchemaFromApi(http, cfg.databaseId, options?.apiPaths);
   }
 
@@ -202,7 +203,8 @@ export async function generateTypes(
   let typesDirAbs: string;
 
   if (outIsFile) {
-    typesPath = path.resolve(process.cwd(), opts.typesOutFile!);
+    const typesOutFile = opts.typesOutFile as string;
+    typesPath = path.resolve(process.cwd(), typesOutFile);
     typesDirAbs = path.dirname(typesPath);
     await ensureDir(typesDirAbs);
     jsonBaseName = path.basename(typesPath, path.extname(typesPath));
@@ -234,8 +236,8 @@ export async function generateTypes(
   }
 
   if (!opts.quiet) {
-    console.error(`[onyx-gen] wrote ${typesPath}`);
-    if (jsonPath) console.error(`[onyx-gen] wrote ${jsonPath}`);
+    process.stderr.write(`[onyx-gen] wrote ${typesPath}\n`);
+    if (jsonPath) process.stderr.write(`[onyx-gen] wrote ${jsonPath}\n`);
   }
 
   return { typesPath, jsonPath };

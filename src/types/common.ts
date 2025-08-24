@@ -13,18 +13,18 @@ export type QueryCriteriaOperator =
 
 export type LogicalOperator = 'AND' | 'OR';
 
-export type Sort = { field: string; order: 'ASC' | 'DESC' };
+export interface Sort { field: string; order: 'ASC' | 'DESC' }
 
 export type StreamAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'QUERY_RESPONSE' | 'KEEP_ALIVE';
 
-export type OnyxDocument = {
+export interface OnyxDocument {
   documentId?: string;
   path?: string;
   created?: Date;
   updated?: Date;
   mimeType?: string;
   content?: string;
-};
+}
 
 /** Minimal fetch typing to avoid DOM lib dependency */
 export interface FetchResponse {

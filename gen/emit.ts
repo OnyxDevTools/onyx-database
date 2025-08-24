@@ -15,11 +15,11 @@ export type OnyxAttribute = Readonly<{
 
 export type OnyxTable = Readonly<{
   name: string;
-  attributes: ReadonlyArray<OnyxAttribute>;
+  attributes: readonly OnyxAttribute[];
 }>;
 
 export type OnyxIntrospection = Readonly<{
-  tables: ReadonlyArray<OnyxTable>;
+  tables: readonly OnyxTable[];
 }>;
 
 export type OptionalStrategy = 'non-null' | 'nullable' | 'none';
