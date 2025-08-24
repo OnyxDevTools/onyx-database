@@ -1,9 +1,17 @@
 import { createRequire } from 'module';
-import { test, expect } from 'vitest';
+import { execSync } from 'node:child_process';
+import { beforeAll, test, expect } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const cjs = require('../dist/index.cjs');
-const esm = await import('../dist/index.js');
+
+let cjs;
+let esm;
+
+beforeAll(async () => {
+  execSync('npm run build', { stdio: 'pipe' });
+  cjs = require('../dist/index.cjs');
+  esm = await import('../dist/index.js');
+});
 
 test('ESM build exports match CJS build', () => {
   const cjsKeys = Object.keys(cjs).sort();
