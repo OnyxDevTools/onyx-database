@@ -1,0 +1,15 @@
+{
+  "name": "@onyx.dev/examples",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@onyx.dev/onyx-database": "file:.."
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "tsx": "^4.17.0"
+  },
+  "scripts": {
+    "gen:onyx": "onyx-gen --source file --schema ./onyx.schema.json --out ./onyx/types.ts --timestamps string --name OnyxSchema"
+  }
+}

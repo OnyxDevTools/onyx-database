@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Example",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/examples",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--import=tsx", "--enable-source-maps"],
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "sourceMaps": true,
+      "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
+      "internalConsoleOptions": "neverOpen",
+      "autoAttachChildProcesses": true
+    }
+  ]
+}
