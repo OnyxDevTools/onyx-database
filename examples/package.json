@@ -7,7 +7,7 @@
   },
   "devDependencies": {
     "typescript": "^5.9.2",
-    "tsx": "^4.17.0"
+    "tsx": "^4.20.5"
   },
   "scripts": {
     "gen:onyx": "onyx-gen --source file --schema ./onyx.schema.json --out ./onyx/types.ts --timestamps string --name OnyxSchema"
