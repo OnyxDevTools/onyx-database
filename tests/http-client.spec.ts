@@ -29,6 +29,22 @@ describe('HttpClient', () => {
     });
   });
 
+  it('does not allow overriding auth headers', () => {
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: vi.fn() });
+    const headers = client.headers({
+      'x-onyx-key': 'bad',
+      'x-onyx-secret': 'bad',
+      'X-Custom': '1',
+    });
+    expect(headers).toEqual({
+      'x-onyx-key': creds.apiKey,
+      'x-onyx-secret': creds.apiSecret,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-Custom': '1',
+    });
+  });
+
   it('uses provided fetch and returns parsed JSON', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
