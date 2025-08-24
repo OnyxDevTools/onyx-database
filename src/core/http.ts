@@ -72,7 +72,10 @@ export class HttpClient {
     const res = await this.fetchImpl(url, init);
     const contentType = res.headers.get('Content-Type') || '';
     const raw = await res.text();
-    const data = contentType.includes('application/json') ? parseJsonAllowNaN(raw) : raw;
+    const isJson =
+      raw.trim().length > 0 &&
+      (contentType.includes('application/json') || /^[\[{]/.test(raw.trim()));
+    const data = isJson ? parseJsonAllowNaN(raw) : raw;
     if (!res.ok) {
       const msg =
         typeof data === 'object' &&
