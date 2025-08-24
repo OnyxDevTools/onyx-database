@@ -192,7 +192,7 @@ const allActive = await db
 ```ts
 const maybeUser = await db
   .from('User')
-  .where(eq('email', 'alice@example.com'))
+  .where(eq('email', 'alice@example.com')) // avoid searching by indentifier with firstOrNull, it will throw not found error
   .firstOrNull(); // or .one()
 ```
 

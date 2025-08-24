@@ -8,17 +8,17 @@ async function main(): Promise<void> {
 
   const maybeVod = await db
     .from(tables.VodItem)
-    .where(eq('id', 'vod_1'))
+    .where(eq('title', 'Superman'))
     .firstOrNull();
 
   console.log(JSON.stringify(maybeVod, null, 2));
 
   const alsoVod = await db
     .from(tables.VodItem)
-    .where(eq('id', 'vod_1'))
+    .where(eq('title', 'DNE'))
     .one();
 
-  console.log(JSON.stringify(alsoVod, null, 2));
+  console.log(`\nshould be null: ${JSON.stringify(alsoVod, null, 2)}`);
 }
 
 main().catch((err) => {
