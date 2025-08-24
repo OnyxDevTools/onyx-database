@@ -10,10 +10,10 @@ Clear licensing.
 
 ## Plan
 1. Choose MIT license and create `LICENSE` file with license text.
-2. Review dependencies to determine if a `NOTICE` file is required; add one if necessary.
+2. Review dependencies to determine if a `NOTICE` file is required; add one if necessary. All dependencies are permissive, so no `NOTICE` file is needed.
 3. Ensure `package.json` contains the matching `"license"` field.
 4. Add a license badge and section to `README.md` referencing the chosen license.
 
 ## Acceptance Criteria
-- [ ] License file matches `package.json` `"license"`.
-- [ ] README shows license section/badge.
+- [x] License file matches `package.json` `"license"`.
+- [x] README shows license section/badge.
