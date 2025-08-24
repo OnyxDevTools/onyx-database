@@ -208,10 +208,10 @@ await db.cascade('User.Role').save('User', {
 
 // Cascade relationship syntax:
 // field:Type(target, source)
-//   field  – property on the parent entity
+//   field  – property or path relative to the entity being saved
 //   Type   – related table name
-//   target – foreign key on the related table referencing the parent
-//   source – field on the parent entity used as the key
+//   target – foreign key on the related table
+//   source – field on the top level entity used as the key
 
 // Using the CascadeRelationshipBuilder
 const programsCascade = db
