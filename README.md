@@ -63,7 +63,7 @@ import { onyx } from '@onyx.dev/onyx-database';
 const db = onyx.init(); // resolves from env/project file/home profile
 ```
 
-### Option B) Project file (checked into *your app* repo)
+### Option B) Project file (ignored in *your app* repo)
 
 ```json
 // ./onyx-database.json
@@ -73,6 +73,13 @@ const db = onyx.init(); // resolves from env/project file/home profile
   "apiKey": "YOUR_KEY",
   "apiSecret": "YOUR_SECRET"
 }
+```
+
+This file contains sensitive credentials and **must never be committed** to version control. Add it to `.gitignore`:
+
+```gitignore
+# Onyx project credentials
+onyx-database.json
 ```
 
 ### Option C) Home profile (per-developer)
