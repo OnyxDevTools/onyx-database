@@ -8,4 +8,4 @@ Create an example demonstrating the use of `select` to specify fields in a query
 3. Ensure types reflect the narrowed field selection.
 
 ## Acceptance Criteria
-- [ ] An example under `examples/` shows selecting fields with `select`.
+- [x] An example under `examples/` shows selecting fields with `select`.
