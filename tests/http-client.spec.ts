@@ -94,6 +94,18 @@ describe('HttpClient', () => {
     expect(res).toEqual({ ok: true });
   });
 
+  it('parses JSON on DELETE even without content-type header', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: {}
+      })
+    );
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
+    const res = await client.request('DELETE', '/other');
+    expect(res).toEqual({ ok: true });
+  });
+
   it('uses global fetch when none provided', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response('pong', {
