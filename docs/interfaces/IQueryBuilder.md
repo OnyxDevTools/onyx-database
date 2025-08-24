@@ -50,7 +50,7 @@ Defined in: types/builders.ts:27
 
 > **delete**(): `Promise`\<`unknown`\>
 
-Defined in: types/builders.ts:33
+Defined in: types/builders.ts:35
 
 #### Returns
 
@@ -163,6 +163,30 @@ Defined in: types/builders.ts:28
 #### Returns
 
 `Promise`\<`T`[]\>
+
+***
+
+### firstOrNull()
+
+> **firstOrNull**(): `Promise`\<`T` | `null`\>
+
+Defined in: types/builders.ts:29
+
+#### Returns
+
+`Promise`\<`T` | `null`\>
+
+***
+
+### one()
+
+> **one**(): `Promise`\<`T` | `null`\>
+
+Defined in: types/builders.ts:30
+
+#### Returns
+
+`Promise`\<`T` | `null`\>
 
 ***
 
@@ -296,7 +320,7 @@ Defined in: types/builders.ts:18
 
 > **page**(`options?`): `Promise`\<\{ `nextPage?`: `null` \| `string`; `records`: `T`[]; \}\>
 
-Defined in: types/builders.ts:29
+Defined in: types/builders.ts:31
 
 #### Parameters
 
@@ -374,7 +398,7 @@ Defined in: types/builders.ts:13
 
 > **setUpdates**(`updates`): `IQueryBuilder`\<`T`\>
 
-Defined in: types/builders.ts:31
+Defined in: types/builders.ts:33
 
 #### Parameters
 
@@ -414,7 +438,7 @@ Defined in: types/builders.ts:39
 
 > **update**(): `Promise`\<`unknown`\>
 
-Defined in: types/builders.ts:32
+Defined in: types/builders.ts:34
 
 #### Returns
 
