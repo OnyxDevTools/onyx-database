@@ -1,5 +1,7 @@
 # @onyx.dev/onyx-database
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-typed, builder-pattern API for querying and persisting data in Onyx from Node.js or modern bundlers. Ships ESM & CJS, includes a credential resolver, and an optional **schema code generator** that produces table-safe types and a `tables` enum.
 
 - **Website:** <https://onyx.dev/>
@@ -326,7 +328,7 @@ See [SECURITY.md](./SECURITY.md) for our security policy and vulnerability repor
 
 ## License
 
-Apache-2.0 © Onyx Dev Tools
+MIT © Onyx Dev Tools. See [LICENSE](./LICENSE).
 
 ---
 
