@@ -31,7 +31,7 @@ function dropUndefined<T extends object>(obj: Partial<T> | undefined): Partial<T
   return out as Partial<T>;
 }
 
-function readEnv(): Partial<OnyxConfig> {
+function readEnv(targetId?: string): Partial<OnyxConfig> {
   if (!isNode) return {};
   const env = process.env ?? {};
   const pick = (...keys: string[]): string | undefined => {
@@ -42,30 +42,49 @@ function readEnv(): Partial<OnyxConfig> {
     return undefined;
   };
 
+  const envId = pick('ONYX_DATABASE_ID', 'NEXT_ONYX_DATABASE_ID');
+  if (targetId && envId && targetId !== envId) return {};
+  const databaseId = targetId ?? envId;
+  if (!databaseId) return {};
+
   // IMPORTANT: only return defined keys so we don't override file values with `undefined`.
   const res = dropUndefined<OnyxConfig>({
     baseUrl: pick('ONYX_DATABASE_BASE_URL', 'NEXT_ONYX_DATABASE_BASE_URL'),
-    databaseId: pick('ONYX_DATABASE_ID', 'NEXT_ONYX_DATABASE_ID'),
+    databaseId,
     apiKey: pick('ONYX_DATABASE_API_KEY', 'NEXT_ONYX_DATABASE_API_KEY'),
-    apiSecret: pick('ONYX_DATABASE_API_SECRET', 'NEXT_ONYX_DATABASE_API_SECRET')
+    apiSecret: pick('ONYX_DATABASE_API_SECRET', 'NEXT_ONYX_DATABASE_API_SECRET'),
   });
 
   dbg('env:', mask(res));
   return res;
 }
 
-async function readProjectFile(): Promise<Partial<OnyxConfig>> {
+async function readProjectFile(databaseId?: string): Promise<Partial<OnyxConfig>> {
   if (!isNode) return {};
   const fs = await import('node:fs/promises');
   const path = await import('node:path');
-  const file = path.resolve(process.cwd(), 'onyx-database.json');
-  try {
-    const txt = await fs.readFile(file, 'utf8');
+
+  const tryRead = async (p: string): Promise<Partial<OnyxConfig>> => {
+    const txt = await fs.readFile(p, 'utf8');
     const json = dropUndefined<OnyxConfig>(JSON.parse(txt) as Partial<OnyxConfig>);
-    dbg('project file:', file, '→', mask(json));
+    dbg('project file:', p, '→', mask(json));
     return json;
+  };
+
+  if (databaseId) {
+    const specific = path.resolve(process.cwd(), `onyx-database-${databaseId}.json`);
+    try {
+      return await tryRead(specific);
+    } catch {
+      dbg('project file not found:', specific);
+    }
+  }
+
+  const fallback = path.resolve(process.cwd(), 'onyx-database.json');
+  try {
+    return await tryRead(fallback);
   } catch {
-    dbg('project file not found:', file);
+    dbg('project file not found:', fallback);
     return {};
   }
 }
@@ -135,7 +154,11 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
 
 /**
  * Resolve configuration using precedence:
- *   explicit config (highest) > env > project file > home profile (lowest)
+ *   explicit config (highest) > env (when ONYX_DATABASE_ID matches)
+ *   > project file > home profile (lowest)
+ * Project file supports:
+ *   - ./onyx-database-<databaseId>.json
+ *   - ./onyx-database.json
  * Home profile supports:
  *   - ~/.onyx/onyx-database-<databaseId>.json
  *   - ~/.onyx/onyx-database.json
@@ -143,20 +166,24 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
  *   - or a single ~/.onyx/onyx-database-*.json if unique
  */
 export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig> {
-  const env = readEnv();
-  const project = await readProjectFile();
-
-  // Use any known databaseId to search home profiles
-  const dbIdForHome = input?.databaseId ?? env.databaseId ?? project.databaseId;
-  const home = await readHomeProfile(dbIdForHome);
+  const targetId = input?.databaseId;
+  const env = readEnv(targetId);
+  let file: Partial<OnyxConfig> = {};
+  if (!env.apiKey || !env.apiSecret) {
+    const project = await readProjectFile(targetId);
+    if (Object.keys(project).length) {
+      file = project;
+    } else {
+      file = await readHomeProfile(targetId);
+    }
+  }
 
   // IMPORTANT: drop undefined keys for every layer before merging.
   const merged: Partial<OnyxConfig> = {
     baseUrl: DEFAULT_BASE_URL,
-    ...dropUndefined<OnyxConfig>(home),
-    ...dropUndefined<OnyxConfig>(project),
+    ...dropUndefined<OnyxConfig>(file),
     ...dropUndefined<OnyxConfig>(env),
-    ...dropUndefined<OnyxConfig>(input)
+    ...dropUndefined<OnyxConfig>(input),
   };
 
   dbg('merged (pre-validate):', mask(merged));
@@ -182,8 +209,9 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
     dbg('validation failed. merged:', mask(merged));
     throw new OnyxConfigError(
       `Missing required config: ${missing.join(', ')}. ` +
-      `Sources: env (ONYX_* / NEXT_ONYX_*), ./onyx-database.json, ` +
-      `~/.onyx/onyx-database-<databaseId>.json, ~/.onyx/onyx-database.json, ~/onyx-database.json`
+        `Sources: env (when ONYX_DATABASE_ID matches), ` +
+        `./onyx-database-<databaseId>.json, ./onyx-database.json, ` +
+        `~/.onyx/onyx-database-<databaseId>.json, ~/.onyx/onyx-database.json, ~/onyx-database.json`
     );
   }
 
