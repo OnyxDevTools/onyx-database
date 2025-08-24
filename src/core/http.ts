@@ -42,13 +42,16 @@ export class HttpClient {
   }
 
   headers(extra?: Record<string, string>): Record<string, string> {
+    const extras = { ...(extra ?? {}) };
+    delete extras['x-onyx-key'];
+    delete extras['x-onyx-secret'];
     return {
       'x-onyx-key': this.apiKey,
       'x-onyx-secret': this.apiSecret,
       'Accept': 'application/json',
       'Content-Type': 'application/json',
       ...this.defaults,
-      ...(extra ?? {})
+      ...extras,
     };
   }
 
