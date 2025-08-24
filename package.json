@@ -25,6 +25,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm run typecheck"
   },
   "repository": "github:OnyxDevTools/onyx-database",
@@ -39,7 +40,9 @@
     "@types/node": "^22.5.0",
     "@typescript-eslint/eslint-plugin": "^8.40.0",
     "@typescript-eslint/parser": "^8.40.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.34.0",
+    "ts-node": "^10.9.2",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
