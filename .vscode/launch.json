@@ -9,11 +9,11 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["--import=tsx", "--enable-source-maps"],
       "program": "${file}",
-      "console": "integratedTerminal",
+      "console": "internalConsole",
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
       "sourceMaps": true,
       "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
-      "internalConsoleOptions": "neverOpen",
+      "internalConsoleOptions": "openOnSessionStart",
       "autoAttachChildProcesses": true
     }
   ]
