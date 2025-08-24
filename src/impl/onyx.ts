@@ -3,7 +3,7 @@ import { resolveConfig, type ResolvedConfig } from '../config/chain';
 import { HttpClient } from '../core/http';
 import { openJsonLinesStream } from '../core/stream';
 
-import type { OnyxFacade, IOnyxDatabase } from '../types/public';
+import type { OnyxFacade, IOnyxDatabase, OnyxConfig } from '../types/public';
 import type {
   IQueryBuilder,
   ISaveBuilder,
@@ -46,9 +46,9 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   private http: HttpClient | null = null;
   private readonly streams = new Set<{ cancel: () => void }>();
 
-  constructor(config?: Partial<ResolvedConfig>) {
+  constructor(config?: OnyxConfig) {
     // Defer resolution; keeps init() synchronous
-    this.cfgPromise = resolveConfig(config as any);
+    this.cfgPromise = resolveConfig(config);
   }
 
   private async ensureClient(): Promise<{
@@ -92,11 +92,11 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   /** -------- IOnyxDatabase -------- */
 
   from<Table extends keyof Schema & string>(table: Table): IQueryBuilder<Schema[Table]> {
-    return new QueryBuilderImpl<Schema[Table]>(this, String(table));
+    return new QueryBuilderImpl<Schema[Table], Schema>(this, String(table));
   }
 
   select(...fields: string[]): IQueryBuilder<Record<string, unknown>> {
-    const qb = new QueryBuilderImpl<Record<string, unknown>>(this, null);
+    const qb = new QueryBuilderImpl<Record<string, unknown>, Schema>(this, null);
     qb.selectFields(fields);
     return qb;
   }
@@ -121,9 +121,9 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     options?: { relationships?: string[] },
   ): ISaveBuilder<unknown> | Promise<unknown> {
     if (arguments.length === 1) {
-      return new SaveBuilderImpl<unknown>(this, table);
+      return new SaveBuilderImpl<unknown, Schema>(this, table);
     }
-    return this._saveInternal(table, entityOrEntities as any, options);
+    return this._saveInternal(table, entityOrEntities as unknown, options);
   }
 
   async findById<Table extends keyof Schema & string, T = Schema[Table]>(
@@ -296,8 +296,8 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
 /** -------------------------
  * QueryBuilder Implementation
  * --------------------------*/
-class QueryBuilderImpl<T = unknown> implements IQueryBuilder<T> {
-  private readonly db: OnyxDatabaseImpl<any>;
+class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQueryBuilder<T> {
+  private readonly db: OnyxDatabaseImpl<S>;
   private table: string | null;
 
   private fields: string[] | null = null;
@@ -320,7 +320,7 @@ class QueryBuilderImpl<T = unknown> implements IQueryBuilder<T> {
   private onItemDeletedListener: ((e: T) => void) | null = null;
   private onItemListener: ((e: T | null, a: StreamAction) => void) | null = null;
 
-  constructor(db: OnyxDatabaseImpl<any>, table: string | null) {
+  constructor(db: OnyxDatabaseImpl<S>, table: string | null) {
     this.db = db;
     this.table = table;
   }
@@ -535,12 +535,12 @@ class QueryBuilderImpl<T = unknown> implements IQueryBuilder<T> {
 /** -------------------------
  * SaveBuilder Implementation
  * --------------------------*/
-class SaveBuilderImpl<T = unknown> implements ISaveBuilder<T> {
-  private readonly db: OnyxDatabaseImpl<any>;
+class SaveBuilderImpl<T = unknown, S = Record<string, unknown>> implements ISaveBuilder<T> {
+  private readonly db: OnyxDatabaseImpl<S>;
   private readonly table: string;
   private relationships: string[] | null = null;
 
-  constructor(db: OnyxDatabaseImpl<any>, table: string) {
+  constructor(db: OnyxDatabaseImpl<S>, table: string) {
     this.db = db;
     this.table = table;
   }
@@ -569,10 +569,10 @@ class SaveBuilderImpl<T = unknown> implements ISaveBuilder<T> {
 class CascadeBuilderImpl<Schema = Record<string, unknown>>
   implements ICascadeBuilder<Schema>
 {
-  private readonly db: OnyxDatabaseImpl<any>;
+  private readonly db: OnyxDatabaseImpl<Schema>;
   private rels: string[] | null = null;
 
-  constructor(db: OnyxDatabaseImpl<any>) {
+  constructor(db: OnyxDatabaseImpl<Schema>) {
     this.db = db;
   }
 
@@ -599,7 +599,7 @@ class CascadeBuilderImpl<Schema = Record<string, unknown>>
  * Facade export
  * --------------------------*/
 export const onyx: OnyxFacade = {
-  init<Schema = Record<string, unknown>>(config?: Partial<ResolvedConfig>): IOnyxDatabase<Schema> {
+  init<Schema = Record<string, unknown>>(config?: OnyxConfig): IOnyxDatabase<Schema> {
     return new OnyxDatabaseImpl<Schema>(config);
   },
 };

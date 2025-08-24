@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // filename: gen/cli/generate.ts
+import process from 'node:process';
 import { generateTypes, type GenerateOptions } from '../generate';
 
 function isTypesFilePath(p?: string): boolean {
@@ -63,14 +64,14 @@ function parseArgs(argv: string[]): GenerateOptions {
         break;
       case '--source': {
         const v = (next(i) ?? '').toLowerCase();
-        if (v === 'api' || v === 'file' || v === 'auto') opts.source = v as any;
+        if (v === 'api' || v === 'file' || v === 'auto') opts.source = v as GenerateOptions['source'];
         else throw new Error(`Invalid --source: ${v}`);
         i++;
         break;
       }
       case '--timestamps': {
         const v = (next(i) ?? '').toLowerCase();
-        if (v === 'string' || v === 'date' || v === 'number') opts.timestampMode = v as any;
+        if (v === 'string' || v === 'date' || v === 'number') opts.timestampMode = v as GenerateOptions['timestampMode'];
         else throw new Error(`Invalid --timestamps: ${v}`);
         i++;
         break;
@@ -126,6 +127,7 @@ function parseArgs(argv: string[]): GenerateOptions {
       case '--help':
         printHelp();
         process.exit(0);
+        break;
       default:
         if (a.startsWith('-')) throw new Error(`Unknown option: ${a}`);
         break;
@@ -135,7 +137,7 @@ function parseArgs(argv: string[]): GenerateOptions {
 }
 
 function printHelp(): void {
-  console.log(`onyx-gen — Generate Onyx schema TypeScript types
+  process.stdout.write(`onyx-gen — Generate Onyx schema TypeScript types
 
 Usage:
   onyx-gen [options]
@@ -176,8 +178,9 @@ Notes:
   try {
     const opts = parseArgs(process.argv);
     await generateTypes(opts);
-  } catch (e: any) {
-    console.error(`onyx-gen: ${e?.message ?? String(e)}`);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    process.stderr.write(`onyx-gen: ${msg}\n`);
     process.exit(1);
   }
 })();

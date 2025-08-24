@@ -12,7 +12,7 @@ export class SaveBuilder<T = unknown> implements ISaveBuilder<T> {
   private relationships: string[] = [];
 
   constructor(
-    private readonly db: IOnyxDatabase<any>,
+    private readonly db: IOnyxDatabase<Record<string, unknown>>,
     private readonly table: string
   ) {}
 
@@ -23,12 +23,12 @@ export class SaveBuilder<T = unknown> implements ISaveBuilder<T> {
 
   one(entity: Partial<T>): Promise<unknown> {
     const opts = this.relationships.length ? { relationships: this.relationships } : undefined;
-    return this.db.save(this.table as any, entity as any, opts);
+    return this.db.save(this.table, entity as Partial<unknown>, opts);
   }
 
   many(entities: Array<Partial<T>>): Promise<unknown> {
     const opts = this.relationships.length ? { relationships: this.relationships } : undefined;
-    return this.db.save(this.table as any, entities as any, opts);
+    return this.db.save(this.table, entities as Array<Partial<unknown>>, opts);
   }
 }
 
