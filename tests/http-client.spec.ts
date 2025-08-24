@@ -72,7 +72,7 @@ describe('HttpClient', () => {
     });
   });
 
-  it('includes Accept header on DELETE and parses JSON', async () => {
+  it('sends Prefer header on DELETE and parses JSON', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
         status: 200,
@@ -87,7 +87,6 @@ describe('HttpClient', () => {
         'x-onyx-key': creds.apiKey,
         'x-onyx-secret': creds.apiSecret,
         Accept: 'application/json',
-        'Content-Type': 'application/json',
         Prefer: 'return=representation'
       },
       body: undefined
