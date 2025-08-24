@@ -1,0 +1,49 @@
+import { describe, it, expect, afterEach } from 'vitest';
+import { resolveConfig } from '../src/config/chain';
+import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
+
+const origEnv = { ...process.env };
+const origCwd = process.cwd();
+const origHome = process.env.HOME;
+
+afterEach(() => {
+  process.env = { ...origEnv };
+  process.chdir(origCwd);
+  if (origHome) process.env.HOME = origHome; else delete process.env.HOME;
+});
+
+describe('config chain database selection', () => {
+  it('uses env when database id matches', async () => {
+    process.env.ONYX_DATABASE_ID = 'envdb';
+    process.env.ONYX_DATABASE_BASE_URL = 'http://env';
+    process.env.ONYX_DATABASE_API_KEY = 'k';
+    process.env.ONYX_DATABASE_API_SECRET = 's';
+    const cfg = await resolveConfig({ databaseId: 'envdb' });
+    expect(cfg.baseUrl).toBe('http://env');
+    expect(cfg.apiKey).toBe('k');
+    expect(cfg.apiSecret).toBe('s');
+  });
+
+  it('prefers project file over home profile when env id differs', async () => {
+    const proj = await mkdtemp(path.join(tmpdir(), 'proj-'));
+    process.chdir(proj);
+    await writeFile(
+      path.join(proj, 'onyx-database-idb.json'),
+      JSON.stringify({ baseUrl: 'http://proj', apiKey: 'pk', apiSecret: 'ps', databaseId: 'idb' }),
+    );
+
+    const home = await mkdtemp(path.join(tmpdir(), 'home-'));
+    process.env.HOME = home;
+    await mkdir(path.join(home, '.onyx'), { recursive: true });
+    await writeFile(
+      path.join(home, '.onyx', 'onyx-database-idb.json'),
+      JSON.stringify({ baseUrl: 'http://home', apiKey: 'hk', apiSecret: 'hs', databaseId: 'idb' }),
+    );
+
+    const cfg = await resolveConfig({ databaseId: 'idb' });
+    expect(cfg.baseUrl).toBe('http://proj');
+    expect(cfg.apiKey).toBe('pk');
+  });
+});

@@ -237,16 +237,19 @@ export interface OnyxFacade {
    *   apiKey: 'key',
    *   apiSecret: 'secret'
    * });
-  * ```
-  *
-  * @param config Connection settings and optional custom fetch.
+   * ```
+   *
+   * @param config Connection settings and optional custom fetch.
    * @remarks
    * Each `db` instance resolves configuration once and holds a single internal
    * HTTP client. Requests leverage Node's built-in `fetch`, which reuses and
    * pools connections for keep-alive, so additional connection caching or
    * pooling is rarely necessary.
   */
-  init<Schema = Record<string, unknown>>(config?: OnyxConfig): IOnyxDatabase<Schema>;
+  init<Schema = Record<string, unknown>>(
+    dbOrConfig?: string | OnyxConfig,
+    config?: OnyxConfig,
+  ): IOnyxDatabase<Schema>;
 }
 
 export * from './common';
