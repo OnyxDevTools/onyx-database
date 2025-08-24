@@ -50,7 +50,7 @@ The package is dual-module (ESM + CJS) and has **no runtime or peer dependencies
 
 ## Initialize the client
 
-This SDK resolves credentials automatically using the chain **environment ➜ project file ➜ home profile** (highest to lowest precedence). Call `onyx.init('database-id')` to target a specific database, or omit the ID to use the default. You can also pass credentials directly via config.
+This SDK resolves credentials automatically using the chain **environment ➜ project file ➜ home profile** (highest to lowest precedence). Call `onyx.init({ databaseId: 'database-id' })` to target a specific database, or omit the `databaseId` to use the default. You can also pass credentials directly via config.
 
 ### Option A) Environment variables (recommended for production)
 
@@ -64,7 +64,7 @@ Set the following environment variables for your database:
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
 
-const db = onyx.init('YOUR_DATABASE_ID'); // uses env when ID matches
+const db = onyx.init({ databaseId: 'YOUR_DATABASE_ID' }); // uses env when ID matches
 ```
 
 ### Option B) Project file (checked into *your app* repo)
