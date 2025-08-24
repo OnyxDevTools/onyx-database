@@ -50,12 +50,12 @@ This SDK resolves credentials automatically using the chain **environment ➜ pr
 
 ### Option A) Environment variables (recommended for production)
 
-Set any of the following (NEXT_ variants work in frameworks like Next.js):
+Set the following environment variables:
 
-- `ONYX_DATABASE_BASE_URL` or `NEXT_ONYX_DATABASE_BASE_URL`
-- `ONYX_DATABASE_ID` or `NEXT_ONYX_DATABASE_ID`
-- `ONYX_DATABASE_API_KEY` or `NEXT_ONYX_DATABASE_API_KEY`
-- `ONYX_DATABASE_API_SECRET` or `NEXT_ONYX_DATABASE_API_SECRET`
+- `ONYX_DATABASE_BASE_URL`
+- `ONYX_DATABASE_ID`
+- `ONYX_DATABASE_API_KEY`
+- `ONYX_DATABASE_API_SECRET`
 
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
