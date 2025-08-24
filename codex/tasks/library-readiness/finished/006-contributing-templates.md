@@ -17,5 +17,5 @@ Contributor-friendly repo.
 5. Commit templates and ensure GitHub recognizes them.
 
 ## Acceptance Criteria
-- [ ] New issues/PRs use templates.
-- [ ] CONTRIBUTING explains tooling and release flow.
+- [x] New issues/PRs use templates.
+- [x] CONTRIBUTING explains tooling and release flow.
