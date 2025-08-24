@@ -137,7 +137,7 @@ export function emitTypes(schema: OnyxIntrospection, options?: EmitOptions): str
     for (const a of t.attributes) {
       lines.push(propertyLine(a, opts.timestampMode, opts.optionalStrategy));
     }
-    lines.push('  [key: string]: unknown;');
+    lines.push('  [key: string]: any;');
     lines.push('}');
     lines.push('');
   }
