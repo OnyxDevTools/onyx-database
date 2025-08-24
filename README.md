@@ -318,6 +318,12 @@ This repository uses [Changesets](https://github.com/changesets/changesets) for 
 
 ---
 
+## Security
+
+See [SECURITY.md](./SECURITY.md) for our security policy and vulnerability reporting process.
+
+---
+
 ## License
 
 Apache-2.0 © Onyx Dev Tools
