@@ -13,5 +13,5 @@
     "noEmit": false,
     "baseUrl": "."
   },
-  "include": ["query/**/*.ts", "generated/**/*.ts"]
+  "include": ["query/**/*.ts", "generated/**/*.ts", "save/cascade.ts"]
 }
