@@ -7,6 +7,7 @@ TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-
 - **Docs hub:** <https://onyx.dev/documentation/>
 - **Cloud API docs:** <https://onyx.dev/documentation/api-documentation/>
 - **API Reference:** [./docs](./docs)
+- **Quality:** 100% unit test coverage enforced in CI
 
 ---
 
