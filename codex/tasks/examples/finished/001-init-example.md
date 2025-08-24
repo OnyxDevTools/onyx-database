@@ -8,4 +8,4 @@ Create an example demonstrating how to initialize the database using `init`.
 3. Log a simple operation to verify the client initializes successfully.
 
 ## Acceptance Criteria
-- [ ] An example is added under `examples/` showing use of `init` to create an `IOnyxDatabase` instance.
+- [x] An example is added under `examples/` showing use of `init` to create an `IOnyxDatabase` instance.

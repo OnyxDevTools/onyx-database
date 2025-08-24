@@ -8,4 +8,4 @@ Create an example demonstrating the use of `from` to start a query for a table.
 3. Confirm the example compiles using the SDK's types.
 
 ## Acceptance Criteria
-- [ ] An example under `examples/` shows querying a table using `from`.
+- [x] An example under `examples/` shows querying a table using `from`.
