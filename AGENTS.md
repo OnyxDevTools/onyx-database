@@ -23,8 +23,11 @@ This guide orients **automated coding agents** to the repository’s structure, 
 ├── .eslintrc.json
 ├── codex/
 │   └── tasks/
-│       ├── _progress.json
-│       ├── 001-task-title.md
+│       ├── done/
+│       |   ├── 001-task-title.md
+|       ├── plan/
+|       |   ├── 001-task-title-plan.md
+|       ├── 001-task-title.md
 ├── dist/                      # build output (ESM/CJS + CLI)
 │   ├── gen/cli/generate.(cjs|js|*.map)
 │   ├── index.(cjs|js|*.map)
@@ -80,6 +83,44 @@ This guide orients **automated coding agents** to the repository’s structure, 
 ```
 
 ---
+
+## Codex Task and Plan Workflow
+
+Agents are expected to manage work items under the \`codex/tasks/{epicName}/\` folder. Each **epic** has its own folder, containing a series of task files (\`NNN-task-title.md\`) and two subfolders for status management:
+
+\`\`\`
+codex/
+└── tasks/
+    └── {epicName}/
+        ├── 001-task-title.md
+        ├── 002-task-title.md
+        ├── plan/
+        │   └── 001-task-title-plan.md
+        └── finished/
+            └── 001-task-title.md
+\`\`\`
+
+### Conventions
+
+- **Root tasks**: Contain the initial task description, acceptance criteria, and any supporting notes.  
+- **Plan/**: Agents create a \`*-plan.md\` file here that breaks down how they will accomplish the root task. Keep it concise, ordered, and actionable. a plan should always have an acceptance criteria checkbox list at the end.   
+- **Finished/**: When a task is completed, move the original task file here. The plan file can remain in \`plan/\` for reference, but should not be modified after completion.  when a task is finished, evaluate if the acceptance criteria is met and check off the items that are and move the task to the finished folder
+
+### Process
+
+1. **New Task**: Start with the \`NNN-task-title.md\` file in the epic’s root.  
+2. **Planning**: Create a corresponding \`NNN-task-title-plan.md\` in \`/plan\` with step-by-step execution details.  
+3. **Execution**: Implement the code or docs changes as specified in the task.  
+4. **Completion**: Once accepted, move the original task file into \`/finished\`. Do not alter it further—this preserves history.  
+5. **Changelog**: For any code or doc changes, also add a \`changelog/YYYY-MM-DD-HHMM-task-desc.md\` file (see [Commit & Changelog Requirements](#commit--changelog-requirements)).  
+
+### Guidelines
+
+- Always preserve the **task order and numbering** (\`NNN-...\`).  
+- Plans should be **short, direct, and prescriptive** so other agents can follow or audit.  
+- Never delete tasks—archive them under \`finished/\`.  
+- Keep one task per file. If a task spawns sub-tasks, create new numbered task files.  
+
 
 ## Public API — Source of Truth
 
