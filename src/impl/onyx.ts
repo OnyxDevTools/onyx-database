@@ -634,7 +634,11 @@ class CascadeBuilderImpl<Schema = Record<string, unknown>>
  * Facade export
  * --------------------------*/
 export const onyx: OnyxFacade = {
-  init<Schema = Record<string, unknown>>(config?: OnyxConfig): IOnyxDatabase<Schema> {
-    return new OnyxDatabaseImpl<Schema>(config);
+  init<Schema = Record<string, unknown>>(dbOrConfig?: string | OnyxConfig, config?: OnyxConfig): IOnyxDatabase<Schema> {
+    const cfg: OnyxConfig | undefined =
+      typeof dbOrConfig === 'string'
+        ? { ...config, databaseId: dbOrConfig }
+        : dbOrConfig;
+    return new OnyxDatabaseImpl<Schema>(cfg);
   },
 };

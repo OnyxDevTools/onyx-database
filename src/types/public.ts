@@ -238,10 +238,15 @@ export interface OnyxFacade {
    *   apiSecret: 'secret'
    * });
    * ```
+   * Initialize the client. Pass a database ID to target a specific database.
    *
-   * @param config Connection settings and optional custom fetch.
+   * @param dbOrConfig Database ID or connection settings.
+   * @param config Optional settings when providing a database ID.
    */
-  init<Schema = Record<string, unknown>>(config?: OnyxConfig): IOnyxDatabase<Schema>;
+  init<Schema = Record<string, unknown>>(
+    dbOrConfig?: string | OnyxConfig,
+    config?: OnyxConfig,
+  ): IOnyxDatabase<Schema>;
 }
 
 export * from './common';
