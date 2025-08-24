@@ -14,7 +14,7 @@
       "sourceMaps": true,
       "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
       "internalConsoleOptions": "openOnSessionStart",
-      "autoAttachChildProcesses": true
+      "autoAttachChildProcesses": false
     }
   ]
 }
