@@ -1,10 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { onyx, eq, contains, startsWith, gt } from '../src';
+import { resolveConfig } from '../src/config/chain';
 
+let hasConfig = true;
+try {
+  await resolveConfig();
+} catch {
+  hasConfig = false;
+}
 
-describe('smoke e2e', () => {
-    it('creates, queries, and deletes a channel', async () => {
+describe.runIf(hasConfig)('smoke e2e', () => {
+  it('creates, queries, and deletes a channel', async () => {
     const db = onyx.init();
 
     const program = {
