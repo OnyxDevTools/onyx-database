@@ -180,6 +180,15 @@ const allActive = await db
   .list();
 ```
 
+### 1b) First or null
+
+```ts
+const maybeUser = await db
+  .from('User')
+  .where(eq('email', 'alice@example.com'))
+  .firstOrNull(); // or .one()
+```
+
 ### 2) Save (create/update)
 
 ```ts

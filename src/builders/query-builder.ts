@@ -8,6 +8,7 @@ import type {
   QueryPage,
 } from '../types/protocol';
 import type { Sort, StreamAction } from '../types/common';
+import { OnyxError } from '../errors/onyx-error';
 
 /**
  * Internal adapter the QueryBuilder uses to execute operations.
@@ -220,6 +221,18 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
   async list(options: { pageSize?: number; nextPage?: string } = {}): Promise<T[]> {
     const pg = await this.page(options);
     return Array.isArray(pg.records) ? pg.records : [];
+  }
+
+  async firstOrNull(): Promise<T | null> {
+    if (this.mode !== 'select') throw new Error('Cannot call firstOrNull() in update mode.');
+    if (!this.conditions) throw new OnyxError('firstOrNull() requires a where() clause.');
+    this.limitValue = 1;
+    const pg = await this.page();
+    return Array.isArray(pg.records) && pg.records.length > 0 ? pg.records[0] : null;
+  }
+
+  async one(): Promise<T | null> {
+    return this.firstOrNull();
   }
 
   async delete(): Promise<unknown> {
