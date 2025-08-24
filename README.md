@@ -111,7 +111,7 @@ Use in code:
 
 ```ts
 import { onyx, eq, asc } from '@onyx.dev/onyx-database';
-import { tables, type Schema } from './src/onyx/types';
+import { tables, Schema } from './src/onyx/types';
 
 const db = onyx.init<Schema>();
 

@@ -154,8 +154,9 @@ export function emitTypes(schema: OnyxIntrospection, options?: EmitOptions): str
   // Convenience alias so consumers can always `import { Schema }`
   if (opts.schemaTypeName !== 'Schema') {
     lines.push(`export type Schema = ${opts.schemaTypeName};`);
-    lines.push('');
   }
+  lines.push(`export const Schema = {} as ${opts.schemaTypeName};`);
+  lines.push('');
 
   // Tables enum (for IDE suggestions & safer table refs)
   lines.push('export enum tables {');
