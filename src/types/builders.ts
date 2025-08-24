@@ -51,5 +51,8 @@ export interface ICascadeBuilder<Schema = Record<string, unknown>> {
     table: Table,
     entityOrEntities: Partial<Schema[Table]> | Array<Partial<Schema[Table]>>
   ): Promise<unknown>;
-  delete(table: string, primaryKey: string): Promise<unknown>;
+  delete<Table extends keyof Schema & string>(
+    table: Table,
+    primaryKey: string,
+  ): Promise<Schema[Table]>;
 }

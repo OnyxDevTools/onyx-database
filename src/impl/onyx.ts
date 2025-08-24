@@ -142,11 +142,11 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     return http.request<T>('GET', path);
   }
 
-  async delete(
-    table: string,
+  async delete<Table extends keyof Schema & string, T = Schema[Table]>(
+    table: Table,
     primaryKey: string,
     options?: { partition?: string; relationships?: string[] },
-  ): Promise<unknown> {
+  ): Promise<T> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
     if (options?.partition) params.append('partition', options.partition);
@@ -156,7 +156,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/${encodeURIComponent(
       table,
     )}/${encodeURIComponent(primaryKey)}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request('DELETE', path);
+    return http.request<T>('DELETE', path);
   }
 
   async saveDocument(doc: OnyxDocument): Promise<unknown> {
@@ -590,7 +590,10 @@ class CascadeBuilderImpl<Schema = Record<string, unknown>>
     });
   }
 
-  delete(table: string, primaryKey: string): Promise<unknown> {
+  delete<Table extends keyof Schema & string>(
+    table: Table,
+    primaryKey: string,
+  ): Promise<Schema[Table]> {
     return this.db.delete(table, primaryKey, { relationships: this.rels ?? undefined });
   }
 }

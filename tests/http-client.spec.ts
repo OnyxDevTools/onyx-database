@@ -33,6 +33,7 @@ describe('HttpClient', () => {
       headers: {
         'x-onyx-key': creds.apiKey,
         'x-onyx-secret': creds.apiSecret,
+        Accept: 'application/json',
         'Content-Type': 'application/json',
         'X-Custom': 'y'
       },
@@ -54,10 +55,33 @@ describe('HttpClient', () => {
       headers: {
         'x-onyx-key': creds.apiKey,
         'x-onyx-secret': creds.apiSecret,
+        Accept: 'application/json',
         'Content-Type': 'application/json'
       },
       body: '{"x":1}'
     });
+  });
+
+  it('includes Accept header on DELETE and parses JSON', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    );
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
+    const res = await client.request('DELETE', '/thing');
+    expect(fetchMock).toHaveBeenCalledWith(`${base}/thing`, {
+      method: 'DELETE',
+      headers: {
+        'x-onyx-key': creds.apiKey,
+        'x-onyx-secret': creds.apiSecret,
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: undefined
+    });
+    expect(res).toEqual({ ok: true });
   });
 
   it('uses global fetch when none provided', async () => {
