@@ -205,6 +205,29 @@ await db.cascade('User.Role').save('User', {
   email: 'dana@example.com',
   Role: ['role_admin', 'role_editor'],
 });
+
+// Cascade relationship syntax:
+// field:Type(target, source)
+//   field  – property on the parent entity
+//   Type   – related table name
+//   target – foreign key on the related table referencing the parent
+//   source – field on the parent entity used as the key
+
+// Using the CascadeRelationshipBuilder
+const programsCascade = db
+  .cascadeBuilder()
+  .graph('programs')
+  .graphType('StreamingProgram')
+  .targetField('channelId')
+  .sourceField('id');
+
+await db.cascade(programsCascade).save('StreamingChannel', {
+  id: 'news_003',
+  category: 'news',
+  name: 'News 24',
+  updatedAt: new Date(),
+  programs: [program], // program defined earlier
+});
 ```
 
 ### 3) Delete (by primary key)

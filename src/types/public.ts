@@ -1,6 +1,11 @@
 // filename: src/types/public.ts
 import type { OnyxDocument, FetchImpl } from './common';
-import type { IQueryBuilder, ICascadeBuilder, ISaveBuilder } from './builders';
+import type {
+  IQueryBuilder,
+  ICascadeBuilder,
+  ISaveBuilder,
+  ICascadeRelationshipBuilder,
+} from './builders';
 
 export interface OnyxConfig {
   baseUrl?: string;
@@ -14,6 +19,7 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   from<Table extends keyof Schema & string>(table: Table): IQueryBuilder<Schema[Table]>;
   select(...fields: string[]): IQueryBuilder<Record<string, unknown>>;
   cascade(...relationships: string[]): ICascadeBuilder<Schema>;
+  cascadeBuilder(): ICascadeRelationshipBuilder;
 
   save<Table extends keyof Schema & string>(table: Table): ISaveBuilder<Schema[Table]>;
   save<Table extends keyof Schema & string>(

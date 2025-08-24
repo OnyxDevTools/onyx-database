@@ -8,7 +8,7 @@
 
 > `const` **onyx**: [`OnyxFacade`](../interfaces/OnyxFacade.md)
 
-Defined in: impl/onyx.ts:601
+Defined in: impl/onyx.ts:623
 
 -------------------------
 Facade export

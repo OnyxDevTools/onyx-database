@@ -4,13 +4,16 @@
 
 # @onyx.dev/onyx-database
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE) [![codecov](https://codecov.io/gh/OnyxDevTools/onyx-database/branch/main/graph/badge.svg)](https://codecov.io/gh/OnyxDevTools/onyx-database)
+
 TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-typed, builder-pattern API for querying and persisting data in Onyx from Node.js or modern bundlers. Ships ESM & CJS, includes a credential resolver, and an optional **schema code generator** that produces table-safe types and a `tables` enum.
 
 - **Website:** <https://onyx.dev/>
 - **Cloud Console:** <https://cloud.onyx.dev>
 - **Docs hub:** <https://onyx.dev/documentation/>
 - **Cloud API docs:** <https://onyx.dev/documentation/api-documentation/>
-- **API Reference:** [./docs](./docs)
+- **API Reference:** [./docs](_media/docs)
+- **Quality:** 100% unit test coverage enforced in CI
 
 ---
 
@@ -41,7 +44,7 @@ TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-
 npm i @onyx.dev/onyx-database
 ```
 
-The package is dual-module (ESM + CJS) and has **no runtime dependencies**.
+The package is dual-module (ESM + CJS) and has **no runtime or peer dependencies**.
 
 ---
 
@@ -206,6 +209,29 @@ await db.cascade('User.Role').save('User', {
   email: 'dana@example.com',
   Role: ['role_admin', 'role_editor'],
 });
+
+// Cascade relationship syntax:
+// field:Type(target, source)
+//   field  – property on the parent entity
+//   Type   – related table name
+//   target – foreign key on the related table referencing the parent
+//   source – field on the parent entity used as the key
+
+// Using the CascadeRelationshipBuilder
+const programsCascade = db
+  .cascadeBuilder()
+  .graph('programs')
+  .graphType('StreamingProgram')
+  .targetField('channelId')
+  .sourceField('id');
+
+await db.cascade(programsCascade).save('StreamingChannel', {
+  id: 'news_003',
+  category: 'news',
+  name: 'News 24',
+  updatedAt: new Date(),
+  programs: [program], // program defined earlier
+});
 ```
 
 ### 3) Delete (by primary key)
@@ -214,11 +240,12 @@ await db.cascade('User.Role').save('User', {
 import { onyx } from '@onyx.dev/onyx-database';
 const db = onyx.init();
 
-// Simple delete
-await db.delete('User', 'user_125');
+// Simple delete returns the removed record
+const removed = await db.delete('User', 'user_125');
 
 // Delete cascading relationships (example)
-await db.delete('Role', 'role_temp', { relationships: ['Role.Permission'] });
+const role = await db.delete('Role', 'role_temp', { relationships: ['Role.Permission'] });
+// role includes cascaded relationships
 ```
 
 ### 4) Documents API (binary assets)
@@ -304,6 +331,15 @@ Works in Node 18+ and modern bundlers (Vite, esbuild, Webpack). For TypeScript, 
   }
 }
 ```
+---
+
+## Release workflow
+
+This repository uses [Changesets](https://github.com/changesets/changesets) for versioning and publishing.
+
+1. Run `npm run changeset` to create a changeset entry.
+2. Push to `main` and the **Release** workflow opens a version PR.
+3. Tag the release to trigger `npm run release -- --dry-run` in CI.
 
 ---
 
@@ -316,9 +352,15 @@ Works in Node 18+ and modern bundlers (Vite, esbuild, Webpack). For TypeScript, 
 
 ---
 
+## Security
+
+See [SECURITY.md](_media/SECURITY.md) for our security policy and vulnerability reporting process.
+
+---
+
 ## License
 
-Apache-2.0 © Onyx Dev Tools
+MIT © Onyx Dev Tools. See [LICENSE](_media/LICENSE).
 
 ---
 
