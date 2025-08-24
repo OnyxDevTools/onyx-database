@@ -20,5 +20,5 @@ Unit tests with Vitest and coverage.
 5. Run `npm test` to verify execution and coverage output.
 
 ## Acceptance Criteria
-- [ ] `npm test` passes and writes coverage summary.
-- [ ] Coverage includes lines, functions, and branches for `src/`.
+- [x] `npm test` passes and writes coverage summary.
+- [x] Coverage includes lines, functions, and branches for `src/`.
