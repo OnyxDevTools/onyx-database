@@ -10,7 +10,7 @@ async function main(): Promise<void> {
     id: 'news_001',
     category: 'news',
     name: 'News 24',
-    updatedAt: new Date().toISOString(),
+    updatedAt: new Date(),
   });
 
   console.log('Saved channel:', channel);
