@@ -16,4 +16,19 @@ describe('emitTypes', () => {
     const out = emitTypes(schema);
     expect(out).toContain('[key: string]: unknown;');
   });
+
+  it('emits EmbeddedObject attributes as any', () => {
+    const schema: OnyxIntrospection = {
+      tables: [
+        {
+          name: 'Sample',
+          attributes: [
+            { name: 'payload', type: 'EmbeddedObject', isNullable: true },
+          ],
+        },
+      ],
+    };
+    const out = emitTypes(schema);
+    expect(out).toContain('payload: any | null;');
+  });
 });
