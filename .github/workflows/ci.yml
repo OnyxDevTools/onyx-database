@@ -5,7 +5,25 @@ on:
   pull_request:
 
 jobs:
-  build:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+      tests: ${{ steps.filter.outputs.tests }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            src:
+              - 'src/**'
+            tests:
+              - 'tests/**'
+
+  ci:
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -18,5 +36,20 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run lint
-      - run: npm test
       - run: npm run build
+
+  test:
+    needs: changes
+    if: needs.changes.outputs.src == 'true' || needs.changes.outputs.tests == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test
