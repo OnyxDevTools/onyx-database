@@ -22,6 +22,26 @@ import type { Sort, StreamAction, OnyxDocument, FetchImpl } from '../types/commo
 import { CascadeRelationshipBuilder } from '../builders/cascade-relationship-builder';
 import { OnyxError } from '../errors/onyx-error';
 
+const DEFAULT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+let cachedCfg: { promise: Promise<ResolvedConfig>; expires: number } | null = null;
+
+function resolveConfigWithCache(config?: OnyxConfig): Promise<ResolvedConfig> {
+  const ttl = config?.ttl ?? DEFAULT_CACHE_TTL;
+  const now = Date.now();
+  if (cachedCfg && cachedCfg.expires > now) {
+    return cachedCfg.promise;
+  }
+  const { ttl: _ttl, ...rest } = config ?? {};
+  const promise = resolveConfig(rest);
+  cachedCfg = { promise, expires: now + ttl };
+  return promise;
+}
+
+function clearCacheConfig(): void {
+  cachedCfg = null;
+}
+
 /** -------------------------
  * Internal helpers
  * --------------------------*/
@@ -64,7 +84,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
 
   constructor(config?: OnyxConfig) {
     // Defer resolution; keeps init() synchronous
-    this.cfgPromise = resolveConfig(config);
+    this.cfgPromise = resolveConfigWithCache(config);
   }
 
   private async ensureClient(): Promise<{
@@ -637,4 +657,5 @@ export const onyx: OnyxFacade = {
   init<Schema = Record<string, unknown>>(config?: OnyxConfig): IOnyxDatabase<Schema> {
     return new OnyxDatabaseImpl<Schema>(config);
   },
+  clearCacheConfig,
 };
