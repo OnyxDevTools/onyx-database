@@ -182,5 +182,12 @@ describe('HttpClient', () => {
       body: 'nope'
     });
   });
+
+  it('rejects invalid HTTP methods at compile time', () => {
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: vi.fn() });
+    // @ts-expect-error - invalid method should not be allowed
+    const call = () => client.request('TRACE', '/bad');
+    expect(call).toBeDefined();
+  });
 });
 
