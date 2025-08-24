@@ -97,6 +97,15 @@ const db = onyx.init({
 });
 ```
 
+### Connection handling
+
+Calling `onyx.init()` returns a lightweight client. Configuration is resolved once
+and each database instance keeps a single internal `HttpClient`. Requests go
+through Node's built‑in `fetch`, which already reuses connections and pools them
+for keep‑alive. Reuse the returned `db` for multiple operations; extra SDK‑level
+connection pooling generally isn't necessary unless you create many short‑lived
+clients.
+
 ---
 
 ## Optional: generate TypeScript types from your schema
