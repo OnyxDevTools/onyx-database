@@ -45,6 +45,7 @@ export class HttpClient {
     return {
       'x-onyx-key': this.apiKey,
       'x-onyx-secret': this.apiSecret,
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
       ...this.defaults,
       ...(extra ?? {})
