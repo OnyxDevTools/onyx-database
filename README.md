@@ -40,7 +40,7 @@ TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-
 npm i @onyx.dev/onyx-database
 ```
 
-The package is dual-module (ESM + CJS) and has **no runtime dependencies**.
+The package is dual-module (ESM + CJS) and has **no runtime or peer dependencies**.
 
 ---
 
