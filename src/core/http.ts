@@ -56,7 +56,7 @@ export class HttpClient {
   }
 
   async request<T = unknown>(
-    method: string,
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     path: string,
     body?: unknown,
     extraHeaders?: Record<string, string>
