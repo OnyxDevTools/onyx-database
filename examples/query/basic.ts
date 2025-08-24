@@ -1,6 +1,7 @@
 // filename: examples/query/basic.ts
+import process from 'node:process';
 import { onyx, eq, gt } from '@onyx.dev/onyx-database';
-import { tables, Schema } from 'onyx/types'
+import { tables, type Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();

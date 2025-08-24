@@ -2,13 +2,13 @@
 import type { OnyxDocument, FetchImpl } from './common';
 import type { IQueryBuilder, ICascadeBuilder, ISaveBuilder } from './builders';
 
-export type OnyxConfig = {
+export interface OnyxConfig {
   baseUrl?: string;
   databaseId?: string;
   apiKey?: string;
   apiSecret?: string;
   fetch?: FetchImpl;
-};
+}
 
 export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   from<Table extends keyof Schema & string>(table: Table): IQueryBuilder<Schema[Table]>;
@@ -42,9 +42,9 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   close(): void;
 }
 
-export type OnyxFacade = {
+export interface OnyxFacade {
   init<Schema = Record<string, unknown>>(config?: OnyxConfig): IOnyxDatabase<Schema>;
-};
+}
 
 export * from './common';
 export * from './protocol';

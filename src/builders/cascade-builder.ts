@@ -11,7 +11,7 @@ import type { IOnyxDatabase } from '../types/public';
 export class CascadeBuilder<Schema = Record<string, unknown>> implements ICascadeBuilder<Schema> {
   private relationships: string[] = [];
 
-  constructor(private readonly db: IOnyxDatabase<any>) {}
+  constructor(private readonly db: IOnyxDatabase<Schema>) {}
 
   cascade(...relationships: string[]): ICascadeBuilder<Schema> {
     this.relationships = relationships.flat();
@@ -23,7 +23,11 @@ export class CascadeBuilder<Schema = Record<string, unknown>> implements ICascad
     entityOrEntities: Partial<Schema[Table]> | Array<Partial<Schema[Table]>>
   ): Promise<unknown> {
     const opts = this.relationships.length ? { relationships: this.relationships } : undefined;
-    return this.db.save(table, entityOrEntities as any, opts);
+    return this.db.save(
+      table,
+      entityOrEntities as Schema[Table] | Array<Schema[Table]>,
+      opts,
+    );
   }
 
   delete(table: string, primaryKey: string): Promise<unknown> {
