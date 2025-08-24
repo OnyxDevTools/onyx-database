@@ -254,13 +254,13 @@ Template:
 ## Release process
 
 - Maintainers handle publishing; do not run `npm publish` in PRs.
+- Use Changesets for versioning and changelogs:
+  1. Run `npm run changeset` for each change that needs a release note.
+  2. Push to `main`; the **Release** workflow opens a version PR.
+  3. Tag the merge commit (e.g., `v0.1.1`) to trigger `npm run release -- --dry-run` in CI.
 - Ensure the `exports` map remains correct:
   - `.` → types/import/require for lib
   - `bin` → `dist/gen/cli/generate.cjs`
-
-When bumping versions:
-- Update `package.json` `version`.
-- Ensure `dist/` builds cleanly and `index.d.ts` aligns with `src/types/public.ts`.
 - Update `README.md` if features changed.
 
 ---

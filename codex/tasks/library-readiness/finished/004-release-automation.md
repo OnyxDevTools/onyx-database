@@ -23,5 +23,5 @@ Automate semver, changelog, and npm publish.
 5. Commit changes and document release workflow in README if needed.
 
 ## Acceptance Criteria
-- [ ] Creating a changeset generates a release PR with version bump and changelog.
-- [ ] Tagging publishes to npm in CI (dry run acceptable initially).
+- [x] Creating a changeset generates a release PR with version bump and changelog.
+- [x] Tagging publishes to npm in CI (dry run acceptable initially).
