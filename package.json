@@ -26,7 +26,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build && npm run typecheck"
+    "prepublishOnly": "npm run build && npm run typecheck",
+    "docs": "typedoc"
   },
   "repository": "github:OnyxDevTools/onyx-database",
   "publishConfig": {
@@ -44,6 +45,8 @@
     "eslint": "^9.34.0",
     "ts-node": "^10.9.2",
     "tsup": "^8.5.0",
+    "typedoc": "^0.28.10",
+    "typedoc-plugin-markdown": "^4.8.1",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }

@@ -17,5 +17,5 @@ Auto-generate typed API docs.
 5. Update `README.md` with a link to `./docs`.
 
 ## Acceptance Criteria
-- [ ] `npm run docs` produces `docs/` with generated API reference.
-- [ ] README links to `./docs`.
+- [x] `npm run docs` produces `docs/` with generated API reference.
+- [x] README links to `./docs`.
