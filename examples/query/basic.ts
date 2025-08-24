@@ -1,5 +1,5 @@
 // filename: examples/query/basic.ts
-import { onyx, eq, desc, gt } from '@onyx.dev/onyx-database';
+import { onyx, eq, gt } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types'
 
 async function main(): Promise<void> {
@@ -13,12 +13,10 @@ async function main(): Promise<void> {
     .limit(5)
     .list();
 
-  // eslint-disable-next-line no-console
   console.log(JSON.stringify(topVodMovies, null, 2));
 }
 
 main().catch((err) => {
-  // eslint-disable-next-line no-console
   console.error(err);
   process.exit(1);
 });
