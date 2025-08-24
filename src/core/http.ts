@@ -59,9 +59,13 @@ export class HttpClient {
     extraHeaders?: Record<string, string>
   ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
+    const headers = this.headers({
+      ...(method === 'DELETE' ? { Prefer: 'return=representation' } : {}),
+      ...(extraHeaders ?? {}),
+    });
     const init = {
       method,
-      headers: this.headers(extraHeaders),
+      headers,
       body: body == null ? undefined : (typeof body === 'string' ? body : JSON.stringify(body))
     };
     const res = await this.fetchImpl(url, init);
