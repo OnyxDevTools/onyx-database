@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security issue, please email security@onyx.dev with detailed information. We will respond within 3 business days.
+If you discover a security issue, please email support@onyx.dev with detailed information. We will respond within 3 business days.
 
 ## Supported Versions
 

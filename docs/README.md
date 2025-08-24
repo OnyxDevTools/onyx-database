@@ -234,7 +234,18 @@ const programsCascade = db
   .targetField('channelId')
   .sourceField('id');
 
+//programsCascade = 'programs:StreamingProgram(channelId, it)'
+
 await db.cascade(programsCascade).save('StreamingChannel', {
+  id: 'news_003',
+  category: 'news',
+  name: 'News 24',
+  updatedAt: new Date(),
+  programs: [program], // program defined earlier
+});
+
+//you dont have to use the cascadeBuilder
+await db.cascade('programs:StreamingProgram(channelId, it)').save('StreamingChannel', {
   id: 'news_003',
   category: 'news',
   name: 'News 24',
@@ -250,14 +261,28 @@ import { onyx } from '@onyx.dev/onyx-database';
 const db = onyx.init();
 
 // Simple delete returns the removed record
-const removed = await db.delete('User', 'user_125');
+await db.delete('User', 'user_125');
 
 // Delete cascading relationships (example)
-const role = await db.delete('Role', 'role_temp', { relationships: ['Role.Permission'] });
-// role includes cascaded relationships
+await db.delete('Role', 'role_temp', { relationships: ['permission'] });
+// this will delete all of the related permissions that come back from the permissions resolver
 ```
 
-### 4) Documents API (binary assets)
+### 4) Delete using query
+
+```ts
+import { onyx } from '@onyx.dev/onyx-database';
+const db = onyx.init();
+
+const delCount = await db
+  .from(tables.User)
+  .where(eq('status', 'inactive'))
+  .delete();
+//this will delete all inactive users in the system
+
+```
+
+### 5) Documents API (binary assets)
 
 ```ts
 import { onyx, type OnyxDocument } from '@onyx.dev/onyx-database';
@@ -280,7 +305,7 @@ const image = await db.getDocument('logo.png', { width: 128, height: 128 });
 await db.deleteDocument('logo.png');
 ```
 
-### 5) Streaming (live changes)
+### 6) Streaming (live changes)
 
 ```ts
 import { onyx, eq } from '@onyx.dev/onyx-database';
