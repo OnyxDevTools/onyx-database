@@ -63,6 +63,7 @@ export class HttpClient {
       ...(method === 'DELETE' ? { Prefer: 'return=representation' } : {}),
       ...(extraHeaders ?? {}),
     });
+    if (body == null) delete headers['Content-Type'];
     const init = {
       method,
       headers,
