@@ -17,7 +17,6 @@ const isNode = typeof process !== 'undefined' && !!(process as any).versions?.no
 // Optional debug logger — enable with ONYX_DEBUG=1
 const dbg = (...args: unknown[]) => {
   if (isNode && (process as any).env?.ONYX_DEBUG) {
-    // eslint-disable-next-line no-console
     console.error('[onyx-config]', ...args);
   }
 };
