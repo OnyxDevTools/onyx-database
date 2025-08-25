@@ -311,7 +311,14 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const handle = await openJsonLinesStream<T>(
       fetchImpl,
       url,
-      { method: 'PUT', headers: http.headers(), body: JSON.stringify(serializeDates(select)) },
+      {
+        method: 'PUT',
+        headers: http.headers({
+          Accept: 'application/x-ndjson',
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify(serializeDates(select)),
+      },
       handlers,
     );
     return this.registerStream(handle);
