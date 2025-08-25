@@ -269,6 +269,8 @@ await db.delete('User', 'user_125');
 // Delete cascading relationships (example)
 await db.delete('Role', 'role_temp', { relationships: ['permission'] });
 // this will delete all of the related permissions that come back from the permissions resolver
+// builder pattern equivalent
+await db.cascade('permission').delete('Role', 'role_temp');
 ```
 
 ### 4) Delete using query
