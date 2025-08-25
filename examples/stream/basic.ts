@@ -66,6 +66,7 @@ async function main(): Promise<void> {
     id: 'news_001',
     category: 'news',
     name: 'News 24',
+    icon: null,
     updatedAt: new Date(),
   });
 
@@ -76,6 +77,7 @@ async function main(): Promise<void> {
     id: 'news_001',
     category: 'news',
     name: 'News 24 - Updated',
+    icon: null,
     updatedAt: new Date(),
   });
 
