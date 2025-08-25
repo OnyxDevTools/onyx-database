@@ -366,8 +366,8 @@ const stream = db
   .onItemDeleted((u) => console.log('USER DELETED', u))
   .onItem((entity, action) => console.log('STREAM EVENT', action, entity));
 
-// Start the stream; include query results and keep-alive as desired:
-const handle = await stream.stream(true, false);
+// Start the stream and keep the connection alive for new events:
+const handle = await stream.stream(true, true);
 
 // Later, cancel:
 setTimeout(() => handle.cancel(), 60_000);
