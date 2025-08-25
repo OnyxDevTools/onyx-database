@@ -42,13 +42,13 @@ function readEnv(targetId?: string): Partial<OnyxConfig> {
     return undefined;
   };
 
-  const envId = pick('ONYX_DATABASE_ID', 'NEXT_ONYX_DATABASE_ID');
+  const envId = pick('ONYX_DATABASE_ID');
   if (targetId && envId && targetId !== envId) return {};
   const res = dropUndefined<OnyxConfig>({
-    baseUrl: pick('ONYX_DATABASE_BASE_URL', 'NEXT_ONYX_DATABASE_BASE_URL'),
+    baseUrl: pick('ONYX_DATABASE_BASE_URL'),
     databaseId: targetId ?? envId,
-    apiKey: pick('ONYX_DATABASE_API_KEY', 'NEXT_ONYX_DATABASE_API_KEY'),
-    apiSecret: pick('ONYX_DATABASE_API_SECRET', 'NEXT_ONYX_DATABASE_API_SECRET'),
+    apiKey: pick('ONYX_DATABASE_API_KEY'),
+    apiSecret: pick('ONYX_DATABASE_API_SECRET'),
   });
   if (Object.keys(res).length === 0) return {};
   dbg('env:', mask(res));

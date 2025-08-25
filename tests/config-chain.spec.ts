@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { resolveConfig } from '../src/config/chain';
+import { OnyxConfigError } from '../src/errors/config-error';
 import { mkdtemp, writeFile, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir, homedir } from 'node:os';
@@ -24,6 +25,14 @@ describe('config chain database selection', () => {
     expect(cfg.baseUrl).toBe('http://env');
     expect(cfg.apiKey).toBe('k');
     expect(cfg.apiSecret).toBe('s');
+  });
+
+  it('ignores NEXT_* env vars', async () => {
+    process.env.NEXT_ONYX_DATABASE_ID = 'nid';
+    process.env.NEXT_ONYX_DATABASE_BASE_URL = 'http://next';
+    process.env.NEXT_ONYX_DATABASE_API_KEY = 'nk';
+    process.env.NEXT_ONYX_DATABASE_API_SECRET = 'ns';
+    await expect(resolveConfig({ databaseId: 'nid' })).rejects.toBeInstanceOf(OnyxConfigError);
   });
 
   it('prefers project file over home profile when env id differs', async () => {
