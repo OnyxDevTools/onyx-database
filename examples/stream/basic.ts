@@ -31,9 +31,16 @@ async function main(): Promise<void> {
       console.log('ITEM DELETED', item);
       events.push('deleted');
       maybeCancel();
+    })
+    .onItem((entity, action) => {
+      console.log('STREAM EVENT', action, entity);
     });
 
   handle = await stream.stream(true, false);
+  setTimeout(() => {
+    console.log('Stream timed out, cancelling');
+    handle?.cancel();
+  }, 5_000);
 
   await db.save(tables.StreamingChannel, {
     id: 'news_001',
