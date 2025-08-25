@@ -1,8 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { resolveConfig } from '../src/config/chain';
-import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, writeFile, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
-import { tmpdir } from 'node:os';
+import { tmpdir, homedir } from 'node:os';
 
 const origEnv = { ...process.env };
 const origCwd = process.cwd();
@@ -45,5 +45,28 @@ describe('config chain database selection', () => {
     const cfg = await resolveConfig({ databaseId: 'idb' });
     expect(cfg.baseUrl).toBe('http://proj');
     expect(cfg.apiKey).toBe('pk');
+  });
+
+  it('supplements env with home profile when database id missing', async () => {
+    const homeDir = path.join(homedir(), '.onyx');
+    await mkdir(homeDir, { recursive: true });
+    const file = path.join(homeDir, 'onyx-database.json');
+    await writeFile(
+      file,
+      JSON.stringify({ baseUrl: 'http://home', databaseId: 'hid', apiKey: 'hk', apiSecret: 'hs' }),
+    );
+
+    process.env.ONYX_DATABASE_API_KEY = 'ek';
+    process.env.ONYX_DATABASE_API_SECRET = 'es';
+
+    try {
+      const cfg = await resolveConfig();
+      expect(cfg.databaseId).toBe('hid');
+      expect(cfg.apiKey).toBe('ek');
+      expect(cfg.apiSecret).toBe('es');
+      expect(cfg.baseUrl).toBe('http://home');
+    } finally {
+      await unlink(file);
+    }
   });
 });
