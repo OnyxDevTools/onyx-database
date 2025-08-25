@@ -48,10 +48,12 @@ async function main(): Promise<void> {
   // keep the connection alive so subsequent saves trigger events
   handle = await stream.stream(true, true);
   console.log('Stream started');
+  // allow the subscription to fully register before issuing writes
+  await new Promise((resolve) => setTimeout(resolve, 500));
   timer = setTimeout(() => {
     console.log('Stream timed out, cancelling');
     cancel();
-  }, 5_000);
+  }, 10_000);
 
   await db.save(tables.StreamingChannel, {
     id: 'news_001',
@@ -60,12 +62,18 @@ async function main(): Promise<void> {
     updatedAt: new Date(),
   });
 
+  // give the server a moment to emit the add event
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
   await db.save(tables.StreamingChannel, {
     id: 'news_001',
     category: 'news',
     name: 'News 24 - Updated',
     updatedAt: new Date(),
   });
+
+  // allow the update event to flush before deletion
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
   await db.delete(tables.StreamingChannel, 'news_001');
 }
