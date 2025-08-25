@@ -44,17 +44,13 @@ function readEnv(targetId?: string): Partial<OnyxConfig> {
 
   const envId = pick('ONYX_DATABASE_ID', 'NEXT_ONYX_DATABASE_ID');
   if (targetId && envId && targetId !== envId) return {};
-  const databaseId = targetId ?? envId;
-  if (!databaseId) return {};
-
-  // IMPORTANT: only return defined keys so we don't override file values with `undefined`.
   const res = dropUndefined<OnyxConfig>({
     baseUrl: pick('ONYX_DATABASE_BASE_URL', 'NEXT_ONYX_DATABASE_BASE_URL'),
-    databaseId,
+    databaseId: targetId ?? envId,
     apiKey: pick('ONYX_DATABASE_API_KEY', 'NEXT_ONYX_DATABASE_API_KEY'),
     apiSecret: pick('ONYX_DATABASE_API_SECRET', 'NEXT_ONYX_DATABASE_API_SECRET'),
   });
-
+  if (Object.keys(res).length === 0) return {};
   dbg('env:', mask(res));
   return res;
 }
@@ -166,10 +162,10 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
  *   - or a single ~/.onyx/onyx-database-*.json if unique
  */
 export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig> {
-  const targetId = input?.databaseId;
-  const env = readEnv(targetId);
+  const env = readEnv(input?.databaseId);
+  const targetId = input?.databaseId ?? env.databaseId;
   let file: Partial<OnyxConfig> = {};
-  if (!env.apiKey || !env.apiSecret) {
+  if (!env.apiKey || !env.apiSecret || !env.databaseId) {
     const project = await readProjectFile(targetId);
     if (Object.keys(project).length) {
       file = project;
