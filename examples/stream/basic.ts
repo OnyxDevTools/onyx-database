@@ -8,9 +8,18 @@ async function main(): Promise<void> {
 
   const events: Array<'added' | 'updated' | 'deleted'> = [];
   let handle: { cancel(): void } | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const cancel = (): void => {
+    handle?.cancel();
+    if (timer) clearTimeout(timer);
+    console.log('Stream cancelled');
+  };
+
   const maybeCancel = (): void => {
     if (events.join(',') === 'added,updated,deleted') {
-      handle?.cancel();
+      console.log('All events received');
+      cancel();
     }
   };
 
@@ -37,9 +46,10 @@ async function main(): Promise<void> {
     });
 
   handle = await stream.stream(true, false);
-  setTimeout(() => {
+  console.log('Stream started');
+  timer = setTimeout(() => {
     console.log('Stream timed out, cancelling');
-    handle?.cancel();
+    cancel();
   }, 5_000);
 
   await db.save(tables.StreamingChannel, {
