@@ -46,18 +46,16 @@ async function main(): Promise<void> {
     });
 
   // keep the connection alive so subsequent saves trigger events
-  void stream
-    .stream(true, true)
-    .then((h) => {
-      handle = h;
-      console.log('Stream started');
-    })
-    .catch((err) => {
-      console.error('Stream failed', err);
-      cancel();
-    });
+  try {
+    handle = await stream.stream(true, true);
+    console.log('Stream started');
+  } catch (err) {
+    console.error('Stream failed', err);
+    cancel();
+    return;
+  }
 
-  // allow the subscription to fully register before issuing writes
+  // allow the server to flush initial results before issuing writes
   await new Promise((resolve) => setTimeout(resolve, 500));
   timer = setTimeout(() => {
     console.log('Stream timed out, cancelling');
