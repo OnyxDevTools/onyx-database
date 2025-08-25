@@ -46,8 +46,17 @@ async function main(): Promise<void> {
     });
 
   // keep the connection alive so subsequent saves trigger events
-  handle = await stream.stream(true, true);
-  console.log('Stream started');
+  void stream
+    .stream(true, true)
+    .then((h) => {
+      handle = h;
+      console.log('Stream started');
+    })
+    .catch((err) => {
+      console.error('Stream failed', err);
+      cancel();
+    });
+
   // allow the subscription to fully register before issuing writes
   await new Promise((resolve) => setTimeout(resolve, 500));
   timer = setTimeout(() => {
@@ -76,6 +85,9 @@ async function main(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 500));
 
   await db.delete(tables.StreamingChannel, 'news_001');
+
+  // give the server a moment to emit the delete event
+  await new Promise((resolve) => setTimeout(resolve, 500));
 }
 
 main().catch((err) => {
