@@ -31,13 +31,32 @@ export async function openJsonLinesStream<T = unknown>(
     const trimmed = line.trim();
     if (!trimmed) return;
     let obj: unknown;
-    try { obj = parseJsonAllowNaN(trimmed); } catch { return; }
-    const action = (obj as { action?: StreamAction }).action;
+    try {
+      obj = parseJsonAllowNaN(trimmed);
+    } catch {
+      return;
+    }
+    const rawAction =
+      (obj as { action?: string; event?: string }).action ??
+      (obj as { action?: string; event?: string }).event;
     const entity = (obj as { entity?: T | null }).entity;
-    if (action === 'CREATE') handlers.onItemAdded?.(entity as T);
-    else if (action === 'UPDATE') handlers.onItemUpdated?.(entity as T);
-    else if (action === 'DELETE') handlers.onItemDeleted?.(entity as T);
-    if (action && action !== 'KEEP_ALIVE') handlers.onItem?.(entity ?? null, action);
+    const action = rawAction?.toUpperCase();
+    if (action === 'CREATE' || action === 'ADDED' || action === 'ADD')
+      handlers.onItemAdded?.(entity as T);
+    else if (action === 'UPDATE' || action === 'UPDATED')
+      handlers.onItemUpdated?.(entity as T);
+    else if (action === 'DELETE' || action === 'DELETED' || action === 'REMOVE' || action === 'REMOVED')
+      handlers.onItemDeleted?.(entity as T);
+    const canonical =
+      action === 'ADDED' || action === 'ADD' || action === 'CREATE' || action === 'CREATED'
+        ? 'CREATE'
+        : action === 'UPDATED' || action === 'UPDATE'
+          ? 'UPDATE'
+          : action === 'DELETED' || action === 'DELETE' || action === 'REMOVE' || action === 'REMOVED'
+            ? 'DELETE'
+            : action;
+    if (canonical && canonical !== 'KEEP_ALIVE')
+      handlers.onItem?.(entity ?? null, canonical as StreamAction);
   };
 
   const connect = async (): Promise<void> => {
