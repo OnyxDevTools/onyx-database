@@ -45,7 +45,8 @@ async function main(): Promise<void> {
       console.log('STREAM EVENT', action, entity);
     });
 
-  handle = await stream.stream(true, false);
+  // keep the connection alive so subsequent saves trigger events
+  handle = await stream.stream(true, true);
   console.log('Stream started');
   timer = setTimeout(() => {
     console.log('Stream timed out, cancelling');
