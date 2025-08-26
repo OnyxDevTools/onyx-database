@@ -4,7 +4,10 @@ import { onyx, eq } from '@onyx.dev/onyx-database';
 import { tables, Schema } from '../onyx/types';
 
 async function main(): Promise<void> {
-  const db = onyx.init<Schema>();
+  // Use separate clients for streaming and writes so change events are
+  // delivered back to the stream connection.
+  const streamDb = onyx.init<Schema>();
+  const writeDb = onyx.init<Schema>();
 
   const events: Array<'added' | 'updated' | 'deleted'> = [];
   let handle: { cancel(): void } | null = null;
@@ -23,7 +26,7 @@ async function main(): Promise<void> {
     }
   };
 
-  const stream = db
+  const stream = streamDb
     .from(tables.StreamingChannel)
     .where(eq('category', 'news'))
     .onItemAdded((item) => {
@@ -63,7 +66,7 @@ async function main(): Promise<void> {
   }, 10_000);
 
   try {
-    await db.save(tables.StreamingChannel, {
+    await writeDb.save(tables.StreamingChannel, {
       id: 'news_001',
       category: 'news',
       name: 'News 24',
@@ -74,7 +77,7 @@ async function main(): Promise<void> {
     // give the server a moment to emit the add event
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    await db.save(tables.StreamingChannel, {
+    await writeDb.save(tables.StreamingChannel, {
       id: 'news_001',
       category: 'news',
       name: 'News 24 - Updated',
@@ -85,7 +88,7 @@ async function main(): Promise<void> {
     // allow the update event to flush before deletion
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    await db.delete(tables.StreamingChannel, 'news_001');
+    await writeDb.delete(tables.StreamingChannel, 'news_001');
 
     // give the server a moment to emit the delete event
     await new Promise((resolve) => setTimeout(resolve, 500));
