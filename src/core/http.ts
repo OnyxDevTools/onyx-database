@@ -85,23 +85,43 @@ export class HttpClient {
       headers,
       body: body == null ? undefined : (typeof body === 'string' ? body : JSON.stringify(body))
     };
-    const res = await this.fetchImpl(url, init);
-    const contentType = res.headers.get('Content-Type') || '';
-    const raw = await res.text();
-    const isJson =
-      raw.trim().length > 0 &&
-      (contentType.includes('application/json') || /^[\[{]/.test(raw.trim()));
-    const data = isJson ? parseJsonAllowNaN(raw) : raw;
-    if (!res.ok) {
-      const msg =
-        typeof data === 'object' &&
-        data !== null &&
-        'error' in data &&
-        typeof (data as { error?: { message?: unknown } }).error?.message === 'string'
-          ? String((data as { error: { message: unknown } }).error.message)
-          : `${res.status} ${res.statusText}`;
-      throw new OnyxHttpError(msg, res.status, res.statusText, data);
+
+    const maxAttempts = 3;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const res = await this.fetchImpl(url, init);
+        const contentType = res.headers.get('Content-Type') || '';
+        const raw = await res.text();
+        const isJson =
+          raw.trim().length > 0 &&
+          (contentType.includes('application/json') || /^[\[{]/.test(raw.trim()));
+        const data = isJson ? parseJsonAllowNaN(raw) : raw;
+        if (!res.ok) {
+          const msg =
+            typeof data === 'object' &&
+            data !== null &&
+            'error' in data &&
+            typeof (data as { error?: { message?: unknown } }).error?.message === 'string'
+              ? String((data as { error: { message: unknown } }).error.message)
+              : `${res.status} ${res.statusText}`;
+          if (res.status >= 500 && attempt + 1 < maxAttempts) {
+            await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+            continue;
+          }
+          throw new OnyxHttpError(msg, res.status, res.statusText, data);
+        }
+        return data as T;
+      } catch (err) {
+        const retryable =
+          !(err instanceof OnyxHttpError) || err.status >= 500;
+        if (attempt + 1 < maxAttempts && retryable) {
+          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+          continue;
+        }
+        throw err;
+      }
     }
-    return data as T;
+    // unreachable but satisfies TypeScript
+    throw new Error('Request failed after retries');
   }
 }
