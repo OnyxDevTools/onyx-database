@@ -29,10 +29,11 @@ export async function openJsonLinesStream<T = unknown>(
 
   const processLine = (line: string): void => {
     const trimmed = line.trim();
-    if (!trimmed) return;
+    if (!trimmed || trimmed.startsWith(':')) return;
+    const jsonLine = trimmed.startsWith('data:') ? trimmed.slice(5).trim() : trimmed;
     let obj: unknown;
     try {
-      obj = parseJsonAllowNaN(trimmed);
+      obj = parseJsonAllowNaN(jsonLine);
     } catch {
       return;
     }
