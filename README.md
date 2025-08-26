@@ -373,6 +373,8 @@ const handle = await stream.stream(true, true);
 setTimeout(() => handle.cancel(), 60_000);
 ```
 
+> **Debugging**: set `ONYX_STREAM_DEBUG=1` to log stream connection details.
+
 ---
 
 ## Error handling
