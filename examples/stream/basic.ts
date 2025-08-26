@@ -62,32 +62,38 @@ async function main(): Promise<void> {
     cancel();
   }, 10_000);
 
-  await db.save(tables.StreamingChannel, {
-    id: 'news_001',
-    category: 'news',
-    name: 'News 24',
-    icon: null,
-    updatedAt: new Date(),
-  });
+  try {
+    await db.save(tables.StreamingChannel, {
+      id: 'news_001',
+      category: 'news',
+      name: 'News 24',
+      icon: null,
+      updatedAt: new Date(),
+    });
 
-  // give the server a moment to emit the add event
-  await new Promise((resolve) => setTimeout(resolve, 500));
+    // give the server a moment to emit the add event
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
-  await db.save(tables.StreamingChannel, {
-    id: 'news_001',
-    category: 'news',
-    name: 'News 24 - Updated',
-    icon: null,
-    updatedAt: new Date(),
-  });
+    await db.save(tables.StreamingChannel, {
+      id: 'news_001',
+      category: 'news',
+      name: 'News 24 - Updated',
+      icon: null,
+      updatedAt: new Date(),
+    });
 
-  // allow the update event to flush before deletion
-  await new Promise((resolve) => setTimeout(resolve, 500));
+    // allow the update event to flush before deletion
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
-  await db.delete(tables.StreamingChannel, 'news_001');
+    await db.delete(tables.StreamingChannel, 'news_001');
 
-  // give the server a moment to emit the delete event
-  await new Promise((resolve) => setTimeout(resolve, 500));
+    // give the server a moment to emit the delete event
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  } catch (err) {
+    console.error('Write failed', err);
+    cancel();
+    return;
+  }
 }
 
 main().catch((err) => {
