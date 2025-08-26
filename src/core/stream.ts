@@ -3,6 +3,11 @@ import type { FetchImpl, StreamAction } from '../types/common';
 import { OnyxHttpError } from '../errors/http-error';
 import { parseJsonAllowNaN } from './http';
 
+const debug = (...args: unknown[]): void => {
+  if (typeof process !== 'undefined' && process.env.ONYX_STREAM_DEBUG)
+    console.log('[onyx-stream]', ...args);
+};
+
 export interface StreamHandlers<T = unknown> {
   onItemAdded?: (entity: T) => void;
   onItemUpdated?: (entity: T) => void;
@@ -29,6 +34,7 @@ export async function openJsonLinesStream<T = unknown>(
 
   const processLine = (line: string): void => {
     const trimmed = line.trim();
+    debug('line', trimmed);
     if (!trimmed || trimmed.startsWith(':')) return;
     const jsonLine = trimmed.startsWith('data:') ? trimmed.slice(5).trim() : trimmed;
     let obj: unknown;
@@ -103,27 +109,36 @@ export async function openJsonLinesStream<T = unknown>(
             : action;
     if (canonical && canonical !== 'KEEP_ALIVE')
       handlers.onItem?.(entity ?? null, canonical as StreamAction);
+    debug('dispatch', canonical, entity);
   };
 
   const connect = async (): Promise<void> => {
     if (canceled) return;
+    debug('connecting', url);
     try {
       const res = await fetchImpl(url, {
         method: init.method ?? 'PUT',
         headers: init.headers ?? {},
         body: init.body,
       });
+      debug('response', res.status, res.statusText);
       if (!res.ok) {
         const raw = await res.text();
         let parsed: unknown = raw;
         try { parsed = parseJsonAllowNaN(raw); } catch { /* ignore */ }
+        debug('non-ok', res.status);
         throw new OnyxHttpError(`${res.status} ${res.statusText}`, res.status, res.statusText, parsed);
       }
       const body = (res as { body?: StreamBody }).body;
-      if (!body || typeof body.getReader !== 'function') return;
+      if (!body || typeof body.getReader !== 'function') {
+        debug('no reader');
+        return;
+      }
       currentReader = body.getReader();
+      debug('connected');
       pump();
-    } catch {
+    } catch (err) {
+      debug('connect error', err);
       if (canceled) return;
       await new Promise((resolve) => setTimeout(resolve, 1000));
       void connect();
@@ -136,7 +151,9 @@ export async function openJsonLinesStream<T = unknown>(
       .read()
       .then(({ done, value }) => {
         if (canceled) return;
+        debug('chunk', { done, length: value?.length ?? 0 });
         if (done) {
+          debug('done');
           void connect();
           return;
         }
@@ -146,7 +163,8 @@ export async function openJsonLinesStream<T = unknown>(
         for (const line of lines) processLine(line);
         pump();
       })
-      .catch(() => {
+      .catch((err) => {
+        debug('pump error', err);
         if (!canceled) void connect();
       });
   };
