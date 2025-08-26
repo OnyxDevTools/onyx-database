@@ -121,6 +121,58 @@ describe('HttpClient', () => {
     const res = await client.request('DELETE', '/other');
     expect(res).toEqual({ ok: true });
   });
+  it('retries transient server errors and succeeds', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('err', {
+          status: 524,
+          statusText: 'Timeout',
+          headers: { 'Content-Type': 'text/plain' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
+    const res = await client.request('GET', '/retry');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(res).toEqual({ ok: true });
+  });
+
+  it('fails after exhausting retries', async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response('nope', {
+          status: 502,
+          statusText: 'Bad Gateway',
+          headers: { 'Content-Type': 'text/plain' },
+        }),
+      ),
+    );
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
+    await expect(client.request('GET', '/fail-retry')).rejects.toMatchObject({ status: 502 });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('retries on fetch rejection and eventually succeeds', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('network'))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
+    const res = await client.request('GET', '/retry-net');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(res).toEqual({ ok: true });
+  });
 
   it('uses global fetch when none provided', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
@@ -168,12 +220,14 @@ describe('HttpClient', () => {
   });
 
   it('throws OnyxHttpError on non-ok responses', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ error: { message: 'bad' } }), {
-        status: 401,
-        statusText: 'Unauthorized',
-        headers: { 'Content-Type': 'application/json' }
-      })
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ error: { message: 'bad' } }), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: { 'Content-Type': 'application/json' }
+        }),
+      ),
     );
     const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
     await expect(client.request('GET', '/oops')).rejects.toMatchObject({
@@ -186,12 +240,14 @@ describe('HttpClient', () => {
   });
 
   it('falls back to status text when no error message present', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response('nope', {
-        status: 500,
-        statusText: 'Server Error',
-        headers: { 'Content-Type': 'text/plain' }
-      })
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response('nope', {
+          status: 500,
+          statusText: 'Server Error',
+          headers: { 'Content-Type': 'text/plain' }
+        }),
+      ),
     );
     const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
     await expect(client.request('GET', '/fail')).rejects.toMatchObject({
