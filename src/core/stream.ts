@@ -37,18 +37,63 @@ export async function openJsonLinesStream<T = unknown>(
       return;
     }
     const rawAction =
-      (obj as { action?: string; event?: string }).action ??
-      (obj as { action?: string; event?: string }).event;
+      (obj as {
+        action?: string;
+        event?: string;
+        type?: string;
+        eventType?: string;
+        changeType?: string;
+      }).action ??
+      (obj as {
+        action?: string;
+        event?: string;
+        type?: string;
+        eventType?: string;
+        changeType?: string;
+      }).event ??
+      (obj as {
+        action?: string;
+        event?: string;
+        type?: string;
+        eventType?: string;
+        changeType?: string;
+      }).type ??
+      (obj as {
+        action?: string;
+        event?: string;
+        type?: string;
+        eventType?: string;
+        changeType?: string;
+      }).eventType ??
+      (obj as {
+        action?: string;
+        event?: string;
+        type?: string;
+        eventType?: string;
+        changeType?: string;
+      }).changeType;
     const entity = (obj as { entity?: T | null }).entity;
     const action = rawAction?.toUpperCase();
-    if (action === 'CREATE' || action === 'ADDED' || action === 'ADD')
+    if (
+      action === 'CREATE' ||
+      action === 'CREATED' ||
+      action === 'ADDED' ||
+      action === 'ADD' ||
+      action === 'INSERT' ||
+      action === 'INSERTED'
+    )
       handlers.onItemAdded?.(entity as T);
     else if (action === 'UPDATE' || action === 'UPDATED')
       handlers.onItemUpdated?.(entity as T);
     else if (action === 'DELETE' || action === 'DELETED' || action === 'REMOVE' || action === 'REMOVED')
       handlers.onItemDeleted?.(entity as T);
     const canonical =
-      action === 'ADDED' || action === 'ADD' || action === 'CREATE' || action === 'CREATED'
+      action === 'ADDED' ||
+      action === 'ADD' ||
+      action === 'CREATE' ||
+      action === 'CREATED' ||
+      action === 'INSERT' ||
+      action === 'INSERTED'
         ? 'CREATE'
         : action === 'UPDATED' || action === 'UPDATE'
           ? 'UPDATE'
