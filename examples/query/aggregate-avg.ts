@@ -1,17 +1,17 @@
 // filename: examples/query/aggregate.ts
 import process from 'node:process';
-import { onyx, count } from '@onyx.dev/onyx-database';
+import { onyx, avg, sum } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const stats = await db
-    .select(count('id'))
-    .from(tables.User)
+    .select(avg('age'))
+    .from(tables.UserProfile)
     .list();
 
-  console.log(JSON.stringify(stats, null, 2)); // [{"count(id)": 3}]
+  console.log(JSON.stringify(stats, null, 2)); // [{"avg(age)": 24}]
 }
 
 main().catch((err) => {

@@ -7,15 +7,15 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const user = await db.save(tables.User, {
-    id: 'user_basic',
-    username: 'basic',
+    id: "example-user-1", //if you omit this one will be generated for you (the schema has a UUID generator specifed)
+    username: 'Example User',
     email: 'basic@example.com',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
 
-  console.log('Saved user:', user);
+  console.log('Saved user:', user);  //Saved user: {id: 'example-user-1', username: 'Example User', email: 'basic@example.com', isActive: true, createdAt: '2025-08-27T01:47:29.655Z', …}
 }
 
 main().catch((err) => {

@@ -1,19 +1,32 @@
 // filename: examples/query/basic.ts
-import process from 'node:process';
 import { onyx, eq, gt } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
-  const recentActive = await db
+  const activeUsers = await db
     .from(tables.User)
     .where(eq('isActive', true))
-    .and(gt('createdAt', new Date('2024-01-01')))
     .limit(5)
     .list();
 
-  console.log(JSON.stringify(recentActive, null, 2));
+  console.log(JSON.stringify(activeUsers, null, 2));
+
+  /* response: 
+  [
+    {
+      "id": "example-user-1",
+      "createdAt": "08/26/2025 07:47:29 PM MDT",
+      "deletedAt": null,
+      "email": "basic@example.com",
+      "isActive": true,
+      "lastLoginAt": null,
+      "updatedAt": "08/26/2025 07:47:29 PM MDT",
+      "username": "Example User"
+    }
+  ]
+  */
 }
 
 main().catch((err) => {

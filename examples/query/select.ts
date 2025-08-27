@@ -12,7 +12,19 @@ async function main(): Promise<void> {
     .limit(5)
     .list();
 
-  console.log(users);
+  console.log(JSON.stringify(users, null, 2))
+  /*
+    [
+      {
+        "email": "basic@example.com",
+        "username": "Example User"
+      },
+      {
+        "email": "cascade@example.com",
+        "username": "cascade"
+      }
+    ]
+   */
 }
 
 main().catch((err) => {

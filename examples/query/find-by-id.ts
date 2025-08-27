@@ -5,7 +5,7 @@ import { Schema, tables } from 'onyx/types';
 
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
-  const id = 'user_001';
+  const id = 'example-user-1';
 
   try {
     const user = await db.findById(tables.User, id);
@@ -14,6 +14,20 @@ async function main(): Promise<void> {
       return;
     }
     console.log(JSON.stringify(user, null, 2));
+
+    /*
+    {
+      "id": "example-user-1",
+      "createdAt": "08/27/2025 01:47:29 AM UTC",
+      "deletedAt": null,
+      "email": "basic@example.com",
+      "isActive": true,
+      "lastLoginAt": null,
+      "updatedAt": "08/27/2025 01:47:29 AM UTC",
+      "username": "Example User"
+    }
+    */
+   
   } catch (err) {
     console.error('Error fetching record:', err);
   }

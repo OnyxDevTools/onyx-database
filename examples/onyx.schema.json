@@ -76,7 +76,7 @@
         },
         {
           "name": "profile",
-          "resolver": "db.from(\"UserProfile\")\n .where(eq(\"userId\", this.id)).firstOrNull()"
+          "resolver": "db.from(\"UserProfile\")\n .where(eq(\"userId\", this.id))\n .firstOrNull()"
         },
         {
           "name": "permissions",
@@ -159,6 +159,12 @@
         {
           "name": "deletedAt",
           "type": "Timestamp",
+          "maxSize": null,
+          "isNullable": true
+        },
+        {
+          "name": "age",
+          "type": "Int",
           "maxSize": null,
           "isNullable": true
         }
@@ -441,7 +447,7 @@
       "isEditing": false
     }
   ],
-  "revisionDescription": "replaced with non plural form",
+  "revisionDescription": "added age to UserProfile",
   "schemaId": 0,
   "timestamp": ""
 }
