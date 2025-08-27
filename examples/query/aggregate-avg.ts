@@ -1,6 +1,6 @@
 // filename: examples/query/aggregate.ts
 import process from 'node:process';
-import { onyx, avg, sum } from '@onyx.dev/onyx-database';
+import { onyx, avg } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
