@@ -11,70 +11,124 @@ try {
 }
 
 describe.runIf(hasConfig)('smoke e2e', () => {
-  it('creates, queries, and deletes a channel', async () => {
+  it('creates, queries, and deletes a user', async () => {
     const db = onyx.init();
 
-    const program = {
-      start: new Date().toISOString(),
-      title: 'Smoke Program',
-      desc: 'Program Description',
-      icon: 'http://example.com/dne.png',
-      streamURL: 'http://example.com/dne',
+    const now = new Date().toISOString();
+
+    const role = {
+      id: randomUUID(),
+      name: 'smoke-role',
+      description: 'role for smoke test',
+      isSystem: false,
+      createdAt: now,
+      updatedAt: now,
     };
 
-    const id = `news_${randomUUID()}`;
-    const channelData = {
-      id,
-      category: 'news',
-      name: 'News Smoke Test',
-      updatedAt: new Date().toISOString(),
-      programs: [program],
+    const permission = {
+      id: randomUUID(),
+      name: 'smoke-permission',
+      key: 'smoke:test',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.save('Role', role);
+    await db.save('Permission', permission);
+    await db.save('RolePermission', {
+      id: randomUUID(),
+      roleId: role.id,
+      permissionId: permission.id,
+      createdAt: now,
+    });
+
+    const userId = randomUUID();
+    const userData = {
+      id: userId,
+      username: `user_${userId.slice(0, 8)}`,
+      email: `user_${userId}@example.com`,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+      profile: {
+        id: randomUUID(),
+        userId,
+        firstName: 'Smoke',
+        lastName: 'Test',
+        createdAt: now,
+        updatedAt: now,
+      },
+      roles: [
+        {
+          id: randomUUID(),
+          userId,
+          roleId: role.id,
+          createdAt: now,
+        },
+      ],
+      permissions: [
+        {
+          id: randomUUID(),
+          userId,
+          permissionId: permission.id,
+          createdAt: now,
+        },
+      ],
     };
 
     const saved = await db
-      .cascade('programs:StreamingProgram(channelId, id)')
-      .save('StreamingChannel', channelData)
+      .cascade(
+        'profile:UserProfile(userId, id)',
+        'roles:UserRole(userId, id)',
+        'permissions:UserPermission(userId, id)'
+      )
+      .save('User', userData);
 
-    expect((saved as any).id).toBe(id);
+    expect((saved as any).id).toBe(userId);
 
     const retrieved = await db
-      .from('StreamingChannel')
-      .where(eq('id', id))
-      .resolve('programs')
+      .from('User')
+      .where(eq('id', userId))
+      .resolve('profile', 'roles', 'permissions')
       .limit(1)
       .list();
 
     expect(retrieved.length).toBe(1);
-    expect((retrieved as any)[0].programs?.length).toBe(1);
+    const user = retrieved[0] as any;
+    expect(user.profile).toBeTruthy();
+    expect(user.roles?.length).toBe(1);
+    expect(user.permissions?.length).toBe(1);
 
     const countBeforeDelete = await db
-      .from('StreamingChannel')
-      .where(eq('id', id))
+      .from('User')
+      .where(eq('id', userId))
       .count();
     expect(countBeforeDelete).toBe(1);
 
     const searchResults = await db
-      .from('StreamingChannel')
-      .where(eq('id', id))
-      .and(eq('category', 'news'))
-      .and(contains('name', 'News'))
-      .and(startsWith('name', 'News'))
-      .and(gt('updatedAt', '2000-01-01T00:00:00.000Z'))
+      .from('User')
+      .where(eq('id', userId))
+      .and(eq('isActive', true))
+      .and(contains('email', 'user_'))
+      .and(startsWith('username', 'user_'))
+      .and(gt('createdAt', '2000-01-01T00:00:00.000Z'))
       .limit(1)
       .list();
 
     expect(searchResults.length).toBe(1);
-    expect((searchResults[0] as any).id).toBe(id);
+    expect((searchResults[0] as any).id).toBe(userId);
 
-    await db.cascade('programs').delete('StreamingChannel', id);
+    await db
+      .cascade('profile', 'roles', 'permissions')
+      .delete('User', userId);
+    await db.cascade('permissions').delete('Role', role.id);
+    await db.delete('Permission', permission.id);
 
     const countAfterDelete = await db
-      .from('StreamingChannel')
-      .where(eq('id', id))
+      .from('User')
+      .where(eq('id', userId))
       .count();
 
     expect(countAfterDelete).toBe(0);
-
   }, 30000);
 });
-
