@@ -7,7 +7,7 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const role = await db.save(tables.Role, {
-    id: 'role_admin',
+    id: 'role_admin', // if omitted, onyx, will generate one for you based on the configured gen
     name: 'admin',
     description: 'Administrator role',
     isSystem: true,
@@ -15,7 +15,7 @@ async function main(): Promise<void> {
     updatedAt: new Date(),
   });
 
-  console.log('Saved role:', role);
+  console.log('Saved role:', role); //Saved role: {id: 'role_admin', name: 'admin', description: 'Administrator role', isSystem: true, createdAt: '2025-08-27T05:18:36.905Z', …}
 }
 
 main().catch((err) => {

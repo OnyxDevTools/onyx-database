@@ -7,7 +7,7 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const stats = await db
-    .select('isActive', count('id'))
+    .select('isActive', count("id"))
     .from(tables.User)
     .groupBy('isActive')
     .list();
