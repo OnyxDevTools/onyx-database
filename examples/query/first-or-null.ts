@@ -6,19 +6,19 @@ import { tables, Schema } from 'onyx/types';
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
-  const maybeVod = await db
-    .from(tables.VodItem)
-    .where(eq('title', 'Superman'))
+  const maybeUser = await db
+    .from(tables.Users)
+    .where(eq('username', 'superman'))
     .firstOrNull();
 
-  console.log(JSON.stringify(maybeVod, null, 2));
+  console.log(JSON.stringify(maybeUser, null, 2));
 
-  const alsoVod = await db
-    .from(tables.VodItem)
-    .where(eq('title', 'DNE'))
+  const alsoUser = await db
+    .from(tables.Users)
+    .where(eq('username', 'DNE'))
     .one();
 
-  console.log(`\nshould be null: ${JSON.stringify(alsoVod, null, 2)}`);
+  console.log(`\nshould be null: ${JSON.stringify(alsoUser, null, 2)}`);
 }
 
 main().catch((err) => {

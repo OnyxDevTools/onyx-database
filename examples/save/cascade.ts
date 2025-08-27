@@ -1,43 +1,50 @@
 // filename: examples/save/cascade.ts
 import process from 'node:process';
 import { eq, onyx } from '@onyx.dev/onyx-database';
-import { Schema, tables, StreamingProgram, StreamingChannel } from 'onyx/types';
+import { Schema, tables, UserProfile, Users } from 'onyx/types';
 
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
-  const program: StreamingProgram  = {
-    start: new Date(),
-    title: "This is a test",
-    desc: "Program Description",
-    icon: "http://example.com/dne.png",
-    streamURL: "http://example.com/dne"
-  }
+  const profile: UserProfile = {
+    id: 'profile_001',
+    userId: 'cascade_001',
+    firstName: 'Test',
+    lastName: 'User',
+    phone: null,
+    address: null,
+    avatarUrl: null,
+    bio: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+  };
 
-  const newChannel:StreamingChannel = await db
-    .cascade('programs:StreamingProgram(channelId, id)')
-    .save(tables.StreamingChannel, {
-      id: 'news_003',
-      category: 'news',
-      name: 'News 24',
+  const newUser: Users = await db
+    .cascade('profile:UserProfile(userId, id)')
+    .save(tables.Users, {
+      id: 'cascade_001',
+      username: 'cascade',
+      email: 'cascade@example.com',
+      isActive: true,
+      createdAt: new Date(),
       updatedAt: new Date(),
-      programs: [program]
-  }) as StreamingChannel;
+      profile,
+    }) as Users;
 
-  console.log('Saved channel:', newChannel);
+  console.log('Saved user:', newUser);
 
-  const channels = await db
-    .from(tables.StreamingChannel)
-    .where(eq("id", newChannel.id))
-    .resolve('programs')
+  const users = await db
+    .from(tables.Users)
+    .where(eq('id', newUser.id))
+    .resolve('profile')
     .limit(1)
     .list();
 
-  console.log('channel with programs:', JSON.stringify(channels, null, 2));
+  console.log('user with profile:', JSON.stringify(users, null, 2));
 
-
-  //cleanup
-  await db.cascade('programs').delete(tables.StreamingChannel, newChannel.id!)
+  // cleanup
+  await db.cascade('profile').delete(tables.Users, newUser.id!);
 }
 
 main().catch((err) => {

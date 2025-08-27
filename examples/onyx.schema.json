@@ -1,7 +1,7 @@
 {
   "tables": [
     {
-      "name": "User",
+      "name": "Users",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -72,11 +72,15 @@
       "resolvers": [
         {
           "name": "roles",
-          "resolver": "db.from(\"UserRole\")\n .where(eq(\"userId\", this.id))\n .list()"
+          "resolver": "db.from(\"UserRoles\")\n .where(eq(\"userId\", this.id))\n .list()"
         },
         {
           "name": "profile",
           "resolver": "db.from(\"UserProfile\")\n .where(eq(\"userId\", this.id)).firstOrNull()"
+        },
+        {
+          "name": "permissions",
+          "resolver": "db.from(\"UserPermissions\")\n .where(eq(\"userId\", this.id))\n .list()"
         }
       ],
       "triggers": [],
@@ -170,7 +174,7 @@
       "isEditing": false
     },
     {
-      "name": "Role",
+      "name": "Roles",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -232,7 +236,7 @@
       "resolvers": [
         {
           "name": "permissions",
-          "resolver": "db.from(\"RolePermission\")\n .where(eq(\"roleId\", this.id))\n .list()"
+          "resolver": "db.from(\"RolePermissions\")\n .where(eq(\"roleId\", this.id))\n .list()"
         }
       ],
       "triggers": [],
@@ -240,7 +244,7 @@
       "isEditing": false
     },
     {
-      "name": "Permission",
+      "name": "Permissions",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -296,7 +300,7 @@
       "isEditing": false
     },
     {
-      "name": "UserRole",
+      "name": "UserRoles",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -343,7 +347,7 @@
       "isEditing": false
     },
     {
-      "name": "RolePermission",
+      "name": "RolePermissions",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -388,9 +392,56 @@
       "triggers": [],
       "expanded": false,
       "isEditing": false
+    },
+    {
+      "name": "UserPermissions",
+      "identifier": {
+        "name": "id",
+        "generator": "UUID",
+        "type": "String"
+      },
+      "partition": "",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "String",
+          "maxSize": 36,
+          "isNullable": false
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "maxSize": 36,
+          "isNullable": false
+        },
+        {
+          "name": "permissionId",
+          "type": "String",
+          "maxSize": 36,
+          "isNullable": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Timestamp",
+          "maxSize": null,
+          "isNullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "userId"
+        },
+        {
+          "name": "permissionId"
+        }
+      ],
+      "resolvers": [],
+      "triggers": [],
+      "expanded": false,
+      "isEditing": false
     }
   ],
-  "revisionDescription": "Added User-Roles-Permissions database structure",
+  "revisionDescription": "Updated Users/Roles/Permissions schema",
   "schemaId": 0,
   "timestamp": ""
 }

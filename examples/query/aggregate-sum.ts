@@ -1,17 +1,17 @@
 // filename: examples/query/aggregate.ts
 import process from 'node:process';
-import { onyx, sum } from '@onyx.dev/onyx-database';
+import { onyx, count } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const stats = await db
-    .select('streamType', sum('rating'))
-    .from(tables.VodItem)
+    .select(count('id'))
+    .from(tables.Users)
     .list();
 
-  console.log(JSON.stringify(stats, null, 2)); // [{"sum(rating)": 321432}
+  console.log(JSON.stringify(stats, null, 2)); // [{"count(id)": 3}]
 }
 
 main().catch((err) => {

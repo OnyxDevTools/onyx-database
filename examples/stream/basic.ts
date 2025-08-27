@@ -27,8 +27,8 @@ async function main(): Promise<void> {
   };
 
   const stream = streamDb
-    .from(tables.StreamingChannel)
-    .where(eq('category', 'news'))
+    .from(tables.Users)
+    .where(eq('isActive', true))
     .onItemAdded((item) => {
       console.log('ITEM ADDED', item);
       events.push('added');
@@ -66,29 +66,33 @@ async function main(): Promise<void> {
   }, 10_000);
 
   try {
-    await writeDb.save(tables.StreamingChannel, {
-      id: 'news_001',
-      category: 'news',
-      name: 'News 24',
-      icon: null,
+    await writeDb.save(tables.Users, {
+      id: 'stream_user_001',
+      username: 'stream_user',
+      email: 'stream@example.com',
+      isActive: true,
+      lastLoginAt: null,
+      createdAt: new Date(),
       updatedAt: new Date(),
     });
 
     // give the server a moment to emit the add event
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    await writeDb.save(tables.StreamingChannel, {
-      id: 'news_001',
-      category: 'news',
-      name: 'News 24 - Updated',
-      icon: null,
+    await writeDb.save(tables.Users, {
+      id: 'stream_user_001',
+      username: 'stream_user_updated',
+      email: 'stream@example.com',
+      isActive: true,
+      lastLoginAt: new Date(),
+      createdAt: new Date(),
       updatedAt: new Date(),
     });
 
     // allow the update event to flush before deletion
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    await writeDb.delete(tables.StreamingChannel, 'news_001');
+    await writeDb.delete(tables.Users, 'stream_user_001');
 
     // give the server a moment to emit the delete event
     await new Promise((resolve) => setTimeout(resolve, 500));

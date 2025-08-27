@@ -1,20 +1,21 @@
 // filename: examples/save/basic.ts
 import process from 'node:process';
-import { onyx, eq, gt } from '@onyx.dev/onyx-database';
+import { onyx } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
-  const topVodMovies = await db
-    .from(tables.VodItem)
-    .where(eq('streamType', 'movie'))
-    .and(gt('rating', 9))
-    .and(gt('year', 2022))
-    .limit(5)
-    .list();
+  const user = await db.save(tables.Users, {
+    id: 'user_basic',
+    username: 'basic',
+    email: 'basic@example.com',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
 
-  console.log(JSON.stringify(topVodMovies, null, 2));
+  console.log('Saved user:', user);
 }
 
 main().catch((err) => {

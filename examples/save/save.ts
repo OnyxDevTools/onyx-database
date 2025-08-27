@@ -6,14 +6,16 @@ import { Schema, tables } from 'onyx/types';
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
-  const channel = await db.save(tables.StreamingChannel, {
-    id: 'news_001',
-    category: 'news',
-    name: 'News 24',
+  const role = await db.save(tables.Roles, {
+    id: 'role_admin',
+    name: 'admin',
+    description: 'Administrator role',
+    isSystem: true,
+    createdAt: new Date(),
     updatedAt: new Date(),
   });
 
-  console.log('Saved channel:', channel);
+  console.log('Saved role:', role);
 }
 
 main().catch((err) => {
