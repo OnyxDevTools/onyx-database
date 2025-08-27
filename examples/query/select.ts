@@ -6,13 +6,13 @@ import { tables, Schema } from 'onyx/types';
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
-  const items = await db
-    .select('title', 'year')
-    .from(tables.VodItem)
+  const users = await db
+    .select('username', 'email')
+    .from(tables.Users)
     .limit(5)
     .list();
 
-  console.log(items);
+  console.log(users);
 }
 
 main().catch((err) => {
