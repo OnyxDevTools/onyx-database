@@ -1,7 +1,7 @@
 {
   "tables": [
     {
-      "name": "Users",
+      "name": "User",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -72,7 +72,7 @@
       "resolvers": [
         {
           "name": "roles",
-          "resolver": "db.from(\"UserRoles\")\n .where(eq(\"userId\", this.id))\n .list()"
+          "resolver": "db.from(\"UserRole\")\n .where(eq(\"userId\", this.id))\n .list()"
         },
         {
           "name": "profile",
@@ -80,7 +80,7 @@
         },
         {
           "name": "permissions",
-          "resolver": "db.from(\"UserPermissions\")\n .where(eq(\"userId\", this.id))\n .list()"
+          "resolver": "db.from(\"UserPermission\")\n .where(eq(\"userId\", this.id))\n .list()"
         }
       ],
       "triggers": [],
@@ -174,7 +174,7 @@
       "isEditing": false
     },
     {
-      "name": "Roles",
+      "name": "Role",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -236,7 +236,7 @@
       "resolvers": [
         {
           "name": "permissions",
-          "resolver": "db.from(\"RolePermissions\")\n .where(eq(\"roleId\", this.id))\n .list()"
+          "resolver": "db.from(\"RolePermission\")\n .where(eq(\"roleId\", this.id))\n .list()"
         }
       ],
       "triggers": [],
@@ -244,7 +244,7 @@
       "isEditing": false
     },
     {
-      "name": "Permissions",
+      "name": "Permission",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -300,7 +300,7 @@
       "isEditing": false
     },
     {
-      "name": "UserRoles",
+      "name": "UserRole",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -347,7 +347,7 @@
       "isEditing": false
     },
     {
-      "name": "RolePermissions",
+      "name": "RolePermission",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -394,7 +394,7 @@
       "isEditing": false
     },
     {
-      "name": "UserPermissions",
+      "name": "UserPermission",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -441,7 +441,7 @@
       "isEditing": false
     }
   ],
-  "revisionDescription": "Updated Users/Roles/Permissions schema",
+  "revisionDescription": "replaced with non plural form",
   "schemaId": 0,
   "timestamp": ""
 }
