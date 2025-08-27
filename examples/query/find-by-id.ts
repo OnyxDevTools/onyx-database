@@ -8,7 +8,7 @@ async function main(): Promise<void> {
   const id = 'user_001';
 
   try {
-    const user = await db.findById(tables.Users, id);
+    const user = await db.findById(tables.User, id);
     if (!user) {
       console.log('No record found for id:', id);
       return;

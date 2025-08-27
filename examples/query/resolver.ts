@@ -6,7 +6,7 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const usersWithRoles = await db
-    .from(tables.Users)
+    .from(tables.User)
     .resolve('roles')
     .limit(5)
     .list();
