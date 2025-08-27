@@ -1,47 +1,7 @@
 {
   "tables": [
     {
-      "name": "EnabledCategories",
-      "identifier": {
-        "name": "user",
-        "generator": "None",
-        "type": "String"
-      },
-      "partition": "",
-      "attributes": [
-        {
-          "name": "movies",
-          "type": "EmbeddedList",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "shows",
-          "type": "EmbeddedList",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "live",
-          "type": "EmbeddedList",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "user",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        }
-      ],
-      "indexes": [],
-      "resolvers": [],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "WatchedMovie",
+      "name": "User",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -52,221 +12,79 @@
         {
           "name": "id",
           "type": "String",
-          "maxSize": null,
+          "maxSize": 36,
           "isNullable": false
         },
         {
-          "name": "movieId",
+          "name": "username",
           "type": "String",
+          "maxSize": 64,
+          "isNullable": false
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "maxSize": 255,
+          "isNullable": false
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
           "maxSize": null,
           "isNullable": false
         },
         {
-          "name": "item",
-          "type": "EmbeddedObject",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "progress",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "updatedAt",
+          "name": "lastLoginAt",
           "type": "Timestamp",
           "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "rating",
-          "type": "Int",
-          "maxSize": null,
           "isNullable": true
-        },
-        {
-          "name": "user",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        }
-      ],
-      "indexes": [
-        {
-          "name": "user"
-        }
-      ],
-      "resolvers": [],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "WatchedShow",
-      "identifier": {
-        "name": "id",
-        "generator": "UUID",
-        "type": "String"
-      },
-      "partition": "",
-      "attributes": [
-        {
-          "name": "id",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "showId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "episodeId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "seasonNumber",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "episodeNumber",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "item",
-          "type": "EmbeddedObject",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "progress",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "updatedAt",
-          "type": "Timestamp",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "rating",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "user",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        }
-      ],
-      "indexes": [
-        {
-          "name": "user"
-        }
-      ],
-      "resolvers": [],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "RecordedStream",
-      "identifier": {
-        "name": "id",
-        "generator": "None",
-        "type": "String"
-      },
-      "partition": "",
-      "attributes": [
-        {
-          "name": "id",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "user",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "channelId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "channelName",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "streamId",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "containerExtension",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "title",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "start",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "stop",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
         },
         {
           "name": "createdAt",
           "type": "Timestamp",
           "maxSize": null,
           "isNullable": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Timestamp",
+          "maxSize": null,
+          "isNullable": false
+        },
+        {
+          "name": "deletedAt",
+          "type": "Timestamp",
+          "maxSize": null,
+          "isNullable": true
         }
       ],
       "indexes": [
         {
-          "name": "user"
+          "name": "username"
         },
         {
-          "name": "start"
+          "name": "email"
+        },
+        {
+          "name": "isActive"
         }
       ],
-      "resolvers": [],
+      "resolvers": [
+        {
+          "name": "roles",
+          "resolver": "db.from(\"UserRole\")\n .where(eq(\"userId\", this.id))\n .list()"
+        },
+        {
+          "name": "profile",
+          "resolver": "db.from(\"UserProfile\")\n .where(eq(\"userId\", this.id)).firstOrNull()"
+        }
+      ],
       "triggers": [],
       "expanded": false,
       "isEditing": false
     },
     {
-      "name": "UserReview",
+      "name": "UserProfile",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -277,32 +95,56 @@
         {
           "name": "id",
           "type": "String",
-          "maxSize": null,
-          "isNullable": true
+          "maxSize": 36,
+          "isNullable": false
         },
         {
-          "name": "user",
+          "name": "userId",
           "type": "String",
-          "maxSize": null,
-          "isNullable": true
+          "maxSize": 36,
+          "isNullable": false
         },
         {
-          "name": "streamId",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "type",
+          "name": "firstName",
           "type": "String",
-          "maxSize": null,
+          "maxSize": 100,
+          "isNullable": false
+        },
+        {
+          "name": "lastName",
+          "type": "String",
+          "maxSize": 100,
+          "isNullable": false
+        },
+        {
+          "name": "phone",
+          "type": "String",
+          "maxSize": 32,
           "isNullable": true
         },
         {
-          "name": "rating",
-          "type": "String",
-          "maxSize": null,
+          "name": "address",
+          "type": "EmbeddedObject",
+          "maxSize": 512,
           "isNullable": true
+        },
+        {
+          "name": "avatarUrl",
+          "type": "String",
+          "maxSize": 512,
+          "isNullable": true
+        },
+        {
+          "name": "bio",
+          "type": "String",
+          "maxSize": 1024,
+          "isNullable": true
+        },
+        {
+          "name": "createdAt",
+          "type": "Timestamp",
+          "maxSize": null,
+          "isNullable": false
         },
         {
           "name": "updatedAt",
@@ -311,492 +153,58 @@
           "isNullable": true
         },
         {
-          "name": "favorite",
-          "type": "Boolean",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "title",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        }
-      ],
-      "indexes": [],
-      "resolvers": [
-        {
-          "name": "vod",
-          "resolver": "db.from(\"VodItem\")\n  .where(eq(\"streamId\", this.streamId))\n  .list().firstOrNull()"
-        }
-      ],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "VodItem",
-      "identifier": {
-        "name": "streamId",
-        "generator": "None",
-        "type": "Int"
-      },
-      "partition": "",
-      "attributes": [
-        {
-          "name": "streamId",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "num",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "name",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "title",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "year",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "streamType",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "streamIcon",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "cover",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "poster",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "rating",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "containerExtension",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "categoryId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "epgChannelId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "type",
-          "type": "String",
+          "name": "deletedAt",
+          "type": "Timestamp",
           "maxSize": null,
           "isNullable": true
         }
       ],
       "indexes": [
         {
-          "name": "year"
-        },
-        {
-          "name": "name"
-        },
-        {
-          "name": "streamType"
-        },
-        {
-          "name": "categoryId"
-        },
-        {
-          "name": "type"
+          "name": "userId"
         }
       ],
-      "resolvers": [
-        {
-          "name": "meta",
-          "resolver": "db.from(\"VodMeta\")\n  .where(eq(\"streamId\", this.streamId))\n  .list().firstOrNull()"
-        }
-      ],
+      "resolvers": [],
       "triggers": [],
       "expanded": false,
       "isEditing": false
     },
     {
-      "name": "VodMeta",
+      "name": "Role",
       "identifier": {
         "name": "id",
         "generator": "UUID",
-        "type": "Int"
+        "type": "String"
       },
       "partition": "",
       "attributes": [
         {
           "name": "id",
           "type": "String",
-          "maxSize": null,
+          "maxSize": 36,
           "isNullable": false
         },
         {
-          "name": "streamId",
-          "type": "Int",
-          "maxSize": null,
+          "name": "name",
+          "type": "String",
+          "maxSize": 64,
           "isNullable": false
-        },
-        {
-          "name": "title",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "year",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "type",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "duration",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": true
         },
         {
           "name": "description",
           "type": "String",
-          "maxSize": null,
+          "maxSize": 512,
           "isNullable": true
         },
         {
-          "name": "genres",
-          "type": "EmbeddedList",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "image",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "language",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "rating",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "runtime",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "tmdbId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "imdbId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "tvdbId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "trailer",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "seasons",
-          "type": "EmbeddedList",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "episodes",
-          "type": "EmbeddedList",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "network",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "cast",
-          "type": "EmbeddedList",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "directors",
-          "type": "EmbeddedList",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "writers",
-          "type": "EmbeddedList",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "status",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        }
-      ],
-      "indexes": [
-        {
-          "name": "streamId"
-        },
-        {
-          "name": "title"
-        },
-        {
-          "name": "year"
-        },
-        {
-          "name": "rating"
-        }
-      ],
-      "resolvers": [],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "LiveStreamReminder",
-      "identifier": {
-        "name": "id",
-        "generator": "UUID",
-        "type": "String"
-      },
-      "partition": "",
-      "attributes": [
-        {
-          "name": "id",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "user",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "channelId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "channelName",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "streamId",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "containerExtension",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "title",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "start",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "stop",
-          "type": "String",
+          "name": "isSystem",
+          "type": "Boolean",
           "maxSize": null,
           "isNullable": false
         },
         {
           "name": "createdAt",
           "type": "Timestamp",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "streamURL",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        }
-      ],
-      "indexes": [
-        {
-          "name": "user"
-        },
-        {
-          "name": "start"
-        }
-      ],
-      "resolvers": [],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "VodMarker",
-      "identifier": {
-        "name": "fingerprint",
-        "generator": "None",
-        "type": "String"
-      },
-      "partition": "",
-      "attributes": [
-        {
-          "name": "fingerprint",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "meta",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        }
-      ],
-      "indexes": [],
-      "resolvers": [],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "EPGSync",
-      "identifier": {
-        "name": "category",
-        "generator": "None",
-        "type": "String"
-      },
-      "partition": "",
-      "attributes": [
-        {
-          "name": "category",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "syncedAt",
-          "type": "Timestamp",
-          "maxSize": null,
-          "isNullable": false
-        }
-      ],
-      "indexes": [],
-      "resolvers": [],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "UserFavoriteChannel",
-      "identifier": {
-        "name": "id",
-        "generator": "UUID",
-        "type": "String"
-      },
-      "partition": "",
-      "attributes": [
-        {
-          "name": "id",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "user",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "channelId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "order",
-          "type": "Int",
           "maxSize": null,
           "isNullable": false
         },
@@ -804,58 +212,35 @@
           "name": "updatedAt",
           "type": "Timestamp",
           "maxSize": null,
-          "isNullable": true
+          "isNullable": false
         },
         {
-          "name": "category",
-          "type": "String",
+          "name": "deletedAt",
+          "type": "Timestamp",
           "maxSize": null,
-          "isNullable": false
+          "isNullable": true
         }
       ],
       "indexes": [
         {
-          "name": "user"
+          "name": "name"
         },
         {
-          "name": "category"
+          "name": "isSystem"
         }
       ],
-      "resolvers": [],
+      "resolvers": [
+        {
+          "name": "permissions",
+          "resolver": "db.from(\"RolePermission\")\n .where(eq(\"roleId\", this.id))\n .list()"
+        }
+      ],
       "triggers": [],
       "expanded": false,
       "isEditing": false
     },
     {
-      "name": "AppConfig",
-      "identifier": {
-        "name": "key",
-        "generator": "None",
-        "type": "String"
-      },
-      "partition": "",
-      "attributes": [
-        {
-          "name": "key",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "value",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        }
-      ],
-      "indexes": [],
-      "resolvers": [],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "NewEpisodeAvailable",
+      "name": "Permission",
       "identifier": {
         "name": "id",
         "generator": "UUID",
@@ -866,122 +251,55 @@
         {
           "name": "id",
           "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "user",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "showId",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "seasonNumber",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "episodeNumber",
-          "type": "Int",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "item",
-          "type": "EmbeddedObject",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "createdAt",
-          "type": "Timestamp",
-          "maxSize": null,
-          "isNullable": false
-        }
-      ],
-      "indexes": [
-        {
-          "name": "user"
-        },
-        {
-          "name": "showId"
-        }
-      ],
-      "resolvers": [],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "StreamingChannel",
-      "identifier": {
-        "name": "id",
-        "generator": "None",
-        "type": "String"
-      },
-      "partition": "",
-      "attributes": [
-        {
-          "name": "id",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "category",
-          "type": "String",
-          "maxSize": null,
+          "maxSize": 36,
           "isNullable": false
         },
         {
           "name": "name",
           "type": "String",
-          "maxSize": null,
+          "maxSize": 96,
           "isNullable": false
         },
         {
-          "name": "icon",
+          "name": "description",
           "type": "String",
-          "maxSize": null,
+          "maxSize": 512,
           "isNullable": true
+        },
+        {
+          "name": "createdAt",
+          "type": "Timestamp",
+          "maxSize": null,
+          "isNullable": false
         },
         {
           "name": "updatedAt",
           "type": "Timestamp",
           "maxSize": null,
           "isNullable": false
+        },
+        {
+          "name": "deletedAt",
+          "type": "Timestamp",
+          "maxSize": null,
+          "isNullable": true
         }
       ],
       "indexes": [
         {
-          "name": "category"
-        },
-        {
           "name": "name"
         }
       ],
-      "resolvers": [
-        {
-          "name": "programs",
-          "resolver": "db.from(\"StreamingProgram\")\n  .where(eq(\"channelId\", this.id))\n  .list()"
-        }
-      ],
+      "resolvers": [],
       "triggers": [],
       "expanded": false,
       "isEditing": false
     },
     {
-      "name": "StreamingProgram",
+      "name": "UserRole",
       "identifier": {
         "name": "id",
-        "generator": "None",
+        "generator": "UUID",
         "type": "String"
       },
       "partition": "",
@@ -989,61 +307,81 @@
         {
           "name": "id",
           "type": "String",
-          "maxSize": null,
+          "maxSize": 36,
           "isNullable": false
         },
         {
-          "name": "channelId",
+          "name": "userId",
           "type": "String",
-          "maxSize": null,
+          "maxSize": 36,
           "isNullable": false
         },
         {
-          "name": "start",
+          "name": "roleId",
+          "type": "String",
+          "maxSize": 36,
+          "isNullable": false
+        },
+        {
+          "name": "createdAt",
           "type": "Timestamp",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "stop",
-          "type": "Timestamp",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "title",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": false
-        },
-        {
-          "name": "desc",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "icon",
-          "type": "String",
-          "maxSize": null,
-          "isNullable": true
-        },
-        {
-          "name": "streamURL",
-          "type": "String",
           "maxSize": null,
           "isNullable": false
         }
       ],
       "indexes": [
         {
-          "name": "channelId"
+          "name": "userId"
         },
         {
-          "name": "start"
+          "name": "roleId"
+        }
+      ],
+      "resolvers": [],
+      "triggers": [],
+      "expanded": false,
+      "isEditing": false
+    },
+    {
+      "name": "RolePermission",
+      "identifier": {
+        "name": "id",
+        "generator": "UUID",
+        "type": "String"
+      },
+      "partition": "",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "String",
+          "maxSize": 36,
+          "isNullable": false
         },
         {
-          "name": "title"
+          "name": "roleId",
+          "type": "String",
+          "maxSize": 36,
+          "isNullable": false
+        },
+        {
+          "name": "permissionId",
+          "type": "String",
+          "maxSize": 36,
+          "isNullable": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Timestamp",
+          "maxSize": null,
+          "isNullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "roleId"
+        },
+        {
+          "name": "permissionId"
         }
       ],
       "resolvers": [],
@@ -1052,7 +390,7 @@
       "isEditing": false
     }
   ],
-  "revisionDescription": "added title to UserReview",
+  "revisionDescription": "Added User-Roles-Permissions database structure",
   "schemaId": 0,
   "timestamp": ""
 }

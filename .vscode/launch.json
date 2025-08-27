@@ -14,7 +14,10 @@
       "sourceMaps": true,
       "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
       "internalConsoleOptions": "openOnSessionStart",
-      "autoAttachChildProcesses": false
+      "autoAttachChildProcesses": false,
+      "env": {
+         "ONYX_STREAM_DEBUG": "1"
+      }
     }
   ]
 }
