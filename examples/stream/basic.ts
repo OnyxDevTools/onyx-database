@@ -27,7 +27,7 @@ async function main(): Promise<void> {
   };
 
   const stream = streamDb
-    .from(tables.Users)
+    .from(tables.User)
     .where(eq('isActive', true))
     .onItemAdded((item) => {
       console.log('ITEM ADDED', item);
@@ -66,7 +66,7 @@ async function main(): Promise<void> {
   }, 10_000);
 
   try {
-    await writeDb.save(tables.Users, {
+    await writeDb.save(tables.User, {
       id: 'stream_user_001',
       username: 'stream_user',
       email: 'stream@example.com',
@@ -79,7 +79,7 @@ async function main(): Promise<void> {
     // give the server a moment to emit the add event
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    await writeDb.save(tables.Users, {
+    await writeDb.save(tables.User, {
       id: 'stream_user_001',
       username: 'stream_user_updated',
       email: 'stream@example.com',
@@ -92,7 +92,7 @@ async function main(): Promise<void> {
     // allow the update event to flush before deletion
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    await writeDb.delete(tables.Users, 'stream_user_001');
+    await writeDb.delete(tables.User, 'stream_user_001');
 
     // give the server a moment to emit the delete event
     await new Promise((resolve) => setTimeout(resolve, 500));

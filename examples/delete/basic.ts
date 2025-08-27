@@ -7,7 +7,7 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const deleted = (await db
-    .from(tables.Users)
+    .from(tables.User)
     .where(eq('username', 'obsolete'))
     .delete()) as number;
 
