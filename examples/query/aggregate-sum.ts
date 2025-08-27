@@ -8,7 +8,7 @@ async function main(): Promise<void> {
 
   const stats = await db
     .select(count('id'))
-    .from(tables.Users)
+    .from(tables.User)
     .list();
 
   console.log(JSON.stringify(stats, null, 2)); // [{"count(id)": 3}]

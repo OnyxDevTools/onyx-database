@@ -7,14 +7,14 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const maybeUser = await db
-    .from(tables.Users)
+    .from(tables.User)
     .where(eq('username', 'superman'))
     .firstOrNull();
 
   console.log(JSON.stringify(maybeUser, null, 2));
 
   const alsoUser = await db
-    .from(tables.Users)
+    .from(tables.User)
     .where(eq('username', 'DNE'))
     .one();
 
