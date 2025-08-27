@@ -77,10 +77,6 @@
         {
           "name": "profile",
           "resolver": "db.from(\"UserProfile\")\n .where(eq(\"userId\", this.id))\n .firstOrNull()"
-        },
-        {
-          "name": "permissions",
-          "resolver": "db.from(\"UserPermission\")\n .where(eq(\"userId\", this.id))\n .list()"
         }
       ],
       "triggers": [],
@@ -347,7 +343,12 @@
           "name": "roleId"
         }
       ],
-      "resolvers": [],
+      "resolvers": [
+        {
+          "name": "role",
+          "resolver": "db.from(\"Role\")\n .where(eq(\"id\", this.roleId))\n .list()"
+        }
+      ],
       "triggers": [],
       "expanded": false,
       "isEditing": false
@@ -394,60 +395,22 @@
           "name": "permissionId"
         }
       ],
-      "resolvers": [],
-      "triggers": [],
-      "expanded": false,
-      "isEditing": false
-    },
-    {
-      "name": "UserPermission",
-      "identifier": {
-        "name": "id",
-        "generator": "UUID",
-        "type": "String"
-      },
-      "partition": "",
-      "attributes": [
+      "resolvers": [
         {
-          "name": "id",
-          "type": "String",
-          "maxSize": 36,
-          "isNullable": false
+          "name": "permission",
+          "resolver": "db.from(\"Permission\")\n .where(eq(\"id\", this.permissionId))\n .firstOrNull()"
         },
         {
-          "name": "userId",
-          "type": "String",
-          "maxSize": 36,
-          "isNullable": false
-        },
-        {
-          "name": "permissionId",
-          "type": "String",
-          "maxSize": 36,
-          "isNullable": false
-        },
-        {
-          "name": "createdAt",
-          "type": "Timestamp",
-          "maxSize": null,
-          "isNullable": false
+          "name": "role",
+          "resolver": "db.from(\"Role\")\n .where(eq(\"id\", this.roleId))\n .firstOrNull()"
         }
       ],
-      "indexes": [
-        {
-          "name": "userId"
-        },
-        {
-          "name": "permissionId"
-        }
-      ],
-      "resolvers": [],
       "triggers": [],
       "expanded": false,
       "isEditing": false
     }
   ],
-  "revisionDescription": "added age to UserProfile",
+  "revisionDescription": "fixed resolvers",
   "schemaId": 0,
   "timestamp": ""
 }
