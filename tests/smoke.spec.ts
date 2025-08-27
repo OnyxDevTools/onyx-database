@@ -64,23 +64,24 @@ describe.runIf(hasConfig)('smoke e2e', () => {
           userId,
           roleId: role.id,
           createdAt: now,
-        },
+          permissions: [
+            {
+              id: randomUUID(),
+              userId,
+              permissionId: permission.id,
+              createdAt: now,
+            },
+          ],
+        }
       ],
-      permissions: [
-        {
-          id: randomUUID(),
-          userId,
-          permissionId: permission.id,
-          createdAt: now,
-        },
-      ],
+
     };
 
     const saved = await db
       .cascade(
         'profile:UserProfile(userId, id)',
         'roles:UserRole(userId, id)',
-        'permissions:UserPermission(userId, id)'
+        'roles.permissions:UserPermission(userId, id, roleId, this.role.roleId)'
       )
       .save('User', userData);
 

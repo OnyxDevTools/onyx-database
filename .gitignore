@@ -52,13 +52,6 @@ Thumbs.db
 onyx-database.json
 **/onyx-database.json
 
-# ───────────────────────────
-# Examples workspace artifacts
-# ───────────────────────────
-examples/build/
-examples/generated/
-# Generated types from onyx-gen (written by scripts/bootstrap or `npm run gen:onyx`)
-examples/onyx/types.ts
 
 
 
