@@ -6,7 +6,7 @@ import { tables, Schema } from 'onyx/types';
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
-  const user = await db.save(tables.Users, {
+  const user = await db.save(tables.User, {
     id: 'user_basic',
     username: 'basic',
     email: 'basic@example.com',

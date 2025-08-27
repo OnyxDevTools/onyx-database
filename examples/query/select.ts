@@ -8,7 +8,7 @@ async function main(): Promise<void> {
 
   const users = await db
     .select('username', 'email')
-    .from(tables.Users)
+    .from(tables.User)
     .limit(5)
     .list();
 

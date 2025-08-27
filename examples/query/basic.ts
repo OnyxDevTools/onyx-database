@@ -7,7 +7,7 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const recentActive = await db
-    .from(tables.Users)
+    .from(tables.User)
     .where(eq('isActive', true))
     .and(gt('createdAt', new Date('2024-01-01')))
     .limit(5)

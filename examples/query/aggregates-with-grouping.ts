@@ -8,7 +8,7 @@ async function main(): Promise<void> {
 
   const stats = await db
     .select('isActive', count('id'))
-    .from(tables.Users)
+    .from(tables.User)
     .groupBy('isActive')
     .list();
 
