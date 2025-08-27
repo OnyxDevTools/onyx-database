@@ -1,5 +1,5 @@
 // filename: examples/query/basic.ts
-import { onyx, eq, gt } from '@onyx.dev/onyx-database';
+import { onyx, eq } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
