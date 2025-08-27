@@ -90,7 +90,7 @@ describe.runIf(hasConfig)('smoke e2e', () => {
     const retrieved = await db
       .from('User')
       .where(eq('id', userId))
-      .resolve('profile', 'roles', 'permissions')
+      .resolve('profile', 'roles.role', 'roles.role.permissions.permission')
       .limit(1)
       .list();
 
@@ -98,7 +98,8 @@ describe.runIf(hasConfig)('smoke e2e', () => {
     const user = retrieved[0] as any;
     expect(user.profile).toBeTruthy();
     expect(user.roles?.length).toBe(1);
-    expect(user.permissions?.length).toBe(1);
+    expect(user.roles[0].role.permissions?.length).toBe(1);
+    expect(user.roles[0].role.permissions[0].permission).toBeTruthy();
 
     const countBeforeDelete = await db
       .from('User')
@@ -120,7 +121,7 @@ describe.runIf(hasConfig)('smoke e2e', () => {
     expect((searchResults[0] as any).id).toBe(userId);
 
     await db
-      .cascade('profile', 'roles', 'permissions')
+      .cascade('profile', 'roles', 'roles.permissions')
       .delete('User', userId);
     await db.cascade('permissions').delete('Role', role.id);
     await db.delete('Permission', permission.id);
