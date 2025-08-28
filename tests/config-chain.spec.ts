@@ -78,4 +78,12 @@ describe('config chain database selection', () => {
       await unlink(file);
     }
   });
+
+  it('throws when required config is missing', async () => {
+    delete process.env.ONYX_DATABASE_ID;
+    delete process.env.ONYX_DATABASE_API_KEY;
+    delete process.env.ONYX_DATABASE_API_SECRET;
+    await expect(resolveConfig()).rejects.toBeInstanceOf(OnyxConfigError);
+  });
 });
+

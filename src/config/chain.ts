@@ -1,5 +1,4 @@
 // filename: src/config/chain.ts
-import process from 'node:process';
 import { DEFAULT_BASE_URL, sanitizeBaseUrl } from './defaults';
 import { OnyxConfigError } from '../errors/config-error';
 import type { OnyxConfig } from '../types/public';
@@ -13,12 +12,20 @@ export interface ResolvedConfig {
   fetch: FetchImpl;
 }
 
-const isNode = typeof process !== 'undefined' && !!process.versions?.node;
+const gProcess = (globalThis as {
+  process?: {
+    versions?: { node?: string };
+    env?: Record<string, string | undefined>;
+    stderr?: { write?: (s: string) => void };
+    cwd?: () => string;
+  };
+}).process;
+const isNode = !!gProcess?.versions?.node;
 
-// Optional debug logger — enable with ONYX_DEBUG=1
-const dbg = (...args: unknown[]) => {
-  if (isNode && process.env?.ONYX_DEBUG) {
-    process.stderr.write(`[onyx-config] ${args.map(String).join(' ')}\n`);
+// Optional debug logger — enable with ONYX_DEBUG=1 (Node only)
+const dbg = (...args: unknown[]): void => {
+  if (gProcess?.env?.ONYX_DEBUG) {
+    gProcess.stderr?.write?.(`[onyx-config] ${args.map(String).join(' ')}\n`);
   }
 };
 
@@ -32,8 +39,8 @@ function dropUndefined<T extends object>(obj: Partial<T> | undefined): Partial<T
 }
 
 function readEnv(targetId?: string): Partial<OnyxConfig> {
-  if (!isNode) return {};
-  const env = process.env ?? {};
+  if (!gProcess?.env) return {};
+  const env = gProcess.env;
   const pick = (...keys: string[]): string | undefined => {
     for (const k of keys) {
       const v = env[k];
@@ -59,6 +66,7 @@ async function readProjectFile(databaseId?: string): Promise<Partial<OnyxConfig>
   if (!isNode) return {};
   const fs = await import('node:fs/promises');
   const path = await import('node:path');
+  const cwd = gProcess?.cwd?.() ?? '.';
 
   const tryRead = async (p: string): Promise<Partial<OnyxConfig>> => {
     const txt = await fs.readFile(p, 'utf8');
@@ -68,7 +76,7 @@ async function readProjectFile(databaseId?: string): Promise<Partial<OnyxConfig>
   };
 
   if (databaseId) {
-    const specific = path.resolve(process.cwd(), `onyx-database-${databaseId}.json`);
+    const specific = path.resolve(cwd, `onyx-database-${databaseId}.json`);
     try {
       return await tryRead(specific);
     } catch {
@@ -76,7 +84,7 @@ async function readProjectFile(databaseId?: string): Promise<Partial<OnyxConfig>
     }
   }
 
-  const fallback = path.resolve(process.cwd(), 'onyx-database.json');
+  const fallback = path.resolve(cwd, 'onyx-database.json');
   try {
     return await tryRead(fallback);
   } catch {
@@ -95,7 +103,12 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
   const dir = path.join(home, '.onyx');
 
   const fileExists = async (p: string): Promise<boolean> => {
-    try { await fs.access(p); return true; } catch { return false; }
+    try {
+      await fs.access(p);
+      return true;
+    } catch {
+      return false;
+    }
   };
   const readProfile = async (p: string): Promise<Partial<OnyxConfig>> => {
     try {
@@ -109,24 +122,20 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
     }
   };
 
-  // 1) Specific profile by ID: ~/.onyx/onyx-database-<id>.json
   if (databaseId) {
     const specific = `${dir}/onyx-database-${databaseId}.json`;
     if (await fileExists(specific)) return readProfile(specific);
     dbg('no specific profile:', specific);
   }
 
-  // 2) Default profile in ~/.onyx without suffix
   const defaultInDir = `${dir}/onyx-database.json`;
   if (await fileExists(defaultInDir)) return readProfile(defaultInDir);
   dbg('no default profile in dir:', defaultInDir);
 
-  // 3) Home-root fallback: ~/onyx-database.json
-  const defaultInHomeRoot = `${home}/onyx-database.json`;
-  if (await fileExists(defaultInHomeRoot)) return readProfile(defaultInHomeRoot);
-  dbg('no home-root fallback:', defaultInHomeRoot);
+  const defaultInHome = `${home}/onyx-database.json`;
+  if (await fileExists(defaultInHome)) return readProfile(defaultInHome);
+  dbg('no home-root fallback:', defaultInHome);
 
-  // 4) Scan ~/.onyx for exactly one suffixed profile
   if (!(await fileExists(dir))) {
     dbg('~/.onyx does not exist:', dir);
     return {};
@@ -139,8 +148,7 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
   }
   if (matches.length > 1) {
     throw new OnyxConfigError(
-      'Multiple ~/.onyx/onyx-database-*.json profiles found. ' +
-      'Specify databaseId via env or provide ./onyx-database.json.'
+      'Multiple ~/.onyx/onyx-database-*.json profiles found. Specify databaseId via env or provide ./onyx-database.json.'
     );
   }
 
@@ -151,15 +159,6 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
 /**
  * Resolve configuration using precedence:
  *   explicit config (highest) > env (when ONYX_DATABASE_ID matches)
- *   > project file > home profile (lowest)
- * Project file supports:
- *   - ./onyx-database-<databaseId>.json
- *   - ./onyx-database.json
- * Home profile supports:
- *   - ~/.onyx/onyx-database-<databaseId>.json
- *   - ~/.onyx/onyx-database.json
- *   - ~/onyx-database.json
- *   - or a single ~/.onyx/onyx-database-*.json if unique
  */
 export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig> {
   const env = readEnv(input?.databaseId);
@@ -174,7 +173,6 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
     }
   }
 
-  // IMPORTANT: drop undefined keys for every layer before merging.
   const merged: Partial<OnyxConfig> = {
     baseUrl: DEFAULT_BASE_URL,
     ...dropUndefined<OnyxConfig>(file),
@@ -203,11 +201,21 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   if (!apiSecret) missing.push('apiSecret');
   if (missing.length) {
     dbg('validation failed. merged:', mask(merged));
+    const sources = [
+      'env (when ONYX_DATABASE_ID matches)',
+      ...(isNode
+        ? [
+            './onyx-database-<databaseId>.json',
+            './onyx-database.json',
+            '~/.onyx/onyx-database-<databaseId>.json',
+            '~/.onyx/onyx-database.json',
+            '~/onyx-database.json',
+          ]
+        : []),
+      'explicit config',
+    ];
     throw new OnyxConfigError(
-      `Missing required config: ${missing.join(', ')}. ` +
-        `Sources: env (when ONYX_DATABASE_ID matches), ` +
-        `./onyx-database-<databaseId>.json, ./onyx-database.json, ` +
-        `~/.onyx/onyx-database-<databaseId>.json, ~/.onyx/onyx-database.json, ~/onyx-database.json`
+      `Missing required config: ${missing.join(', ')}. Sources: ${sources.join(', ')}`,
     );
   }
 
