@@ -16,6 +16,7 @@ export default defineConfig([
     target: 'es2022',
     sourcemap: true,
     minify: false,
+    platform: 'neutral',
   },
   // CLI bundle (no .d.ts)
   {
@@ -26,5 +27,6 @@ export default defineConfig([
     target: 'es2022',
     sourcemap: true,
     minify: false,
+    platform: 'node',
   },
 ]);
