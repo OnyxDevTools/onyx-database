@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE) [![codecov](https://codecov.io/gh/OnyxDevTools/onyx-database/branch/main/graph/badge.svg)](https://codecov.io/gh/OnyxDevTools/onyx-database)
 
-TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-typed, builder-pattern API for querying and persisting data in Onyx from Node.js or modern bundlers. Ships ESM & CJS, includes a credential resolver, and an optional **schema code generator** that produces table-safe types and a `tables` enum.
+TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-typed, builder-pattern API for querying and persisting data in Onyx from Node.js or edge runtimes like Cloudflare Workers. Ships ESM & CJS, includes a credential resolver, and an optional **schema code generator** that produces table-safe types and a `tables` enum.
 
 - **Website:** <https://onyx.dev/>
 - **Cloud Console:** <https://cloud.onyx.dev>
@@ -28,9 +28,9 @@ TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-
    npm i @onyx.dev/onyx-database
    ```
 
-4. **Initialize the client** using env vars or a config file (details below).
+4. **Initialize the client** using env vars or explicit config.
 
-> Node.js **18+** required.
+> Supports Node.js **18+** and Cloudflare Workers.
 
 ---
 
@@ -46,7 +46,7 @@ The package is dual-module (ESM + CJS) and has **no runtime or peer dependencies
 
 ## Initialize the client
 
-This SDK resolves credentials automatically using the chain **environment ➜ project file ➜ home profile** (highest to lowest precedence). Call `onyx.init({ databaseId: 'database-id' })` to target a specific database, or omit the `databaseId` to use the default. You can also pass credentials directly via config.
+This SDK resolves credentials automatically from **environment variables** (when `process.env` is available), **project or home config files** _(Node.js only)_, or explicit config. Call `onyx.init({ databaseId: 'database-id' })` to target a specific database, or omit the `databaseId` to use the default. You can also pass credentials directly via config.
 
 ### Option A) Environment variables (recommended for production)
 
@@ -64,31 +64,7 @@ const db = onyx.init({ databaseId: 'YOUR_DATABASE_ID' }); // uses env when ID ma
 // credentials are cached for 5 minutes by default
 ```
 
-### Option B) Project file (ignored in *your app* repo)
-
-```json
-// ./onyx-database-YOUR_DATABASE_ID.json
-{
-  "baseUrl": "https://api.onyx.dev",
-  "databaseId": "YOUR_DATABASE_ID",
-  "apiKey": "YOUR_KEY",
-  "apiSecret": "YOUR_SECRET"
-}
-```
-
-This file contains sensitive credentials and **must never be committed** to version control. Add it to `.gitignore`:
-
-```gitignore
-# Onyx project credentials
-onyx-database-*.json
-```
-
-### Option C) Home profile (per-developer)
-
-- `~/.onyx/onyx-database-<databaseId>.json`, or
-- `~/.onyx/onyx-database.json` (used when only one profile exists)
-
-### Option D) Explicit config
+### Option B) Explicit config
 
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
@@ -101,12 +77,24 @@ const db = onyx.init({
 });
 ```
 
+### Option C) Node-only config files
+
+When running on Node.js, the resolver also checks for JSON files matching the `OnyxConfig` shape in the following order:
+
+- `./onyx-database-<databaseId>.json`
+- `./onyx-database.json`
+- `~/.onyx/onyx-database-<databaseId>.json`
+- `~/.onyx/onyx-database.json`
+- `~/onyx-database.json`
+
+These files are ignored in non-Node runtimes like Cloudflare Workers.
+
 ### Connection handling
 
 Calling `onyx.init()` returns a lightweight client. Configuration is resolved once
 and cached for 5 minutes to avoid repeated credential lookups (override with
 `ttl` or reset via `onyx.clearCacheConfig()`). Each database instance keeps a
-single internal `HttpClient`. Requests go through Node's built‑in `fetch`, which
+single internal `HttpClient`. Requests use the runtime's global `fetch`, which
 already reuses connections and pools them for keep‑alive. Reuse the returned
 `db` for multiple operations; extra SDK‑level connection pooling generally isn't
 necessary unless you create many short‑lived clients.
