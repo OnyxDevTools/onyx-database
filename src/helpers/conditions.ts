@@ -8,7 +8,14 @@ const c = (field: string, operator: QueryCriteriaOperator, value?: unknown) =>
 
 export const eq = (field: string, value: unknown) => c(field, 'EQUAL', value);
 export const neq = (field: string, value: unknown) => c(field, 'NOT_EQUAL', value);
-export const inOp = (field: string, values: unknown[]) => c(field, 'IN', values);
+export const inOp = (field: string, values: unknown[] | string) =>
+  c(
+    field,
+    'IN',
+    typeof values === 'string'
+      ? values.split(',').map((v) => v.trim()).filter((v) => v.length)
+      : values,
+  );
 export const notIn = (field: string, values: unknown[]) => c(field, 'NOT_IN', values);
 export const between = (field: string, lower: unknown, upper: unknown) => c(field, 'BETWEEN', [lower, upper]);
 export const gt = (field: string, value: unknown) => c(field, 'GREATER_THAN', value);
