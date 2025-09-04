@@ -601,6 +601,14 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
     return this;
   }
 
+  async streamEventsOnly(keepAlive = true): Promise<{ cancel: () => void }> {
+    return this.stream(false, keepAlive);
+  }
+
+  async streamWithQueryResults(keepAlive = false): Promise<{ cancel: () => void }> {
+    return this.stream(true, keepAlive);
+  }
+
   /**
    * Start a streaming query with optional initial results and keep-alive support.
    *

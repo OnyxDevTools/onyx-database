@@ -434,6 +434,42 @@ Defined in: types/builders.ts:39
 
 ***
 
+### streamEventsOnly()
+
+> **streamEventsOnly**(`keepAlive?`): `Promise`\<\{ `cancel`: () => `void`; \}\>
+
+Defined in: types/builders.ts:40
+
+#### Parameters
+
+##### keepAlive?
+
+`boolean`
+
+#### Returns
+
+`Promise`\<\{ `cancel`: () => `void`; \}\>
+
+***
+
+### streamWithQueryResults()
+
+> **streamWithQueryResults**(`keepAlive?`): `Promise`\<\{ `cancel`: () => `void`; \}\>
+
+Defined in: types/builders.ts:41
+
+#### Parameters
+
+##### keepAlive?
+
+`boolean`
+
+#### Returns
+
+`Promise`\<\{ `cancel`: () => `void`; \}\>
+
+***
+
 ### update()
 
 > **update**(): `Promise`\<`unknown`\>

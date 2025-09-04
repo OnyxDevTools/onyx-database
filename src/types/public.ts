@@ -146,6 +146,24 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   ): Promise<unknown>;
 
   /**
+   * Save many entities in configurable batches.
+   *
+   * @example
+   * ```ts
+   * await db.batchSave('User', users, 500);
+   * ```
+   *
+   * @param table Table to save into.
+   * @param entities Array of entities to persist.
+   * @param batchSize Number of entities per batch; defaults to 1000.
+   */
+  batchSave<Table extends keyof Schema & string>(
+    table: Table,
+    entities: Array<Partial<Schema[Table]>>,
+    batchSize?: number
+  ): Promise<void>;
+
+  /**
    * Retrieve an entity by its primary key.
    *
    * @example
@@ -164,7 +182,7 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
     table: Table,
     primaryKey: string,
     options?: { partition?: string; resolvers?: string[] }
-  ): Promise<T>;
+  ): Promise<T | null>;
 
   /**
    * Delete an entity by primary key.
