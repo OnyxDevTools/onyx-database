@@ -43,6 +43,8 @@ export interface IQueryBuilder<T = unknown> {
   onItemDeleted(listener: (entity: T) => void): IQueryBuilder<T>;
   onItem(listener: (entity: T | null, action: StreamAction) => void): IQueryBuilder<T>;
   stream(includeQueryResults?: boolean, keepAlive?: boolean): Promise<{ cancel: () => void }>;
+  streamEventsOnly(keepAlive?: boolean): Promise<{ cancel: () => void }>;
+  streamWithQueryResults(keepAlive?: boolean): Promise<{ cancel: () => void }>;
 }
 
 export interface ISaveBuilder<T = unknown> {
