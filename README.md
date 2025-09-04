@@ -229,6 +229,10 @@ const allActive = await db
 
 // Collect IDs across all pages
 const ids = await db.from('User').list().values('id');
+// Get the first user across pages
+const firstUser = await db.from('User').list().firstOrNull();
+// Call any QueryResults helper before awaiting
+const size = await db.from('User').list().size();
 ```
 
 ### 1b) First or null
