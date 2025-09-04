@@ -5,7 +5,10 @@ import type {
   ICascadeBuilder,
   ISaveBuilder,
   ICascadeRelationshipBuilder,
+  QueryResults,
 } from './builders';
+
+export type { QueryResults };
 
 export interface OnyxConfig {
   baseUrl?: string;
