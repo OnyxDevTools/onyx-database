@@ -31,6 +31,8 @@ export async function openJsonLinesStream<T = unknown>(
   let buffer = '';
   let canceled = false;
   let currentReader: Reader | null = null;
+  let retryCount = 0;
+  const maxRetries = 4;
 
   const processLine = (line: string): void => {
     const trimmed = line.trim();
@@ -136,11 +138,15 @@ export async function openJsonLinesStream<T = unknown>(
       }
       currentReader = body.getReader();
       debug('connected');
+      retryCount = 0;
       pump();
     } catch (err) {
       debug('connect error', err);
       if (canceled) return;
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (retryCount >= maxRetries) return;
+      const delay = Math.min(1000 * 2 ** retryCount, 30000);
+      retryCount++;
+      await new Promise((resolve) => setTimeout(resolve, delay));
       void connect();
     }
   };
