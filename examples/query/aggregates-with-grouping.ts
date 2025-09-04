@@ -14,14 +14,15 @@ async function main(): Promise<void> {
 
   console.log(JSON.stringify(stats, null, 2));
 
-//  response looks like this:
-// [{
-//     "isActive": true,
-//     "count(id)": 5
+// response looks like this:
+// [
+//   {
+//     "count(id)": 1,
+//     "isActive": false
 //   },
 //   {
-//     "isActive": false,
-//     "count(id)": 2
+//     "count(id)": 41,
+//     "isActive": true
 //   }
 // ]
 

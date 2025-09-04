@@ -16,7 +16,7 @@
       "internalConsoleOptions": "openOnSessionStart",
       "autoAttachChildProcesses": false,
       "env": {
-         "ONYX_STREAM_DEBUG": "1"
+         "ONYX_STREAM_DEBUG": "false"
       }
     }
   ]
