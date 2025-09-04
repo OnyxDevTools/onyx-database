@@ -1,10 +1,7 @@
 // filename: src/types/builders.ts
 import type { Sort, StreamAction } from './common';
 import type { QueryCondition, QueryCriteria } from './protocol';
-
-export interface QueryResults<T> extends Array<T> {
-  nextPage?: string | null;
-}
+import type { QueryResults } from '../builders/query-results';
 
 export interface IConditionBuilder {
   and(condition: IConditionBuilder | QueryCriteria): IConditionBuilder;
@@ -46,6 +43,8 @@ export interface IQueryBuilder<T = unknown> {
   streamEventsOnly(keepAlive?: boolean): Promise<{ cancel: () => void }>;
   streamWithQueryResults(keepAlive?: boolean): Promise<{ cancel: () => void }>;
 }
+
+export type { QueryResults } from '../builders/query-results';
 
 export interface ISaveBuilder<T = unknown> {
   cascade(...relationships: string[]): ISaveBuilder<T>;

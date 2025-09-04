@@ -10,8 +10,8 @@ import type {
   ICascadeBuilder,
   IConditionBuilder,
   ICascadeRelationshipBuilder,
-  QueryResults,
 } from '../types/builders';
+import { QueryResults } from '../builders/query-results';
 import type {
   QueryCriteria,
   QueryCondition,
@@ -545,9 +545,9 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   } = {}): Promise<QueryResults<T>> {
     // Explicit annotation avoids TS7022 during dts emit.
     const pg: { records: T[]; nextPage?: string | null } = await this.page(options);
-    const arr = (Array.isArray(pg.records) ? pg.records : []) as QueryResults<T>;
-    arr.nextPage = pg.nextPage ?? null;
-    return arr;
+    const size = this.pageSizeValue ?? options.pageSize;
+    const fetcher = (token: string) => this.nextPage(token).list({ pageSize: size });
+    return new QueryResults<T>(Array.isArray(pg.records) ? pg.records : [], pg.nextPage ?? null, fetcher);
   }
 
   async firstOrNull(): Promise<T | null> {
