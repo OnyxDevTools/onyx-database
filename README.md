@@ -226,6 +226,9 @@ const allActive = await db
   .from('User')
   .where(eq('status', 'active'))
   .list();
+
+// Collect IDs across all pages
+const ids = await db.from('User').list().values('id');
 ```
 
 ### 1b) First or null

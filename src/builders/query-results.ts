@@ -176,6 +176,20 @@ export class QueryResults<T> extends Array<T> {
   }
 
   /**
+   * Extracts values for a field across all records.
+   * @param field - Name of the field to pluck.
+   * @example
+   * ```ts
+   * const ids = await results.values('id');
+   * ```
+   */
+  // @ts-expect-error overriding Array#values
+  async values<K extends keyof T>(field: K): Promise<Array<T[K]>> {
+    const all = await this.getAllRecords();
+    return all.map(r => r[field]);
+  }
+
+  /**
    * Maximum value produced by the selector across all records.
    * @param selector - Function extracting a numeric value.
    * @example
