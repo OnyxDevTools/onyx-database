@@ -108,7 +108,7 @@ export class HttpClient {
             await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
             continue;
           }
-          throw new OnyxHttpError(msg, res.status, res.statusText, data);
+          throw new OnyxHttpError(msg, res.status, res.statusText, data, raw);
         }
         return data as T;
       } catch (err) {
