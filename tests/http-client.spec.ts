@@ -228,6 +228,28 @@ describe('HttpClient', () => {
     expect(res).toEqual({ ok: true });
   });
 
+  it('retries transient errors on query requests', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('err', {
+          status: 500,
+          statusText: 'oops',
+          headers: { 'Content-Type': 'text/plain' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
+    const res = await client.request('PUT', '/query/foo', { x: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(res).toEqual({ ok: true });
+  });
+
   it('fails after exhausting retries', async () => {
     const fetchMock = vi.fn(() =>
       Promise.resolve(
@@ -257,6 +279,59 @@ describe('HttpClient', () => {
     const res = await client.request('GET', '/retry-net');
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(res).toEqual({ ok: true });
+  });
+
+  it('uses exponential backoff for retries', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('net'))
+      .mockRejectedValueOnce(new TypeError('net'))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    const delays: number[] = [];
+    const st = vi
+      .spyOn(globalThis, 'setTimeout')
+      .mockImplementation((fn: any, ms?: number) => {
+        delays.push(ms as number);
+        fn();
+        // @ts-expect-error mock timer
+        return 0;
+      });
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
+    const res = await client.request('GET', '/backoff');
+    expect(res).toEqual({ ok: true });
+    expect(delays).toEqual([100, 200]);
+    st.mockRestore();
+  });
+
+  it('does not retry write requests', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('err', {
+        status: 502,
+        statusText: 'Bad Gateway',
+        headers: { 'Content-Type': 'text/plain' },
+      }),
+    );
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
+    await expect(client.request('PUT', '/data/foo', { a: 1 })).rejects.toMatchObject({ status: 502 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry delete requests', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('err', {
+        status: 500,
+        statusText: 'Server',
+        headers: { 'Content-Type': 'text/plain' },
+      }),
+    );
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
+    await expect(client.request('DELETE', '/data/foo')).rejects.toMatchObject({ status: 500 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('uses global fetch when none provided', async () => {
