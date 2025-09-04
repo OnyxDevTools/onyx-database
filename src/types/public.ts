@@ -22,6 +22,10 @@ export interface OnyxConfig {
    */
   requestLoggingEnabled?: boolean;
   /**
+   * When true, log HTTP responses and bodies to the console.
+   */
+  responseLoggingEnabled?: boolean;
+  /**
    * Milliseconds to cache resolved credentials; defaults to 5 minutes.
    */
   ttl?: number;
