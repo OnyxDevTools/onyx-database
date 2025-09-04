@@ -11,7 +11,7 @@ import type {
   IConditionBuilder,
   ICascadeRelationshipBuilder,
 } from '../types/builders';
-import { QueryResults } from '../builders/query-results';
+import { QueryResults, QueryResultsPromise } from '../builders/query-results';
 import type {
   QueryCriteria,
   QueryCondition,
@@ -539,15 +539,17 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this.db._queryPage<T>(table, this.toSelectQuery(), final);
   }
 
-  async list(options: {
+  list(options: {
     pageSize?: number;
     nextPage?: string;
-  } = {}): Promise<QueryResults<T>> {
-    // Explicit annotation avoids TS7022 during dts emit.
-    const pg: { records: T[]; nextPage?: string | null } = await this.page(options);
+  } = {}): QueryResultsPromise<T> {
     const size = this.pageSizeValue ?? options.pageSize;
-    const fetcher = (token: string) => this.nextPage(token).list({ pageSize: size });
-    return new QueryResults<T>(Array.isArray(pg.records) ? pg.records : [], pg.nextPage ?? null, fetcher);
+    const pgPromise = this.page(options).then(pg => {
+      const fetcher = (token: string) => this.nextPage(token).list({ pageSize: size });
+      return new QueryResults<T>(Array.isArray(pg.records) ? pg.records : [], pg.nextPage ?? null, fetcher);
+    });
+    (pgPromise as QueryResultsPromise<T>).values = field => pgPromise.then(res => res.values(field));
+    return pgPromise as QueryResultsPromise<T>;
   }
 
   async firstOrNull(): Promise<T | null> {

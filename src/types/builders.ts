@@ -1,7 +1,7 @@
 // filename: src/types/builders.ts
 import type { Sort, StreamAction } from './common';
 import type { QueryCondition, QueryCriteria } from './protocol';
-import type { QueryResults } from '../builders/query-results';
+import type { QueryResultsPromise } from '../builders/query-results';
 
 /**
  * Builder used to compose query conditions.
@@ -66,7 +66,7 @@ export interface IQueryBuilder<T = unknown> {
   /** Counts matching records. */
   count(): Promise<number>;
   /** Lists records with optional pagination. */
-  list(options?: { pageSize?: number; nextPage?: string }): Promise<QueryResults<T>>;
+  list(options?: { pageSize?: number; nextPage?: string }): QueryResultsPromise<T>;
   /** Retrieves the first record or null. */
   firstOrNull(): Promise<T | null>;
   /** Retrieves exactly one record or null. */
@@ -97,7 +97,7 @@ export interface IQueryBuilder<T = unknown> {
   streamWithQueryResults(keepAlive?: boolean): Promise<{ cancel: () => void }>;
 }
 
-export type { QueryResults } from '../builders/query-results';
+export type { QueryResults, QueryResultsPromise } from '../builders/query-results';
 
 /** Builder for save operations. */
 export interface ISaveBuilder<T = unknown> {
