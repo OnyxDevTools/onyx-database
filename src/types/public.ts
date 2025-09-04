@@ -252,10 +252,18 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
    * ```
    *
    * @param documentId ID of the document to delete.
-   */
+  */
   deleteDocument(documentId: string): Promise<unknown>;
 
-  /** Cancels active streams; safe to call multiple times */
+  /**
+   * Cancels active streams; safe to call multiple times.
+   * @example
+   * ```ts
+   * const stream = await db.from('User').stream();
+   * stream.cancel();
+   * db.close();
+   * ```
+   */
   close(): void;
 }
 
