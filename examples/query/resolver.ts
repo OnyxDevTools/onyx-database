@@ -1,13 +1,18 @@
 import process from 'node:process';
-import { onyx } from '@onyx.dev/onyx-database';
+import { eq, onyx } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
+import { seed } from '../seed';
 
 async function main(): Promise<void> {
+  await seed() //creates user with roles an permissions
+
   const db = onyx.init<Schema>();
 
+  // Example query: resolve profile and roles → permissions
   const users = await db
     .from(tables.User)
-    .resolve('profile', 'roles.role', 'roles.role.permissions.permission')
+    .where(eq('email', 'admin@example.com'))
+    .resolve(['profile', 'roles.permissions'])
     .limit(5)
     .list();
 
@@ -17,13 +22,14 @@ async function main(): Promise<void> {
   [
     {
       "id": "example-user-1",
-      "username": "Example User",
+      "username": "Example Admin",
       "profile": { ... },
       "roles": [
         {
           "role": {
+            "name": "Admin",
             "permissions": [
-              { "permission": { ... } }
+              { "permission": { "name": "user.write", ... } }
             ]
           }
         }

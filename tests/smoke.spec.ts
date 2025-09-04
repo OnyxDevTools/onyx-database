@@ -60,18 +60,9 @@ describe.runIf(hasConfig)('smoke e2e', () => {
       },
       roles: [
         {
-          id: randomUUID(),
           userId,
           roleId: role.id,
-          createdAt: now,
-          permissions: [
-            {
-              id: randomUUID(),
-              userId,
-              permissionId: permission.id,
-              createdAt: now,
-            },
-          ],
+          createdAt: now
         }
       ],
 
@@ -80,8 +71,7 @@ describe.runIf(hasConfig)('smoke e2e', () => {
     const saved = await db
       .cascade(
         'profile:UserProfile(userId, id)',
-        'roles:UserRole(userId, id)',
-        'roles.permissions:UserPermission(userId, id, roleId, this.role.roleId)'
+        'roles:UserRole(userId, id)'
       )
       .save('User', userData);
 
@@ -90,7 +80,7 @@ describe.runIf(hasConfig)('smoke e2e', () => {
     const retrieved = await db
       .from('User')
       .where(eq('id', userId))
-      .resolve('profile', 'roles.role', 'roles.role.permissions.permission')
+      .resolve(['profile', 'roles.role.permissions.permission'])
       .limit(1)
       .list();
 
@@ -133,4 +123,5 @@ describe.runIf(hasConfig)('smoke e2e', () => {
 
     expect(countAfterDelete).toBe(0);
   }, 30000);
+
 });
