@@ -18,6 +18,10 @@ export interface OnyxConfig {
   apiSecret?: string;
   fetch?: FetchImpl;
   /**
+   * When true, log HTTP requests and bodies to the console.
+   */
+  requestLoggingEnabled?: boolean;
+  /**
    * Milliseconds to cache resolved credentials; defaults to 5 minutes.
    */
   ttl?: number;
