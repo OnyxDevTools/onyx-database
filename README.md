@@ -219,13 +219,20 @@ const firstPage = await db
   .and(contains('email', '@example.com'))
   .orderBy(asc('createdAt'))
   .limit(25)
-  .page(); // or .list() to get just records
+  .page(); // or .list() for array-like results with nextPage
 
 // Iterate to fetch all pages:
 const allActive = await db
   .from('User')
   .where(eq('status', 'active'))
   .list();
+
+// Collect IDs across all pages
+const ids = await db.from('User').list().values('id');
+// Get the first user across pages
+const firstUser = await db.from('User').list().firstOrNull();
+// Call any QueryResults helper before awaiting
+const size = await db.from('User').list().size();
 ```
 
 ### 1b) First or null
@@ -255,6 +262,9 @@ await db.save('User', [
   { id: 'user_124', email: 'bob@example.com', status: 'active' },
   { id: 'user_125', email: 'carol@example.com', status: 'invited' },
 ]);
+
+// Save many users in batches of 500
+await db.batchSave('User', largeUserArray, 500);
 
 // Save with cascade relationships (example)
 await db.cascade('User.Role').save('User', {

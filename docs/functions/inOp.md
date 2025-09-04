@@ -18,7 +18,7 @@ Defined in: helpers/conditions.ts:11
 
 ### values
 
-`unknown`[]
+`string` | `unknown`[]
 
 ## Returns
 
