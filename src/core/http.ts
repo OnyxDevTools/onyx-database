@@ -101,7 +101,10 @@ export class HttpClient {
       body: payload,
     };
 
-    const maxAttempts = 3;
+    const isQuery =
+      path.includes('/query/') && !/\/query\/(?:update|delete)\//.test(path);
+    const canRetry = method === 'GET' || isQuery;
+    const maxAttempts = canRetry ? 3 : 1;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const res = await this.fetchImpl(url, init);
@@ -126,8 +129,8 @@ export class HttpClient {
             typeof (data as { error?: { message?: unknown } }).error?.message === 'string'
               ? String((data as { error: { message: unknown } }).error.message)
               : `${res.status} ${res.statusText}`;
-          if (res.status >= 500 && attempt + 1 < maxAttempts) {
-            await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+          if (canRetry && res.status >= 500 && attempt + 1 < maxAttempts) {
+            await new Promise((r) => setTimeout(r, 100 * 2 ** attempt));
             continue;
           }
           throw new OnyxHttpError(msg, res.status, res.statusText, data, raw);
@@ -135,9 +138,9 @@ export class HttpClient {
         return data as T;
       } catch (err) {
         const retryable =
-          !(err instanceof OnyxHttpError) || err.status >= 500;
+          canRetry && (!(err instanceof OnyxHttpError) || err.status >= 500);
         if (attempt + 1 < maxAttempts && retryable) {
-          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+          await new Promise((r) => setTimeout(r, 100 * 2 ** attempt));
           continue;
         }
         throw err;
