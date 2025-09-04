@@ -97,6 +97,8 @@ const db = onyx.init({
 });
 ```
 
+Enable `requestLoggingEnabled` to log each request and its body to the console. Enable `responseLoggingEnabled` to log responses and bodies. You can also enable these globally via the `ONYX_REQUEST_LOGGING_ENABLED` and `ONYX_RESPONSE_LOGGING_ENABLED` environment variables when the options are omitted (values of `1` or `true`).
+
 ### Connection handling
 
 Calling `onyx.init()` returns a lightweight client. Configuration is resolved once
