@@ -26,4 +26,44 @@ describe('openJsonLinesStream', () => {
     handle.cancel();
     expect(actions).toEqual(['CREATE']);
   });
+
+  it('retries with exponential backoff', async () => {
+    vi.useFakeTimers();
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    const reader = { cancel: vi.fn(), read: vi.fn().mockImplementation(() => new Promise(() => {})) };
+    const fetchImpl = vi
+      .fn<[string, any], Promise<any>>()
+      .mockRejectedValueOnce(new Error('fail1'))
+      .mockRejectedValueOnce(new Error('fail2'))
+      .mockResolvedValue({ ok: true, status: 200, statusText: 'OK', body: { getReader: () => reader } });
+
+    const handlePromise = openJsonLinesStream<any>(fetchImpl as any, 'url');
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    await vi.runOnlyPendingTimersAsync();
+    expect(setTimeoutSpy).toHaveBeenNthCalledWith(1, expect.any(Function), 1000);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+
+    await vi.runOnlyPendingTimersAsync();
+    expect(setTimeoutSpy).toHaveBeenNthCalledWith(2, expect.any(Function), 2000);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+
+    const handle = await handlePromise;
+    handle.cancel();
+    setTimeoutSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('stops after 4 retries', async () => {
+    vi.useFakeTimers();
+    const fetchImpl = vi.fn<[string, any], Promise<any>>().mockRejectedValue(new Error('fail'));
+    const handlePromise = openJsonLinesStream<any>(fetchImpl as any, 'url');
+    for (let i = 0; i < 4; i++) await vi.runOnlyPendingTimersAsync();
+    const handle = await handlePromise;
+    handle.cancel();
+    expect(fetchImpl).toHaveBeenCalledTimes(5);
+    await vi.runOnlyPendingTimersAsync();
+    expect(fetchImpl).toHaveBeenCalledTimes(5);
+    vi.useRealTimers();
+  });
 });
