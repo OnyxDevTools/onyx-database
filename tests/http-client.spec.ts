@@ -131,6 +131,48 @@ describe('HttpClient', () => {
     logSpy.mockRestore();
   });
 
+  it('logs responses and bodies when responseLoggingEnabled', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        statusText: 'OK',
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      responseLoggingEnabled: true,
+    });
+    await client.request('GET', '/resp');
+    expect(logSpy).toHaveBeenNthCalledWith(1, '200 OK');
+    expect(logSpy).toHaveBeenNthCalledWith(2, JSON.stringify({ ok: true }));
+    logSpy.mockRestore();
+  });
+
+  it('logs response line without body when enabled and body absent', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 204,
+        statusText: 'No Content',
+        headers: { 'Content-Type': 'text/plain' },
+      }),
+    );
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      responseLoggingEnabled: true,
+    });
+    await client.request('GET', '/no-content');
+    expect(logSpy).toHaveBeenCalledWith('204 No Content');
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    logSpy.mockRestore();
+  });
+
   it('omits Content-Type on body-less DELETE and parses JSON', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {

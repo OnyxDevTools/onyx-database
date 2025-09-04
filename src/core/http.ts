@@ -19,6 +19,7 @@ export interface HttpClientOptions {
   fetchImpl?: FetchImpl;
   defaultHeaders?: Record<string, string>;
   requestLoggingEnabled?: boolean;
+  responseLoggingEnabled?: boolean;
 }
 
 export class HttpClient {
@@ -28,6 +29,7 @@ export class HttpClient {
   private readonly fetchImpl: FetchImpl;
   private readonly defaults: Record<string, string>;
   private readonly requestLoggingEnabled: boolean;
+  private readonly responseLoggingEnabled: boolean;
 
   constructor(opts: HttpClientOptions) {
     if (!opts.baseUrl || opts.baseUrl.trim() === '') {
@@ -52,6 +54,7 @@ export class HttpClient {
     }
     this.defaults = Object.assign({}, opts.defaultHeaders);
     this.requestLoggingEnabled = !!opts.requestLoggingEnabled;
+    this.responseLoggingEnabled = !!opts.responseLoggingEnabled;
   }
 
   headers(extra?: Record<string, string>): Record<string, string> {
@@ -104,6 +107,13 @@ export class HttpClient {
         const res = await this.fetchImpl(url, init);
         const contentType = res.headers.get('Content-Type') || '';
         const raw = await res.text();
+        if (this.responseLoggingEnabled) {
+          const statusLine = `${res.status} ${res.statusText}`.trim();
+          console.log(statusLine);
+          if (raw.trim().length > 0) {
+            console.log(raw);
+          }
+        }
         const isJson =
           raw.trim().length > 0 &&
           (contentType.includes('application/json') || /^[\[{]/.test(raw.trim()));
