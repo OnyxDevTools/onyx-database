@@ -18,6 +18,7 @@ export interface HttpClientOptions {
   apiSecret: string;
   fetchImpl?: FetchImpl;
   defaultHeaders?: Record<string, string>;
+  requestLoggingEnabled?: boolean;
 }
 
 export class HttpClient {
@@ -26,6 +27,7 @@ export class HttpClient {
   private readonly apiSecret: string;
   private readonly fetchImpl: FetchImpl;
   private readonly defaults: Record<string, string>;
+  private readonly requestLoggingEnabled: boolean;
 
   constructor(opts: HttpClientOptions) {
     if (!opts.baseUrl || opts.baseUrl.trim() === '') {
@@ -49,6 +51,7 @@ export class HttpClient {
       throw new Error('global fetch is not available; provide OnyxConfig.fetch');
     }
     this.defaults = Object.assign({}, opts.defaultHeaders);
+    this.requestLoggingEnabled = !!opts.requestLoggingEnabled;
   }
 
   headers(extra?: Record<string, string>): Record<string, string> {
@@ -75,15 +78,24 @@ export class HttpClient {
       throw new OnyxConfigError('path must start with /');
     }
     const url = `${this.baseUrl}${path}`;
+    if (this.requestLoggingEnabled) {
+      console.log(`${method} ${url}`);
+      if (body != null) {
+        const logBody = typeof body === 'string' ? body : JSON.stringify(body);
+        console.log(logBody);
+      }
+    }
     const headers = this.headers({
       ...(method === 'DELETE' ? { Prefer: 'return=representation' } : {}),
       ...(extraHeaders ?? {}),
     });
     if (body == null) delete headers['Content-Type'];
+    const payload =
+      body == null ? undefined : typeof body === 'string' ? body : JSON.stringify(body);
     const init = {
       method,
       headers,
-      body: body == null ? undefined : (typeof body === 'string' ? body : JSON.stringify(body))
+      body: payload,
     };
 
     const maxAttempts = 3;
