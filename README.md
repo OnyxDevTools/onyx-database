@@ -75,10 +75,11 @@ const db = onyx.init({
   apiKey: 'YOUR_KEY',
   apiSecret: 'YOUR_SECRET',
   requestLoggingEnabled: true, // logs HTTP requests
+  responseLoggingEnabled: true, // logs HTTP responses
 });
 ```
 
-Enable `requestLoggingEnabled` to log each request and its body to the console.
+Enable `requestLoggingEnabled` to log each request and its body to the console. Enable `responseLoggingEnabled` to log responses and bodies.
 
 ### Option C) Node-only config files
 
