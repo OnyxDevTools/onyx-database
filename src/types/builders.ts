@@ -2,6 +2,10 @@
 import type { Sort, StreamAction } from './common';
 import type { QueryCondition, QueryCriteria } from './protocol';
 
+export interface QueryResults<T> extends Array<T> {
+  nextPage?: string | null;
+}
+
 export interface IConditionBuilder {
   and(condition: IConditionBuilder | QueryCriteria): IConditionBuilder;
   or(condition: IConditionBuilder | QueryCriteria): IConditionBuilder;
@@ -25,7 +29,7 @@ export interface IQueryBuilder<T = unknown> {
   nextPage(token: string): IQueryBuilder<T>;
 
   count(): Promise<number>;
-  list(options?: { pageSize?: number; nextPage?: string }): Promise<T[]>;
+  list(options?: { pageSize?: number; nextPage?: string }): Promise<QueryResults<T>>;
   firstOrNull(): Promise<T | null>;
   one(): Promise<T | null>;
   page(options?: { pageSize?: number; nextPage?: string }): Promise<{ records: T[]; nextPage?: string | null }>;

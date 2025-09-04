@@ -18,6 +18,7 @@
 - [OnyxFacade](interfaces/OnyxFacade.md)
 - [QueryCriteria](interfaces/QueryCriteria.md)
 - [QueryPage](interfaces/QueryPage.md)
+- [QueryResults](interfaces/QueryResults.md)
 - [SelectQuery](interfaces/SelectQuery.md)
 - [Sort](interfaces/Sort.md)
 - [UpdateQuery](interfaces/UpdateQuery.md)

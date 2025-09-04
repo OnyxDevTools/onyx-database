@@ -144,9 +144,9 @@ Defined in: types/builders.ts:21
 
 ### list()
 
-> **list**(`options?`): `Promise`\<`T`[]\>
+> **list**(`options?`): `Promise`\<[`QueryResults`](QueryResults.md)\<`T`\>\>
 
-Defined in: types/builders.ts:28
+Defined in: types/builders.ts:32
 
 #### Parameters
 
