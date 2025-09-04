@@ -43,8 +43,12 @@ describe('QueryBuilder', () => {
       .nextPage('tok');
 
     expect(await qb.count()).toBe(2);
-    expect(await qb.list()).toEqual([{ id: 1 }]);
-    expect(await qb.list()).toEqual([]);
+    const first = await qb.list();
+    expect(Array.from(first)).toEqual([{ id: 1 }]);
+    expect(first.nextPage).toBe('n1');
+    const second = await qb.list();
+    expect(Array.from(second)).toEqual([]);
+    expect(second.nextPage).toBeNull();
     await qb.page({ pageSize: 1, nextPage: 'x' });
     expect(exec.queryPage).toHaveBeenLastCalledWith('users', expect.any(Object), { pageSize: 5, nextPage: 'tok', partition: 'p1' });
     await qb.delete();

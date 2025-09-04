@@ -225,7 +225,7 @@ const firstPage = await db
   .and(contains('email', '@example.com'))
   .orderBy(asc('createdAt'))
   .limit(25)
-  .page(); // or .list() to get just records
+  .page(); // or .list() for array-like results with nextPage
 
 // Iterate to fetch all pages:
 const allActive = await db
