@@ -1,5 +1,5 @@
 // filename: src/builders/query-builder.ts
-import type { IQueryBuilder, IConditionBuilder } from '../types/builders';
+import type { IQueryBuilder, IConditionBuilder, QueryResults } from '../types/builders';
 import type {
   QueryCondition,
   QueryCriteria,
@@ -474,9 +474,11 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * const users = await builder.list({ pageSize: 5 });
    * ```
    */
-  async list(options: { pageSize?: number; nextPage?: string } = {}): Promise<T[]> {
+  async list(options: { pageSize?: number; nextPage?: string } = {}): Promise<QueryResults<T>> {
     const pg = await this.page(options);
-    return Array.isArray(pg.records) ? pg.records : [];
+    const arr = (Array.isArray(pg.records) ? pg.records : []) as QueryResults<T>;
+    arr.nextPage = pg.nextPage ?? null;
+    return arr;
   }
 
   /**
