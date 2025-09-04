@@ -127,7 +127,7 @@ export async function openJsonLinesStream<T = unknown>(
         let parsed: unknown = raw;
         try { parsed = parseJsonAllowNaN(raw); } catch { /* ignore */ }
         debug('non-ok', res.status);
-        throw new OnyxHttpError(`${res.status} ${res.statusText}`, res.status, res.statusText, parsed);
+        throw new OnyxHttpError(`${res.status} ${res.statusText}`, res.status, res.statusText, parsed, raw);
       }
       const body = (res as { body?: StreamBody }).body;
       if (!body || typeof body.getReader !== 'function') {
