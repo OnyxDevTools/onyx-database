@@ -12,3 +12,6 @@ export { onyx } from './impl/onyx';
 export * from './helpers/sort';        // asc, desc
 export * from './helpers/conditions';  // eq, neq, inOp, ...
 export * from './helpers/aggregates';  // avg, sum, count, ...
+
+// Query result helper
+export { QueryResults } from './builders/query-results';
