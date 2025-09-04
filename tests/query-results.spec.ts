@@ -54,6 +54,10 @@ describe('QueryResults', () => {
     const idsViaValues = await res.values('id');
     expect(idsViaValues).toEqual([1, 2, 3]);
 
+    const qb2 = new QueryBuilder(exec as any, 'users');
+    const idsDirect = await qb2.list().values('id');
+    expect(idsDirect).toEqual([1, 2, 3]);
+
     expect(await res.maxOfInt(r => r.id)).toBe(3);
     expect(await res.sumOfInt(r => r.id)).toBe(6);
     expect(await res.minOfInt(r => r.id)).toBe(1);

@@ -15,3 +15,4 @@ export * from './helpers/aggregates';  // avg, sum, count, ...
 
 // Query result helper
 export { QueryResults } from './builders/query-results';
+export type { QueryResultsPromise } from './builders/query-results';

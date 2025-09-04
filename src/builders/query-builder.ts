@@ -1,6 +1,6 @@
 // filename: src/builders/query-builder.ts
 import type { IQueryBuilder, IConditionBuilder } from '../types/builders';
-import { QueryResults } from './query-results';
+import { QueryResults, QueryResultsPromise } from './query-results';
 import type {
   QueryCondition,
   QueryCriteria,
@@ -475,11 +475,14 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * const users = await builder.list({ pageSize: 5 });
    * ```
    */
-  async list(options: { pageSize?: number; nextPage?: string } = {}): Promise<QueryResults<T>> {
-    const pg = await this.page(options);
+  list(options: { pageSize?: number; nextPage?: string } = {}): QueryResultsPromise<T> {
     const size = this.pageSizeValue ?? options.pageSize;
-    const fetcher = (token: string) => this.nextPage(token).list({ pageSize: size });
-    return new QueryResults<T>(Array.isArray(pg.records) ? pg.records : [], pg.nextPage ?? null, fetcher);
+    const pgPromise = this.page(options).then(pg => {
+      const fetcher = (token: string) => this.nextPage(token).list({ pageSize: size });
+      return new QueryResults<T>(Array.isArray(pg.records) ? pg.records : [], pg.nextPage ?? null, fetcher);
+    });
+    (pgPromise as QueryResultsPromise<T>).values = field => pgPromise.then(res => res.values(field));
+    return pgPromise as QueryResultsPromise<T>;
   }
 
   /**
