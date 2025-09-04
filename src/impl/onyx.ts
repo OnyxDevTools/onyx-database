@@ -26,21 +26,50 @@ import { OnyxHttpError } from '../errors/http-error';
 
 const DEFAULT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-let cachedCfg: { promise: Promise<ResolvedConfig>; expires: number } | null = null;
+let cachedCfg:
+  | {
+      promise: Promise<ResolvedConfig>;
+      expires: number;
+      requestLoggingEnabled: boolean;
+      responseLoggingEnabled: boolean;
+    }
+  | null = null;
 
-function resolveConfigWithCache(config?: OnyxConfig): Promise<ResolvedConfig> {
+function resolveConfigWithCache(config?: OnyxConfig): {
+  promise: Promise<ResolvedConfig>;
+  requestLoggingEnabled: boolean;
+  responseLoggingEnabled: boolean;
+} {
   const ttl = config?.ttl ?? DEFAULT_CACHE_TTL;
   const now = Date.now();
-  if (cachedCfg && cachedCfg.expires > now) {
-    return cachedCfg.promise;
+
+  const reqLog = config?.requestLoggingEnabled;
+  const resLog = config?.responseLoggingEnabled;
+
+  if (!cachedCfg || cachedCfg.expires <= now) {
+    const { ttl: _ttl, requestLoggingEnabled: _rl, responseLoggingEnabled: _rsl, ...rest } = config ?? {};
+    void _ttl;
+    const env = (globalThis as {
+      process?: { env?: Record<string, string | undefined> };
+    }).process?.env;
+    const envBool = (v: string | undefined): boolean => v === '1' || v?.toLowerCase() === 'true';
+    const promise = resolveConfig(rest);
+    cachedCfg = {
+      promise,
+      expires: now + ttl,
+      requestLoggingEnabled: _rl ?? envBool(env?.ONYX_REQUEST_LOGGING_ENABLED),
+      responseLoggingEnabled: _rsl ?? envBool(env?.ONYX_RESPONSE_LOGGING_ENABLED),
+    };
+  } else {
+    if (reqLog !== undefined) cachedCfg.requestLoggingEnabled = reqLog;
+    if (resLog !== undefined) cachedCfg.responseLoggingEnabled = resLog;
   }
-  const { ttl: _ttl, requestLoggingEnabled: _reqLog, responseLoggingEnabled: _resLog, ...rest } = config ?? {};
-  void _ttl;
-  void _reqLog;
-  void _resLog;
-  const promise = resolveConfig(rest);
-  cachedCfg = { promise, expires: now + ttl };
-  return promise;
+
+  return {
+    promise: cachedCfg.promise,
+    requestLoggingEnabled: cachedCfg.requestLoggingEnabled,
+    responseLoggingEnabled: cachedCfg.responseLoggingEnabled,
+  };
 }
 
 function clearCacheConfig(): void {
@@ -91,9 +120,10 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
 
   constructor(config?: OnyxConfig) {
     // Defer resolution; keeps init() synchronous
-    this.requestLoggingEnabled = !!config?.requestLoggingEnabled;
-    this.responseLoggingEnabled = !!config?.responseLoggingEnabled;
-    this.cfgPromise = resolveConfigWithCache(config);
+    const cfg = resolveConfigWithCache(config);
+    this.requestLoggingEnabled = cfg.requestLoggingEnabled;
+    this.responseLoggingEnabled = cfg.responseLoggingEnabled;
+    this.cfgPromise = cfg.promise;
   }
 
   private async ensureClient(): Promise<{

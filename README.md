@@ -81,6 +81,15 @@ const db = onyx.init({
 
 Enable `requestLoggingEnabled` to log each request and its body to the console. Enable `responseLoggingEnabled` to log responses and bodies.
 
+You can also enable logging globally via environment variables when config options are omitted:
+
+```bash
+export ONYX_REQUEST_LOGGING_ENABLED=1
+export ONYX_RESPONSE_LOGGING_ENABLED=1
+```
+
+Values of `1` or `true` (case-insensitive) turn on the corresponding logging mode.
+
 ### Option C) Node-only config files
 
 When running on Node.js, the resolver also checks for JSON files matching the `OnyxConfig` shape in the following order:
