@@ -11,6 +11,7 @@ import type {
   IConditionBuilder,
   ICascadeRelationshipBuilder,
 } from '../types/builders';
+import { QueryResults, QueryResultsPromise } from '../builders/query-results';
 import type {
   QueryCriteria,
   QueryCondition,
@@ -21,6 +22,7 @@ import type {
 import type { Sort, StreamAction, OnyxDocument, FetchImpl } from '../types/common';
 import { CascadeRelationshipBuilder } from '../builders/cascade-relationship-builder';
 import { OnyxError } from '../errors/onyx-error';
+import { OnyxHttpError } from '../errors/http-error';
 
 const DEFAULT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -167,11 +169,24 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     return this._saveInternal(table, entityOrEntities as unknown, options);
   }
 
+  async batchSave<Table extends keyof Schema & string>(
+    table: Table,
+    entities: Array<Partial<Schema[Table]>>,
+    batchSize = 1000,
+  ): Promise<void> {
+    for (let i = 0; i < entities.length; i += batchSize) {
+      const chunk = entities.slice(i, i + batchSize);
+      if (chunk.length) {
+        await this._saveInternal(String(table), chunk);
+      }
+    }
+  }
+
   async findById<Table extends keyof Schema & string, T = Schema[Table]>(
     table: Table,
     primaryKey: string,
     options?: { partition?: string; resolvers?: string[] },
-  ): Promise<T> {
+  ): Promise<T | null> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
     if (options?.partition) params.append('partition', options.partition);
@@ -180,7 +195,12 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/${encodeURIComponent(
       String(table),
     )}/${encodeURIComponent(primaryKey)}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request<T>('GET', path);
+    try {
+      return await http.request<T>('GET', path);
+    } catch (err) {
+      if (err instanceof OnyxHttpError && err.status === 404) return null;
+      throw err;
+    }
   }
 
   async delete<Table extends keyof Schema & string, T = Schema[Table]>(
@@ -519,13 +539,20 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this.db._queryPage<T>(table, this.toSelectQuery(), final);
   }
 
-  async list(options: {
+  list(options: {
     pageSize?: number;
     nextPage?: string;
-  } = {}): Promise<T[]> {
-    // Explicit annotation avoids TS7022 during dts emit.
-    const pg: { records: T[]; nextPage?: string | null } = await this.page(options);
-    return Array.isArray(pg.records) ? pg.records : [];
+  } = {}): QueryResultsPromise<T> {
+    const size = this.pageSizeValue ?? options.pageSize;
+    const pgPromise = this.page(options).then(pg => {
+      const fetcher = (token: string) => this.nextPage(token).list({ pageSize: size });
+      return new QueryResults<T>(Array.isArray(pg.records) ? pg.records : [], pg.nextPage ?? null, fetcher);
+    });
+    for (const m of Object.getOwnPropertyNames(QueryResults.prototype) as string[]) {
+      if (m === 'constructor') continue;
+      (pgPromise as any)[m] = (...args: any[]) => pgPromise.then(res => (res as any)[m](...args));
+    }
+    return pgPromise as QueryResultsPromise<T>;
   }
 
   async firstOrNull(): Promise<T | null> {
@@ -578,6 +605,14 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   onItem(listener: (entity: T | null, action: StreamAction) => void): IQueryBuilder<T> {
     this.onItemListener = listener;
     return this;
+  }
+
+  async streamEventsOnly(keepAlive = true): Promise<{ cancel: () => void }> {
+    return this.stream(false, keepAlive);
+  }
+
+  async streamWithQueryResults(keepAlive = false): Promise<{ cancel: () => void }> {
+    return this.stream(true, keepAlive);
   }
 
   async stream(includeQueryResults = true, keepAlive = false): Promise<{ cancel: () => void }> {

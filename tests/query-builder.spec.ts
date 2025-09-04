@@ -43,8 +43,12 @@ describe('QueryBuilder', () => {
       .nextPage('tok');
 
     expect(await qb.count()).toBe(2);
-    expect(await qb.list()).toEqual([{ id: 1 }]);
-    expect(await qb.list()).toEqual([]);
+    const first = await qb.list();
+    expect(Array.from(first)).toEqual([{ id: 1 }]);
+    expect(first.nextPage).toBe('n1');
+    const second = await qb.list();
+    expect(Array.from(second)).toEqual([]);
+    expect(second.nextPage).toBeNull();
     await qb.page({ pageSize: 1, nextPage: 'x' });
     expect(exec.queryPage).toHaveBeenLastCalledWith('users', expect.any(Object), { pageSize: 5, nextPage: 'tok', partition: 'p1' });
     await qb.delete();
@@ -74,6 +78,13 @@ describe('QueryBuilder', () => {
     const qb = new QueryBuilder(exec as any, 't');
     await qb.page();
     await qb.stream();
+
+    const qb2 = new QueryBuilder(exec as any, 't');
+    await qb2.streamEventsOnly();
+    await qb2.streamWithQueryResults(true);
+    expect(exec.stream).toHaveBeenNthCalledWith(1, 't', expect.any(Object), true, false, expect.any(Object));
+    expect(exec.stream).toHaveBeenNthCalledWith(2, 't', expect.any(Object), false, true, expect.any(Object));
+    expect(exec.stream).toHaveBeenNthCalledWith(3, 't', expect.any(Object), true, true, expect.any(Object));
 
     const qbUpd = new QueryBuilder(exec as any, 't');
     qbUpd.setUpdates(undefined as any);

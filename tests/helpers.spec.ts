@@ -25,7 +25,8 @@ describe('helper utilities', () => {
     // Execute every helper to ensure complete coverage
     cond.eq('a', 1).toCondition();
     cond.neq('a', 1);
-    cond.inOp('a', [1]);
+    expect(cond.inOp('a', [1, 2]).toCondition().criteria.value).toEqual([1, 2]);
+    expect(cond.inOp('a', 'b,c').toCondition().criteria.value).toEqual(['b', 'c']);
     cond.notIn('a', [1]);
     cond.between('a', 1, 2);
     cond.gt('a', 1);

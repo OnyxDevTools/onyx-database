@@ -1,5 +1,6 @@
 // filename: src/builders/query-builder.ts
 import type { IQueryBuilder, IConditionBuilder } from '../types/builders';
+import { QueryResults, QueryResultsPromise } from './query-results';
 import type {
   QueryCondition,
   QueryCriteria,
@@ -474,9 +475,17 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * const users = await builder.list({ pageSize: 5 });
    * ```
    */
-  async list(options: { pageSize?: number; nextPage?: string } = {}): Promise<T[]> {
-    const pg = await this.page(options);
-    return Array.isArray(pg.records) ? pg.records : [];
+  list(options: { pageSize?: number; nextPage?: string } = {}): QueryResultsPromise<T> {
+    const size = this.pageSizeValue ?? options.pageSize;
+    const pgPromise = this.page(options).then(pg => {
+      const fetcher = (token: string) => this.nextPage(token).list({ pageSize: size });
+      return new QueryResults<T>(Array.isArray(pg.records) ? pg.records : [], pg.nextPage ?? null, fetcher);
+    });
+    for (const m of Object.getOwnPropertyNames(QueryResults.prototype) as string[]) {
+      if (m === 'constructor') continue;
+      (pgPromise as any)[m] = (...args: any[]) => pgPromise.then(res => (res as any)[m](...args));
+    }
+    return pgPromise as QueryResultsPromise<T>;
   }
 
   /**
@@ -597,6 +606,14 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
   onItem(listener: (entity: T | null, action: StreamAction) => void): IQueryBuilder<T> {
     this.onItemListener = listener;
     return this;
+  }
+
+  async streamEventsOnly(keepAlive = true): Promise<{ cancel: () => void }> {
+    return this.stream(false, keepAlive);
+  }
+
+  async streamWithQueryResults(keepAlive = false): Promise<{ cancel: () => void }> {
+    return this.stream(true, keepAlive);
   }
 
   /**
