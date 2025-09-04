@@ -9,7 +9,7 @@ async function main(): Promise<void> {
   const users = await db
     .select('username', 'email')
     .from(tables.User)
-    .limit(5)
+    .limit(2)
     .list();
 
   console.log(JSON.stringify(users, null, 2))

@@ -15,15 +15,15 @@ async function main(): Promise<void> {
 
   /* 
   {
-  "id": "example-user-1",
-  "createdAt": "08/27/2025 01:47:29 AM UTC",
-  "deletedAt": null,
-  "email": "basic@example.com",
-  "isActive": true,
-  "lastLoginAt": null,
-  "updatedAt": "08/27/2025 01:47:29 AM UTC",
-  "username": "Example User"
-}
+    "id": "example-user-1",
+    "createdAt": "08/27/2025 01:47:29 AM UTC",
+    "deletedAt": null,
+    "email": "basic@example.com",
+    "isActive": true,
+    "lastLoginAt": null,
+    "updatedAt": "08/27/2025 01:47:29 AM UTC",
+    "username": "Example User"
+  }
   */
 
   const alsoUser = await db

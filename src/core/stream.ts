@@ -4,7 +4,7 @@ import { OnyxHttpError } from '../errors/http-error';
 import { parseJsonAllowNaN } from './http';
 
 const debug = (...args: unknown[]): void => {
-  if ((globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.ONYX_STREAM_DEBUG)
+  if ((globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.ONYX_STREAM_DEBUG == "true")
     console.log('[onyx-stream]', ...args);
 };
 

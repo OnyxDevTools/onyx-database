@@ -3,6 +3,7 @@ import { onyx, eq } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
+
   const db = onyx.init<Schema>();
 
   const activeUsers = await db

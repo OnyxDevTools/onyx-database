@@ -22,9 +22,9 @@ const gProcess = (globalThis as {
 }).process;
 const isNode = !!gProcess?.versions?.node;
 
-// Optional debug logger — enable with ONYX_DEBUG=1 (Node only)
+// Optional debug logger — enable with ONYX_DEBUG=true (Node only)
 const dbg = (...args: unknown[]): void => {
-  if (gProcess?.env?.ONYX_DEBUG) {
+  if (gProcess?.env?.ONYX_DEBUG == "true") {
     gProcess.stderr?.write?.(`[onyx-config] ${args.map(String).join(' ')}\n`);
   }
 };

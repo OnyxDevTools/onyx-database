@@ -2,7 +2,7 @@
 import { onyx } from '@onyx.dev/onyx-database';
 import { tables, Schema, Role, Permission, RolePermission, User } from './onyx/types';
 
-export async function seed(): Promise<void> {
+export async function seed(): Promise<User> {
   const db = onyx.init<Schema>();
 
   // Create Role
@@ -13,28 +13,30 @@ export async function seed(): Promise<void> {
     deletedAt: null,
   })) as Role;
 
-  // Create Permission
+  // Create Permissions
   const wPermission = (await db.save(tables.Permission, {
     name: 'user.write',
     description: 'Create, update, and delete users',
     deletedAt: null,
   })) as Permission;
 
-    const rPermission = (await db.save(tables.Permission, {
+  const rPermission = (await db.save(tables.Permission, {
     name: 'user.read',
     description: 'get user(s)',
     deletedAt: null,
   })) as Permission;
 
-  // Link RolePermission
-  await db.save(tables.RolePermission, [{
-    roleId: role.id,
-    permissionId: rPermission.id,
-  },
-  {
-    roleId: role.id,
-    permissionId: wPermission.id,
-  }] as RolePermission[]);
+  // Link RolePermissions
+  await db.save(tables.RolePermission, [
+    {
+      roleId: role.id,
+      permissionId: rPermission.id,
+    },
+    {
+      roleId: role.id,
+      permissionId: wPermission.id,
+    },
+  ] as RolePermission[]);
 
   // Create User
   const user = (await db.save(tables.User, {
@@ -64,4 +66,7 @@ export async function seed(): Promise<void> {
     userId: user.id,
     roleId: role.id,
   });
+
+  // Return the created user
+  return user;
 }

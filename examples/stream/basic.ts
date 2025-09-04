@@ -103,6 +103,10 @@ async function main(): Promise<void> {
   }
 }
 
+/* console logs look like this: 
+
+*/
+
 main().catch((err) => {
   console.error(err);
   process.exit(1);

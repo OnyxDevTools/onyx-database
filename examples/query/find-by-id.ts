@@ -16,16 +16,16 @@ async function main(): Promise<void> {
     console.log(JSON.stringify(user, null, 2));
 
     /*
-    {
-      "id": "example-user-1",
-      "createdAt": "08/27/2025 01:47:29 AM UTC",
-      "deletedAt": null,
-      "email": "basic@example.com",
-      "isActive": true,
-      "lastLoginAt": null,
-      "updatedAt": "08/27/2025 01:47:29 AM UTC",
-      "username": "Example User"
-    }
+      {
+        "id": "example-user-1",
+        "createdAt": "2025-08-31T20:21:43.696Z",
+        "deletedAt": null,
+        "email": "basic@example.com",
+        "isActive": true,
+        "lastLoginAt": null,
+        "updatedAt": "2025-08-31T20:21:43.696Z",
+        "username": "Example User"
+      }
     */
    
   } catch (err) {
