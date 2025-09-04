@@ -256,6 +256,9 @@ await db.save('User', [
   { id: 'user_125', email: 'carol@example.com', status: 'invited' },
 ]);
 
+// Save many users in batches of 500
+await db.batchSave('User', largeUserArray, 500);
+
 // Save with cascade relationships (example)
 await db.cascade('User.Role').save('User', {
   id: 'user_126',

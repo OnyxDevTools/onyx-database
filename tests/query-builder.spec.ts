@@ -79,6 +79,13 @@ describe('QueryBuilder', () => {
     await qb.page();
     await qb.stream();
 
+    const qb2 = new QueryBuilder(exec as any, 't');
+    await qb2.streamEventsOnly();
+    await qb2.streamWithQueryResults(true);
+    expect(exec.stream).toHaveBeenNthCalledWith(1, 't', expect.any(Object), true, false, expect.any(Object));
+    expect(exec.stream).toHaveBeenNthCalledWith(2, 't', expect.any(Object), false, true, expect.any(Object));
+    expect(exec.stream).toHaveBeenNthCalledWith(3, 't', expect.any(Object), true, true, expect.any(Object));
+
     const qbUpd = new QueryBuilder(exec as any, 't');
     qbUpd.setUpdates(undefined as any);
     await qbUpd.update();

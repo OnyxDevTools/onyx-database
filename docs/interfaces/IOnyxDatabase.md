@@ -98,7 +98,7 @@ Defined in: types/public.ts:37
 
 #### Returns
 
-`Promise`\<`T`\>
+`Promise`\<`T` \| `null`\>
 
 ***
 
@@ -120,9 +120,41 @@ Defined in: types/public.ts:45
 
 ***
 
+### batchSave()
+
+> **batchSave**\<`Table`\>(`table`, `entities`, `batchSize?`): `Promise`\<`void`\>
+
+Defined in: types/public.ts:24
+
+#### Type Parameters
+
+##### Table
+
+`Table` *extends* `string`
+
+#### Parameters
+
+##### table
+
+`Table`
+
+##### entities
+
+`Partial`\<`Schema`\[`Table`\]\>[]
+
+##### batchSize?
+
+`number`
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
 ### findById()
 
-> **findById**\<`Table`, `T`\>(`table`, `primaryKey`, `options?`): `Promise`\<`T`\>
+> **findById**\<`Table`, `T`\>(`table`, `primaryKey`, `options?`): `Promise`\<`T` \| `null`\>
 
 Defined in: types/public.ts:31
 
