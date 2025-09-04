@@ -481,7 +481,10 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
       const fetcher = (token: string) => this.nextPage(token).list({ pageSize: size });
       return new QueryResults<T>(Array.isArray(pg.records) ? pg.records : [], pg.nextPage ?? null, fetcher);
     });
-    (pgPromise as QueryResultsPromise<T>).values = field => pgPromise.then(res => res.values(field));
+    for (const m of Object.getOwnPropertyNames(QueryResults.prototype) as string[]) {
+      if (m === 'constructor') continue;
+      (pgPromise as any)[m] = (...args: any[]) => pgPromise.then(res => (res as any)[m](...args));
+    }
     return pgPromise as QueryResultsPromise<T>;
   }
 

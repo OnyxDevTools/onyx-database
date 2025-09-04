@@ -58,6 +58,14 @@ describe('QueryResults', () => {
     const idsDirect = await qb2.list().values('id');
     expect(idsDirect).toEqual([1, 2, 3]);
 
+    const qb3 = new QueryBuilder(exec as any, 'users');
+    const firstDirect = await qb3.list().firstOrNull();
+    expect(firstDirect).toEqual({ id: 1 });
+
+    const qb4 = new QueryBuilder(exec as any, 'users');
+    const sizeDirect = await qb4.list().size();
+    expect(sizeDirect).toBe(2);
+
     expect(await res.maxOfInt(r => r.id)).toBe(3);
     expect(await res.sumOfInt(r => r.id)).toBe(6);
     expect(await res.minOfInt(r => r.id)).toBe(1);
