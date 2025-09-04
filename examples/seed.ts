@@ -1,6 +1,6 @@
 // filename: examples/seed.ts
 import { onyx } from '@onyx.dev/onyx-database';
-import { tables, Schema, Role, Permission, RolePermission, User, UserProfile, UserRole } from './onyx/types';
+import { tables, Schema, Role, Permission, RolePermission, User } from './onyx/types';
 
 export async function seed(): Promise<void> {
   const db = onyx.init<Schema>();
