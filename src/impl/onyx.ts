@@ -34,8 +34,9 @@ function resolveConfigWithCache(config?: OnyxConfig): Promise<ResolvedConfig> {
   if (cachedCfg && cachedCfg.expires > now) {
     return cachedCfg.promise;
   }
-  const { ttl: _ttl, ...rest } = config ?? {};
+  const { ttl: _ttl, requestLoggingEnabled: _reqLog, ...rest } = config ?? {};
   void _ttl;
+  void _reqLog;
   const promise = resolveConfig(rest);
   cachedCfg = { promise, expires: now + ttl };
   return promise;
@@ -84,9 +85,11 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   private resolved: ResolvedConfig | null = null;
   private http: HttpClient | null = null;
   private readonly streams = new Set<{ cancel: () => void }>();
+  private readonly requestLoggingEnabled: boolean;
 
   constructor(config?: OnyxConfig) {
     // Defer resolution; keeps init() synchronous
+    this.requestLoggingEnabled = !!config?.requestLoggingEnabled;
     this.cfgPromise = resolveConfigWithCache(config);
   }
 
@@ -105,6 +108,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
         apiKey: this.resolved.apiKey,
         apiSecret: this.resolved.apiSecret,
         fetchImpl: this.resolved.fetch,
+        requestLoggingEnabled: this.requestLoggingEnabled,
       });
     }
     return {
