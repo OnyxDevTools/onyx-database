@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
+import { inspect } from 'node:util';
 import { HttpClient, parseJsonAllowNaN } from '../src/core/http';
+import { OnyxHttpError } from '../src/errors/http-error';
 
 // filename: tests/http-client.spec.ts
 
@@ -235,7 +237,8 @@ describe('HttpClient', () => {
       message: 'bad',
       status: 401,
       statusText: 'Unauthorized',
-      body: { error: { message: 'bad' } }
+      body: { error: { message: 'bad' } },
+      rawBody: JSON.stringify({ error: { message: 'bad' } })
     });
   });
 
@@ -254,7 +257,8 @@ describe('HttpClient', () => {
       message: '500 Server Error',
       status: 500,
       statusText: 'Server Error',
-      body: 'nope'
+      body: 'nope',
+      rawBody: 'nope'
     });
   });
 
@@ -263,6 +267,19 @@ describe('HttpClient', () => {
     // @ts-expect-error - invalid method should not be allowed
     const call = () => client.request('TRACE', '/bad');
     expect(call).toBeDefined();
+  });
+
+  it('serializes and inspects OnyxHttpError with raw body', () => {
+    const err = new OnyxHttpError('msg', 418, 'I\'m a teapot', { a: 1 }, '{"a":1}');
+    expect(err.toJSON()).toMatchObject({
+      name: 'OnyxHttpError',
+      status: 418,
+      statusText: 'I\'m a teapot',
+      body: { a: 1 },
+      rawBody: '{"a":1}'
+    });
+    const out = inspect(err);
+    expect(out).toContain('rawBody');
   });
 });
 
