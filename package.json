@@ -58,7 +58,7 @@
     "@changesets/cli": "^2.29.6",
     "@size-limit/file": "^11.2.0",
     "@types/node": "^24.3.0",
-    "@typescript-eslint/eslint-plugin": "^8.40.0",
+    "@typescript-eslint/eslint-plugin": "^8.41.0",
     "@typescript-eslint/parser": "^8.41.0",
     "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.34.0",
