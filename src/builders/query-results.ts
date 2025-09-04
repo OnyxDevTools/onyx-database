@@ -9,7 +9,8 @@
  * ```
  */
 export type QueryResultsPromise<T> = Promise<QueryResults<T>> & {
-  values<K extends keyof T>(field: K): Promise<Array<T[K]>>;
+  [K in keyof QueryResults<T> as QueryResults<T>[K] extends (...args: any[]) => any ? K : never]:
+    QueryResults<T>[K] extends (...args: infer P) => infer R ? (...args: P) => Promise<Awaited<R>> : never;
 };
 
 export class QueryResults<T> extends Array<T> {
