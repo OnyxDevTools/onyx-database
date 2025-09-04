@@ -8,6 +8,10 @@
  * const firstUser = results.first();
  * ```
  */
+export type QueryResultsPromise<T> = Promise<QueryResults<T>> & {
+  values<K extends keyof T>(field: K): Promise<Array<T[K]>>;
+};
+
 export class QueryResults<T> extends Array<T> {
   /** Token for the next page of results or null. */
   nextPage: string | null;

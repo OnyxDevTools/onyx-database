@@ -6,9 +6,10 @@ import type {
   ISaveBuilder,
   ICascadeRelationshipBuilder,
   QueryResults,
+  QueryResultsPromise,
 } from './builders';
 
-export type { QueryResults };
+export type { QueryResults, QueryResultsPromise };
 
 export interface OnyxConfig {
   baseUrl?: string;
