@@ -6,20 +6,19 @@ import { Schema, tables } from 'onyx/types';
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
-  const users = await db
-    .from(tables.User)
+  const logs = await db
+    .from(tables.AuditLog)
     .where(
-      eq('isActive', true)
-        .and(
-          startsWith('username', 'user_').or(startsWith('email', 'user_'))
-        )
+      eq('status', 'FAILURE')
+        .and(eq('action', 'DELETE').or(eq('action', 'UPDATE')))
         .or(
-          eq('role', 'admin').and(startsWith('email', 'admin'))
+          eq('actorId', 'admin-user-1').and(startsWith('resource', 'User'))
         ),
     )
+    .orderBy('dateTime', 'desc')
     .list();
 
-  console.log(JSON.stringify(users, null, 2));
+  console.log(JSON.stringify(logs, null, 2));
 }
 
 main().catch((err) => {
