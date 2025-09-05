@@ -4,10 +4,19 @@ import { onyx } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
-  const db = onyx.init<Schema>({ requestLoggingEnabled: true });
+  const db = onyx.init<Schema>();
 
   await db.save(tables.AuditLog, {
+    id: 'audit-id-a',
     tenantId: 'tenantA',
+    dateTime: new Date(),
+    action: 'LOGIN',
+    status: 'SUCCESS',
+  });
+
+  await db.save(tables.AuditLog, {
+    id: 'audit-id-b',
+    tenantId: 'tenantB',
     dateTime: new Date(),
     action: 'LOGIN',
     status: 'SUCCESS',
@@ -22,9 +31,14 @@ async function main(): Promise<void> {
   /*
     [
       {
-        "id": "log-1",
-        "action": "LOGIN",
-        "status": "SUCCESS"
+        "id": "64bc1ff2-8a9d-11f0-0000-af8883148268",
+        ...
+        "tenantId": "tenantA"
+      },
+      {
+        "id": "audit-id-a",
+        ...
+        "tenantId": "tenantA"
       }
     ]
   */

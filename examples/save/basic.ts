@@ -7,7 +7,7 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const user = await db.save(tables.User, {
-    id: "example-user-1", //if you omit this one will be generated for you (the schema has a UUID generator specifed)
+    id: "example-user-1", //if you omit this one will be generated for you when the schema has a UUID generator specified
     username: 'Example User',
     email: 'basic@example.com',
     isActive: true,
