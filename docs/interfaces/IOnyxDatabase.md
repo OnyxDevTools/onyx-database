@@ -122,9 +122,9 @@ Defined in: types/public.ts:45
 
 ### batchSave()
 
-> **batchSave**\<`Table`\>(`table`, `entities`, `batchSize?`): `Promise`\<`void`\>
+> **batchSave**\<`Table`\>(`table`, `entities`, `batchSize?`, `options?`): `Promise`\<`void`\>
 
-Defined in: types/public.ts:24
+Defined in: types/public.ts:27
 
 #### Type Parameters
 
@@ -145,6 +145,12 @@ Defined in: types/public.ts:24
 ##### batchSize?
 
 `number`
+
+##### options?
+
+###### relationships?
+
+`string`[]
 
 #### Returns
 

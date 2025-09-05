@@ -6,7 +6,10 @@
 
 # Interface: ICascadeBuilder\<Schema\>
 
-Defined in: types/builders.ts:48
+Defined in: types/builders.ts:315
+
+Helper for constructing cascade relationship strings. Partition values are
+managed by the database facade or by setting the partition field on entities.
 
 ## Type Parameters
 
@@ -20,7 +23,7 @@ Defined in: types/builders.ts:48
 
 > **cascade**(...`relationships`): `ICascadeBuilder`\<`Schema`\>
 
-Defined in: types/builders.ts:49
+Defined in: types/builders.ts:323
 
 #### Parameters
 
@@ -38,7 +41,7 @@ Defined in: types/builders.ts:49
 
 > **delete**\<`Table`\>(`table`, `primaryKey`): `Promise`\<`Schema`\[`Table`\]\>
 
-Defined in: types/builders.ts:54
+Defined in: types/builders.ts:339
 
 #### Type Parameters
 
@@ -51,6 +54,7 @@ Defined in: types/builders.ts:54
 ##### table
 
 `Table`
+
 
 ##### primaryKey
 
@@ -66,7 +70,7 @@ Defined in: types/builders.ts:54
 
 > **save**\<`Table`\>(`table`, `entityOrEntities`): `Promise`\<`unknown`\>
 
-Defined in: types/builders.ts:50
+Defined in: types/builders.ts:327
 
 #### Type Parameters
 
