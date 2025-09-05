@@ -4,7 +4,7 @@ import { onyx } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
-  const db = onyx.init<Schema>({requestLoggingEnabled: true});
+  const db = onyx.init<Schema>({ requestLoggingEnabled: true });
 
   await db.save(tables.AuditLog, {
     tenantId: 'tenantA',
@@ -12,7 +12,7 @@ async function main(): Promise<void> {
     action: 'LOGIN',
     status: 'SUCCESS',
   });
-
+  
   const tenantLogs = await db
     .from(tables.AuditLog)
     .inPartition('tenantA')
