@@ -1,37 +1,33 @@
 import { describe, it, expect } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { onyx, eq, contains, startsWith, gt } from '../src';
+import { resolveConfig } from '../src/config/chain';
 
-const required = [
-  'ONYX_DATABASE_ID',
-  'ONYX_DATABASE_API_KEY',
-  'ONYX_DATABASE_API_SECRET',
-];
-const hasConfig = required.every(k =>
-  typeof process.env[k] === 'string' && process.env[k]!.trim() !== ''
-);
+const hasConfig = await resolveConfig()
 
 describe.runIf(hasConfig)('smoke e2e', () => {
   it('creates, queries, and deletes a user', async () => {
-    const db = onyx.init();
 
-    const now = new Date().toISOString();
+    const db = onyx.init();
+    const now = new Date()
+    const startDateTime = now.toISOString();
+    const fiveSecondsAgo = new Date(now.getMilliseconds() - 5000)
 
     const role = {
       id: randomUUID(),
       name: 'smoke-role',
       description: 'role for smoke test',
       isSystem: false,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: startDateTime,
+      updatedAt: startDateTime,
     };
 
     const permission = {
       id: randomUUID(),
       name: 'smoke-permission',
       key: 'smoke:test',
-      createdAt: now,
-      updatedAt: now,
+      createdAt: startDateTime,
+      updatedAt: startDateTime,
     };
 
     await db.save('Role', role);
@@ -40,7 +36,7 @@ describe.runIf(hasConfig)('smoke e2e', () => {
       id: randomUUID(),
       roleId: role.id,
       permissionId: permission.id,
-      createdAt: now,
+      createdAt: startDateTime,
     });
 
     const userId = randomUUID();
@@ -49,21 +45,21 @@ describe.runIf(hasConfig)('smoke e2e', () => {
       username: `user_${userId.slice(0, 8)}`,
       email: `user_${userId}@example.com`,
       isActive: true,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: startDateTime,
+      updatedAt: startDateTime,
       profile: {
         id: randomUUID(),
         userId,
         firstName: 'Smoke',
         lastName: 'Test',
-        createdAt: now,
-        updatedAt: now,
+        createdAt: startDateTime,
+        updatedAt: startDateTime,
       },
       roles: [
         {
           userId,
           roleId: role.id,
-          createdAt: now
+          createdAt: startDateTime
         }
       ],
 
@@ -81,7 +77,7 @@ describe.runIf(hasConfig)('smoke e2e', () => {
     const retrieved = await db
       .from('User')
       .where(eq('id', userId))
-      .resolve(['profile', 'roles.role.permissions.permission'])
+      .resolve(['profile', 'roles.permissions'])
       .limit(1)
       .list();
 
@@ -89,13 +85,14 @@ describe.runIf(hasConfig)('smoke e2e', () => {
     const user = retrieved[0] as any;
     expect(user.profile).toBeTruthy();
     expect(user.roles?.length).toBe(1);
-    expect(user.roles[0].role.permissions?.length).toBe(1);
-    expect(user.roles[0].role.permissions[0].permission).toBeTruthy();
+    expect(user.roles[0].permissions?.length).toBe(1);
+    expect(user.roles[0].permissions[0]).toBeTruthy();
 
     const countBeforeDelete = await db
       .from('User')
       .where(eq('id', userId))
       .count();
+      
     expect(countBeforeDelete).toBe(1);
 
     const searchResults = await db
@@ -104,7 +101,7 @@ describe.runIf(hasConfig)('smoke e2e', () => {
       .and(eq('isActive', true))
       .and(contains('email', 'user_'))
       .and(startsWith('username', 'user_'))
-      .and(gt('createdAt', '2000-01-01T00:00:00.000Z'))
+      .and(gt('createdAt', fiveSecondsAgo))
       .limit(1)
       .list();
 
@@ -112,10 +109,10 @@ describe.runIf(hasConfig)('smoke e2e', () => {
     expect((searchResults[0] as any).id).toBe(userId);
 
     await db
-      .cascade('profile', 'roles', 'roles.permissions')
+      .cascade('profile', 'userRoles')
       .delete('User', userId);
-    await db.cascade('permissions').delete('Role', role.id);
-    await db.delete('Permission', permission.id);
+
+    await db.cascade('rolePermissions').delete('Role', role.id);
 
     const countAfterDelete = await db
       .from('User')
