@@ -1,6 +1,6 @@
 // filename: examples/seed.ts
 import { onyx } from '@onyx.dev/onyx-database';
-import { tables, Schema, Role, Permission, RolePermission, User } from './onyx/types';
+import { tables, Schema, Role, Permission, RolePermission, User, AuditLog } from './onyx/types';
 
 export async function seed(): Promise<User> {
   const db = onyx.init<Schema>();
@@ -69,4 +69,27 @@ export async function seed(): Promise<User> {
 
   // Return the created user
   return user;
+}
+
+export async function seedAuditLogs(): Promise<AuditLog[]> {
+  const db = onyx.init<Schema>();
+
+  const actions = ['LOGIN', 'CREATE', 'UPDATE', 'DELETE'];
+
+  const logs: AuditLog[] = Array.from({ length: 10 }, (_, i) => ({
+    dateTime: new Date(Date.now() - i * 60000),
+    action: actions[i % actions.length],
+    status: i % 3 === 0 ? 'FAILURE' : 'SUCCESS',
+    actorId: i % 2 === 0 ? 'admin-user-1' : 'service',
+    tenantId: 'tenant-1',
+    targetId: `entity-${i}`,
+    resource: i % 2 === 0 ? 'User' : 'Role',
+    requestId: `req-${i}`,
+    errorCode: i % 3 === 0 ? 'ERR_SAMPLE' : null,
+    errorMessage: i % 3 === 0 ? 'Sample error' : null,
+    changes: null,
+    metadata: null,
+  }));
+
+  return (await db.save(tables.AuditLog, logs)) as AuditLog[];
 }
