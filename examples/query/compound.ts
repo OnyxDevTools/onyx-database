@@ -8,8 +8,15 @@ async function main(): Promise<void> {
 
   const users = await db
     .from(tables.User)
-    .where(eq('isActive', true))
-    .and(startsWith('username', 'user_'))
+    .where(
+      eq('isActive', true)
+        .and(
+          startsWith('username', 'user_').or(startsWith('email', 'user_'))
+        )
+        .or(
+          eq('role', 'admin').and(startsWith('email', 'admin'))
+        ),
+    )
     .list();
 
   console.log(JSON.stringify(users, null, 2));
