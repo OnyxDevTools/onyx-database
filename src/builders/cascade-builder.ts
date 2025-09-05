@@ -14,6 +14,9 @@ import type { IOnyxDatabase } from '../types/public';
  *     .targetField('target')
  *     .sourceField('source');
  *   onyx.cascade(rel).save('Table', {...})
+ *
+ * Note: this builder is partition-agnostic. Partitioning is handled by the
+ * entity's partition field and query/delete options on the database facade.
  */
 export class CascadeBuilder<Schema = Record<string, unknown>> implements ICascadeBuilder<Schema> {
   private relationships: string[] = [];
@@ -77,14 +80,11 @@ export class CascadeBuilder<Schema = Record<string, unknown>> implements ICascad
    */
   save<Table extends keyof Schema & string>(
     table: Table,
-    entityOrEntities: Partial<Schema[Table]> | Array<Partial<Schema[Table]>>
+    entityOrEntities: Partial<Schema[Table]> | Array<Partial<Schema[Table]>>,
   ): Promise<unknown> {
-    const opts = this.relationships.length ? { relationships: this.relationships } : undefined;
-    return this.db.save(
-      table,
-      entityOrEntities as Schema[Table] | Array<Schema[Table]>,
-      opts,
-    );
+    const opts =
+      this.relationships.length ? { relationships: this.relationships } : undefined;
+    return this.db.save(table, entityOrEntities as any, opts);
   }
 
   /**
@@ -103,7 +103,8 @@ export class CascadeBuilder<Schema = Record<string, unknown>> implements ICascad
     table: Table,
     primaryKey: string,
   ): Promise<Schema[Table]> {
-    const opts = this.relationships.length ? { relationships: this.relationships } : undefined;
+    const opts =
+      this.relationships.length ? { relationships: this.relationships } : undefined;
     return this.db.delete(table, primaryKey, opts);
   }
 }

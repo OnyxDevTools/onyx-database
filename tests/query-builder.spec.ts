@@ -58,6 +58,24 @@ describe('QueryBuilder', () => {
     await qb.update();
   });
 
+  it('applies default partition from db config', async () => {
+    const db = onyx.init({
+      baseUrl: 'http://x',
+      databaseId: 'd',
+      apiKey: 'k',
+      apiSecret: 's',
+      fetch: vi.fn() as any,
+      partition: 'p1',
+    });
+    (db as any)._queryPage = vi.fn().mockResolvedValue({ records: [], nextPage: null });
+    await db.from('User').list();
+    expect((db as any)._queryPage).toHaveBeenCalledWith(
+      'User',
+      expect.any(Object),
+      { partition: 'p1', pageSize: undefined, nextPage: undefined },
+    );
+  });
+
   it('covers and/or branches', () => {
     const exec = makeExec();
     const a = new QueryBuilder(exec as any, 't');

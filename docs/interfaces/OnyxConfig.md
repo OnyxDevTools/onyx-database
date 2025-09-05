@@ -47,3 +47,14 @@ Defined in: types/public.ts:12
 > `optional` **fetch**: [`FetchImpl`](../type-aliases/FetchImpl.md)
 
 Defined in: types/public.ts:15
+
+***
+
+### partition?
+
+> `optional` **partition**: `string`
+
+Default partition for queries, `findById`, and `delete` by primary key. Saves
+use the entity's partition field.
+
+Defined in: types/public.ts:16
