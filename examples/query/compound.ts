@@ -9,7 +9,7 @@ async function main(): Promise<void> {
   const users = await db
     .from(tables.User)
     .where(eq('isActive', true))
-    .and(startsWith('username', 'A'))
+    .and(startsWith('username', 'user_'))
     .list();
 
   console.log(JSON.stringify(users, null, 2));

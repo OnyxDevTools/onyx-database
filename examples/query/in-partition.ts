@@ -4,7 +4,10 @@ import { onyx } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
-  const db = onyx.init<Schema>();
+  const db = onyx.init<Schema>({requestLoggingEnabled: true});
+
+  const userA = await db
+    .save(tables.User, {})
 
   const tenantUsers = await db
     .from(tables.User)
