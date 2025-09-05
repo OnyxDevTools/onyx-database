@@ -48,7 +48,7 @@ export class SaveBuilder<T = unknown> implements ISaveBuilder<T> {
    * saver.cascade(rel);
    * ```
    */
-  cascade(...relationships: string[]): ISaveBuilder<T> {
+  cascade(...relationships: Array<string | string[]>): ISaveBuilder<T> {
     this.relationships = relationships.flat();
     return this;
   }

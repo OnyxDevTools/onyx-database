@@ -95,7 +95,7 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
    * `graph:Type(targetField, sourceField)` syntax when saving.
    * When deleting, pass resolver attribute names only.
    */
-  cascade(...relationships: string[]): ICascadeBuilder<Schema>;
+  cascade(...relationships: Array<string | string[]>): ICascadeBuilder<Schema>;
 
   /**
    * Build cascade relationship strings programmatically.

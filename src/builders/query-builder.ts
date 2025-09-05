@@ -234,11 +234,12 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * @param fields List of field names to include.
    * @example
    * ```ts
-   * builder.selectFields(['id', 'name']);
+   * builder.selectFields('id', 'name');
    * ```
    */
-  selectFields(fields: string[]): IQueryBuilder<T> {
-    this.fields = Array.isArray(fields) && fields.length > 0 ? fields : null;
+  selectFields(...fields: Array<string | string[]>): IQueryBuilder<T> {
+    const flat = fields.flatMap((f) => (Array.isArray(f) ? f : [f]));
+    this.fields = flat.length > 0 ? flat : null;
     return this;
   }
 
@@ -248,11 +249,12 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * @param values Resolver names to include.
    * @example
    * ```ts
-   * builder.resolve('owner');
+   * builder.resolve('owner', 'profile');
    * ```
    */
-  resolve(values: string[] | string): IQueryBuilder<T> {
-    this.resolvers = Array.isArray(values) ? values : [values];
+  resolve(...values: Array<string | string[]>): IQueryBuilder<T> {
+    const flat = values.flatMap((v) => (Array.isArray(v) ? v : [v]));
+    this.resolvers = flat.length > 0 ? flat : null;
     return this;
   }
 
