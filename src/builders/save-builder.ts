@@ -63,7 +63,9 @@ export class SaveBuilder<T = unknown> implements ISaveBuilder<T> {
    * ```
    */
   one(entity: Partial<T>): Promise<unknown> {
-    const opts = this.relationships.length ? { relationships: this.relationships } : undefined;
+    const opts = this.relationships.length
+      ? { relationships: this.relationships }
+      : undefined;
     return this.db.save(this.table, entity as Partial<unknown>, opts);
   }
 
@@ -77,7 +79,9 @@ export class SaveBuilder<T = unknown> implements ISaveBuilder<T> {
    * ```
    */
   many(entities: Array<Partial<T>>): Promise<unknown> {
-    const opts = this.relationships.length ? { relationships: this.relationships } : undefined;
+    const opts = this.relationships.length
+      ? { relationships: this.relationships }
+      : undefined;
     return this.db.save(this.table, entities as Array<Partial<unknown>>, opts);
   }
 }

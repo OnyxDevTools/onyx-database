@@ -322,7 +322,7 @@ export interface ICascadeBuilder<Schema = Record<string, unknown>> {
    */
   save<Table extends keyof Schema & string>(
     table: Table,
-    entityOrEntities: Partial<Schema[Table]> | Array<Partial<Schema[Table]>>
+    entityOrEntities: Partial<Schema[Table]> | Array<Partial<Schema[Table]>>,
   ): Promise<unknown>;
   /**
    * Deletes an entity by primary key.

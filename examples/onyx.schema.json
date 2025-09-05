@@ -408,6 +408,42 @@
       "triggers": [],
       "expanded": false,
       "isEditing": false
+    },
+    {
+      "name": "AuditLog",
+      "identifier": {
+        "name": "id",
+        "generator": "UUID",
+        "type": "String"
+      },
+      "partition": "tenantId",
+      "attributes": [
+        { "name": "id", "type": "String", "maxSize": 36, "isNullable": false },
+        { "name": "dateTime", "type": "Timestamp", "maxSize": null, "isNullable": false },
+        { "name": "action", "type": "String", "maxSize": 128, "isNullable": true },
+        { "name": "status", "type": "String", "maxSize": 64, "isNullable": true },
+        { "name": "actorId", "type": "String", "maxSize": 36, "isNullable": true },
+        { "name": "tenantId", "type": "String", "maxSize": 36, "isNullable": true },
+        { "name": "targetId", "type": "String", "maxSize": 36, "isNullable": true },
+        { "name": "resource", "type": "String", "maxSize": 255, "isNullable": true },
+        { "name": "requestId", "type": "String", "maxSize": 36, "isNullable": true },
+        { "name": "errorCode", "type": "String", "maxSize": 64, "isNullable": true },
+        { "name": "errorMessage", "type": "String", "maxSize": 512, "isNullable": true },
+        { "name": "changes", "type": "EmbeddedObject", "maxSize": 512, "isNullable": true },
+        { "name": "metadata", "type": "EmbeddedObject", "maxSize": 512, "isNullable": true }
+      ],
+      "indexes": [
+        { "name": "errorCode" },
+        { "name": "resource" },
+        { "name": "actorId" },
+        { "name": "action" },
+        { "name": "status" },
+        { "name": "dateTime" }
+      ],
+      "resolvers": [],
+      "triggers": [],
+      "expanded": false,
+      "isEditing": false
     }
   ],
   "revisionDescription": "fixed resolvers",
