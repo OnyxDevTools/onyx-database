@@ -23,8 +23,8 @@ describe('CascadeBuilder', () => {
     await builder.delete('Users', '1');
     expect(del).toHaveBeenCalledWith('Users', '1', undefined);
 
-    builder.cascade('rel');
+    builder.cascade(['relA', 'relB']);
     await builder.delete('Users', '2');
-    expect(del).toHaveBeenLastCalledWith('Users', '2', { relationships: ['rel'] });
+    expect(del).toHaveBeenLastCalledWith('Users', '2', { relationships: ['relA', 'relB'] });
   });
 });
