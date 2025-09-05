@@ -79,7 +79,7 @@ export async function seedAuditLogs(): Promise<AuditLog[]> {
     {
       id: '1',
       dateTime: new Date(now),
-      action: 'UPDATE',
+      action: 'CREATE',
       status: 'SUCCESS',
       actorId: 'admin-user-1',
       tenantId: 'tenant-1',
@@ -124,11 +124,11 @@ export async function seedAuditLogs(): Promise<AuditLog[]> {
     {
       id: '4',
       dateTime: new Date(now - 3 * 60_000),
-      action: 'DELETE',
+      action: 'GET',
       status: 'FAILURE',
       actorId: 'service',
       tenantId: 'tenant-1',
-      targetId: 'entity-4',
+      targetId: 'entity-6',
       resource: 'Role',
       requestId: 'req-4',
       errorCode: 'ERR_SAMPLE',
@@ -184,7 +184,7 @@ export async function seedAuditLogs(): Promise<AuditLog[]> {
     {
       id: '8',
       dateTime: new Date(now - 7 * 60_000),
-      action: 'DELETE',
+      action: 'GET',
       status: 'SUCCESS',
       actorId: 'admin-user-1',
       tenantId: 'tenant-1',
