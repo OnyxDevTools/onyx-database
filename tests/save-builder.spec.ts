@@ -21,7 +21,7 @@ describe('SaveBuilder', () => {
     await builder.many([{ id: 1 }]);
     expect(save).toHaveBeenCalledWith('Users', [{ id: 1 }], undefined);
 
-    builder.cascade('relA', 'relB');
+    builder.cascade(['relA', 'relB']);
     await builder.many([{ id: 2 }, { id: 3 }]);
     expect(save).toHaveBeenLastCalledWith('Users', [{ id: 2 }, { id: 3 }], { relationships: ['relA', 'relB'] });
   });

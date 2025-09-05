@@ -58,7 +58,7 @@ export class CascadeBuilder<Schema = Record<string, unknown>> implements ICascad
    * builder.cascade(rel).save('User', { id: '1' });
    * ```
    */
-  cascade(...relationships: string[]): ICascadeBuilder<Schema> {
+  cascade(...relationships: Array<string | string[]>): ICascadeBuilder<Schema> {
     this.relationships = relationships.flat();
     return this;
   }

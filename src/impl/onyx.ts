@@ -144,13 +144,17 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     return new QueryBuilderImpl<Schema[Table], Schema>(this, String(table), this.defaultPartition);
   }
 
-  select(...fields: string[]): IQueryBuilder<Record<string, unknown>> {
-    const qb = new QueryBuilderImpl<Record<string, unknown>, Schema>(this, null, this.defaultPartition);
-    qb.selectFields(fields);
+  select(...fields: Array<string | string[]>): IQueryBuilder<Record<string, unknown>> {
+    const qb = new QueryBuilderImpl<Record<string, unknown>, Schema>(
+      this,
+      null,
+      this.defaultPartition,
+    );
+    qb.selectFields(...fields);
     return qb;
   }
 
-  cascade(...relationships: string[]): ICascadeBuilder<Schema> {
+  cascade(...relationships: Array<string | string[]>): ICascadeBuilder<Schema> {
     const cb = new CascadeBuilderImpl<Schema>(this);
     return cb.cascade(...relationships);
   }
@@ -435,13 +439,15 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this;
   }
 
-  selectFields(fields: string[]): IQueryBuilder<T> {
-    this.fields = Array.isArray(fields) && fields.length > 0 ? fields : null;
+  selectFields(...fields: Array<string | string[]>): IQueryBuilder<T> {
+    const flat = fields.flatMap((f) => (Array.isArray(f) ? f : [f]));
+    this.fields = flat.length > 0 ? flat : null;
     return this;
   }
 
-  resolve(values: string[] | string): IQueryBuilder<T> {
-    this.resolvers = Array.isArray(values) ? values : [values];
+  resolve(...values: Array<string | string[]>): IQueryBuilder<T> {
+    const flat = values.flatMap((v) => (Array.isArray(v) ? v : [v]));
+    this.resolvers = flat.length > 0 ? flat : null;
     return this;
   }
 
@@ -658,7 +664,7 @@ class SaveBuilderImpl<T = unknown, S = Record<string, unknown>> implements ISave
     this.table = table;
   }
 
-  cascade(...relationships: string[]): ISaveBuilder<T> {
+  cascade(...relationships: Array<string | string[]>): ISaveBuilder<T> {
     this.relationships = relationships.flat();
     return this;
   }
@@ -687,7 +693,7 @@ class CascadeBuilderImpl<Schema = Record<string, unknown>>
     this.db = db;
   }
 
-  cascade(...relationships: string[]): ICascadeBuilder<Schema> {
+  cascade(...relationships: Array<string | string[]>): ICascadeBuilder<Schema> {
     this.rels = relationships.flat();
     return this;
   }
