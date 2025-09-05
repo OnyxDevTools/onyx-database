@@ -51,21 +51,21 @@ export interface IQueryBuilder<T = unknown> {
    * Selects a subset of fields to return.
    * @example
    * ```ts
-   * const emails = await db.from('User').selectFields(['email']).list();
+   * const emails = await db.from('User').selectFields('email').list();
    * ```
    */
-  selectFields(fields: string[]): IQueryBuilder<T>;
+  selectFields(...fields: Array<string | string[]>): IQueryBuilder<T>;
   /**
    * Resolves related values by name.
    * @example
    * ```ts
    * const users = await db
    *   .from('User')
-   *   .resolve('profile')
+   *   .resolve('profile', 'roles')
    *   .list();
    * ```
    */
-  resolve(values: string[] | string): IQueryBuilder<T>;
+  resolve(...values: Array<string | string[]>): IQueryBuilder<T>;
   /**
    * Adds a filter condition.
    * @example
@@ -107,10 +107,10 @@ export interface IQueryBuilder<T = unknown> {
    */
   groupBy(...fields: string[]): IQueryBuilder<T>;
   /**
-   * Ensures only distinct records are returned.
-   * @example
-   * ```ts
-   * const roles = await db.from('User').selectFields(['role']).distinct().list();
+  * Ensures only distinct records are returned.
+  * @example
+  * ```ts
+   * const roles = await db.from('User').selectFields('role').distinct().list();
    * ```
    */
   distinct(): IQueryBuilder<T>;
@@ -284,7 +284,7 @@ export interface ISaveBuilder<T = unknown> {
    * await db.save('User').cascade('role').one(user);
    * ```
    */
-  cascade(...relationships: string[]): ISaveBuilder<T>;
+  cascade(...relationships: Array<string | string[]>): ISaveBuilder<T>;
   /**
    * Persists a single entity.
    * @example
@@ -312,7 +312,7 @@ export interface ICascadeBuilder<Schema = Record<string, unknown>> {
    * const builder = db.cascade('permissions');
    * ```
    */
-  cascade(...relationships: string[]): ICascadeBuilder<Schema>;
+  cascade(...relationships: Array<string | string[]>): ICascadeBuilder<Schema>;
   /**
    * Saves one or many entities for a given table.
    * @example

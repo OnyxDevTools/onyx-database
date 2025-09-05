@@ -23,10 +23,12 @@ describe('QueryBuilder', () => {
     const qb = new QueryBuilder(exec as any, null);
     const other = new ConditionBuilderImpl({ field: 'f', operator: 'EQUAL', value: 6 });
     qb.from('users')
-      .selectFields(['id'])
-      .selectFields([])
-      .resolve('rel1')
-      .resolve(['rel2'])
+      .selectFields('id', 'name')
+      .selectFields(['email'])
+      .selectFields()
+      .resolve('rel1', 'rel2')
+      .resolve(['rel3'])
+      .resolve()
       .where({ field: 'a', operator: 'EQUAL', value: 1 })
       .where({ field: 'b', operator: 'EQUAL', value: 2 })
       .and({ field: 'c', operator: 'EQUAL', value: 3 })
