@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { onyx, eq, contains, startsWith, gt } from '../src';
-import { resolveConfig } from '../src/config/chain';
 
-let hasConfig = true;
-try {
-  await resolveConfig();
-} catch {
-  hasConfig = false;
-}
+const required = [
+  'ONYX_DATABASE_ID',
+  'ONYX_DATABASE_API_KEY',
+  'ONYX_DATABASE_API_SECRET',
+];
+const hasConfig = required.every(k =>
+  typeof process.env[k] === 'string' && process.env[k]!.trim() !== ''
+);
 
 describe.runIf(hasConfig)('smoke e2e', () => {
   it('creates, queries, and deletes a user', async () => {
