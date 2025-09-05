@@ -18,6 +18,11 @@ export interface OnyxConfig {
   apiSecret?: string;
   fetch?: FetchImpl;
   /**
+   * Default partition for queries, `findById`, and deletes when removing by
+   * primary key. Saves rely on the entity's partition field instead.
+   */
+  partition?: string;
+  /**
    * When true, log HTTP requests and bodies to the console.
    */
   requestLoggingEnabled?: boolean;
@@ -172,7 +177,8 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   batchSave<Table extends keyof Schema & string>(
     table: Table,
     entities: Array<Partial<Schema[Table]>>,
-    batchSize?: number
+    batchSize?: number,
+    options?: { relationships?: string[] }
   ): Promise<void>;
 
   /**

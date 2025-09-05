@@ -170,9 +170,10 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * const qb = new QueryBuilder(exec, 'Users');
    * ```
    */
-  constructor(executor: QueryExecutor, table: string | null) {
+  constructor(executor: QueryExecutor, table: string | null, partition?: string) {
     this.exec = executor;
     this.table = table;
+    this.partitionValue = partition;
   }
 
   /** ----------------- private helpers ----------------- */

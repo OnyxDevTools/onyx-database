@@ -6,20 +6,25 @@ import { tables, Schema } from 'onyx/types';
 async function main(): Promise<void> {
   const db = onyx.init<Schema>({requestLoggingEnabled: true});
 
-  const userA = await db
-    .save(tables.User, {})
+  await db.save(tables.AuditLog, {
+    tenantId: 'tenantA',
+    dateTime: new Date(),
+    action: 'LOGIN',
+    status: 'SUCCESS',
+  });
 
-  const tenantUsers = await db
-    .from(tables.User)
+  const tenantLogs = await db
+    .from(tables.AuditLog)
     .inPartition('tenantA')
     .list();
 
-  console.log(JSON.stringify(tenantUsers, null, 2));
+  console.log(JSON.stringify(tenantLogs, null, 2));
   /*
     [
       {
-        "id": "tenantA-user-1",
-        "email": "a@example.com"
+        "id": "log-1",
+        "action": "LOGIN",
+        "status": "SUCCESS"
       }
     ]
   */

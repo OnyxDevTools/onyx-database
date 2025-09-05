@@ -88,11 +88,13 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   private readonly streams = new Set<{ cancel: () => void }>();
   private readonly requestLoggingEnabled: boolean;
   private readonly responseLoggingEnabled: boolean;
+  private readonly defaultPartition: string | undefined;
 
   constructor(config?: OnyxConfig) {
     // Defer resolution; keeps init() synchronous
     this.requestLoggingEnabled = !!config?.requestLoggingEnabled;
     this.responseLoggingEnabled = !!config?.responseLoggingEnabled;
+    this.defaultPartition = config?.partition;
     this.cfgPromise = resolveConfigWithCache(config);
   }
 
@@ -139,11 +141,11 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   /** -------- IOnyxDatabase -------- */
 
   from<Table extends keyof Schema & string>(table: Table): IQueryBuilder<Schema[Table]> {
-    return new QueryBuilderImpl<Schema[Table], Schema>(this, String(table));
+    return new QueryBuilderImpl<Schema[Table], Schema>(this, String(table), this.defaultPartition);
   }
 
   select(...fields: string[]): IQueryBuilder<Record<string, unknown>> {
-    const qb = new QueryBuilderImpl<Record<string, unknown>, Schema>(this, null);
+    const qb = new QueryBuilderImpl<Record<string, unknown>, Schema>(this, null, this.defaultPartition);
     qb.selectFields(fields);
     return qb;
   }
@@ -181,11 +183,12 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     table: Table,
     entities: Array<Partial<Schema[Table]>>,
     batchSize = 1000,
+    options?: { relationships?: string[] },
   ): Promise<void> {
     for (let i = 0; i < entities.length; i += batchSize) {
       const chunk = entities.slice(i, i + batchSize);
       if (chunk.length) {
-        await this._saveInternal(String(table), chunk);
+        await this._saveInternal(String(table), chunk, options);
       }
     }
   }
@@ -197,7 +200,8 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   ): Promise<T | null> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
-    if (options?.partition) params.append('partition', options.partition);
+    const partition = options?.partition ?? this.defaultPartition;
+    if (partition) params.append('partition', partition);
     if (options?.resolvers?.length) params.append('resolvers', options.resolvers.join(','));
 
     const path = `/data/${encodeURIComponent(databaseId)}/${encodeURIComponent(
@@ -218,7 +222,8 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   ): Promise<T> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
-    if (options?.partition) params.append('partition', options.partition);
+    const partition = options?.partition ?? this.defaultPartition;
+    if (partition) params.append('partition', partition);
     if (options?.relationships?.length) {
       params.append('relationships', options.relationships.map(encodeURIComponent).join(','));
     }
@@ -273,7 +278,8 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async _count(table: string, select: SelectQuery, partition?: string): Promise<number> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
-    if (partition) params.append('partition', partition);
+    const p = partition ?? this.defaultPartition;
+    if (p) params.append('partition', p);
     const path = `/data/${encodeURIComponent(databaseId)}/query/count/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
@@ -289,7 +295,8 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const params = new URLSearchParams();
     if (opts.pageSize != null) params.append('pageSize', String(opts.pageSize));
     if (opts.nextPage) params.append('nextPage', opts.nextPage);
-    if (opts.partition) params.append('partition', opts.partition);
+    const p = opts.partition ?? this.defaultPartition;
+    if (p) params.append('partition', p);
     const path = `/data/${encodeURIComponent(databaseId)}/query/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
@@ -299,7 +306,8 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async _update(table: string, update: UpdateQuery, partition?: string): Promise<unknown> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
-    if (partition) params.append('partition', partition);
+    const p = partition ?? this.defaultPartition;
+    if (p) params.append('partition', p);
     const path = `/data/${encodeURIComponent(databaseId)}/query/update/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
@@ -309,7 +317,8 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async _deleteByQuery(table: string, select: SelectQuery, partition?: string): Promise<unknown> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
-    if (partition) params.append('partition', partition);
+    const p = partition ?? this.defaultPartition;
+    if (p) params.append('partition', p);
     const path = `/data/${encodeURIComponent(databaseId)}/query/delete/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
@@ -396,9 +405,10 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   private onItemDeletedListener: ((e: T) => void) | null = null;
   private onItemListener: ((e: T | null, a: StreamAction) => void) | null = null;
 
-  constructor(db: OnyxDatabaseImpl<S>, table: string | null) {
+  constructor(db: OnyxDatabaseImpl<S>, table: string | null, partition?: string) {
     this.db = db;
     this.table = table;
+    this.partitionValue = partition;
   }
 
   private ensureTable(): string {
@@ -654,15 +664,13 @@ class SaveBuilderImpl<T = unknown, S = Record<string, unknown>> implements ISave
   }
 
   one(entity: Partial<T>): Promise<unknown> {
-    return this.db._saveInternal(this.table, entity, {
-      relationships: this.relationships ?? undefined,
-    });
+    const opts = this.relationships ? { relationships: this.relationships } : undefined;
+    return this.db._saveInternal(this.table, entity, opts);
   }
 
   many(entities: Array<Partial<T>>): Promise<unknown> {
-    return this.db._saveInternal(this.table, entities, {
-      relationships: this.relationships ?? undefined,
-    });
+    const opts = this.relationships ? { relationships: this.relationships } : undefined;
+    return this.db._saveInternal(this.table, entities, opts);
   }
 }
 
@@ -688,16 +696,16 @@ class CascadeBuilderImpl<Schema = Record<string, unknown>>
     table: Table,
     entityOrEntities: Partial<Schema[Table]> | Array<Partial<Schema[Table]>>,
   ): Promise<unknown> {
-    return this.db._saveInternal(String(table), entityOrEntities, {
-      relationships: this.rels ?? undefined,
-    });
+    const opts = this.rels ? { relationships: this.rels } : undefined;
+    return this.db._saveInternal(String(table), entityOrEntities, opts);
   }
 
   delete<Table extends keyof Schema & string>(
     table: Table,
     primaryKey: string,
   ): Promise<Schema[Table]> {
-    return this.db.delete(table, primaryKey, { relationships: this.rels ?? undefined });
+    const opts = this.rels ? { relationships: this.rels } : undefined;
+    return this.db.delete(table, primaryKey, opts);
   }
 }
 
