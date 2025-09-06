@@ -11,7 +11,7 @@ async function main(): Promise<void> {
 
   const logs = await db
     .from(tables.AuditLog)
-    .selectFields(["actorId", "action", "targetId", "status", "dateTime"])
+    .selectFields("actorId", "action", "targetId", "status", "dateTime")
     .where(
       eq('actorId', 'admin-user-1')
         .and(eq('action', 'DELETE').or(eq('action', 'UPDATE')))

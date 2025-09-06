@@ -21,6 +21,11 @@ async function main(): Promise<void> {
       .page({ pageSize: 2 });
     console.log('Page 2:', secondPage.records.map(u => u.username));
   }
+
+  /*
+    Page 1: (2) ['user_97b12fbd', 'user_95f64f46']
+    Page 2: (2) ['user_70a7850b', 'user_649db1b4']
+  */
 }
 
 main().catch((err) => {
