@@ -163,8 +163,13 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
 export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig> {
   const env = readEnv(input?.databaseId);
   const targetId = input?.databaseId ?? env.databaseId;
+
+  const haveDbId = !!(input?.databaseId ?? env.databaseId);
+  const haveApiKey = !!(input?.apiKey ?? env.apiKey);
+  const haveApiSecret = !!(input?.apiSecret ?? env.apiSecret);
+
   let file: Partial<OnyxConfig> = {};
-  if (!env.apiKey || !env.apiSecret || !env.databaseId) {
+  if (!(haveDbId && haveApiKey && haveApiSecret)) {
     const project = await readProjectFile(targetId);
     if (Object.keys(project).length) {
       file = project;
