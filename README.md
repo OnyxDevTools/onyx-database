@@ -182,14 +182,72 @@ export interface UserProfile {
 const user = await db
   .from(tables.User)
   .selectFields('id', 'username')
-  .resolve('role.permissions', 'profile')
+  .resolve('roles.permissions', 'profile')
   .firstOrNull();
 
-// user.role?.permissions -> Permission[]
+// user.roles -> Role[]
+// user.roles[0]?.permissions -> Permission[]
 // user.profile -> UserProfile | undefined
 ```
 
 > The generator defaults to not emitting the JSON copy of your schema. Use `--emit-json` if you want it.
+
+### Modeling users, roles, and permissions
+
+`User` and `Role` form a many-to-many relationship through a `UserRole` join table. `Role` and `Permission` are connected the same way via `RolePermission`.
+
+- **`userRoles` / `rolePermissions` resolvers** return join-table rows. Use these when cascading saves or deletes to add or remove associations.
+- **`roles` / `permissions` resolvers** traverse those joins and return `Role` or `Permission` records for display.
+
+Define these resolvers in your `onyx.schema.json`:
+
+```json
+"resolvers": [
+  {
+    "name": "roles",
+    "resolver": "db.from(\"Role\")\n  .where(\n    inOp(\"id\", \n        db.from(\"UserRole\")\n            .where(eq(\"userId\", this.id))\n            .list()\n            .values('roleId')\n    )\n)\n .list()"
+  },
+  {
+    "name": "profile",
+    "resolver": "db.from(\"UserProfile\")\n .where(eq(\"userId\", this.id))\n .firstOrNull()"
+  },
+  {
+    "name": "userRoles",
+    "resolver": "db.from(\"UserRole\")\n  .where(eq(\"userId\", this.id))\n  .list()"
+  }
+]
+```
+
+Save a user and attach roles in one operation:
+
+```ts
+await db.cascade('userRoles:UserRole(userId, id)').save('User', {
+  id: 'user_126',
+  email: 'dana@example.com',
+  userRoles: [
+    { roleId: 'role_admin' },
+    { roleId: 'role_editor' },
+  ],
+});
+```
+
+Fetch a user with roles and each role's permissions:
+
+```ts
+const detailed = await db
+  .from('User')
+  .resolve('roles.permissions', 'profile')
+  .firstOrNull();
+
+// detailed.roles -> Role[]
+// detailed.roles[0]?.permissions -> Permission[]
+```
+
+Remove a role and its permission links:
+
+```ts
+await db.cascade('rolePermissions').delete('Role', 'role_temp');
+```
 
 ---
 
@@ -277,10 +335,13 @@ await db.save('User', [
 await db.batchSave('User', largeUserArray, 500);
 
 // Save with cascade relationships (example)
-await db.cascade('User.Role').save('User', {
+await db.cascade('userRoles:UserRole(userId, id)').save('User', {
   id: 'user_126',
   email: 'dana@example.com',
-  Role: ['role_admin', 'role_editor'],
+  userRoles: [
+    { roleId: 'role_admin' },
+    { roleId: 'role_editor' },
+  ],
 });
 
 // Cascade relationship syntax:
@@ -317,10 +378,10 @@ const db = onyx.init();
 await db.delete('User', 'user_125');
 
 // Delete cascading relationships (example)
-await db.delete('Role', 'role_temp', { relationships: ['permission'] });
-// this will delete all of the related permissions that come back from the permissions resolver
+await db.delete('Role', 'role_temp', { relationships: ['rolePermissions'] });
+// this will delete all of the related permissions that come back from the rolePermissions resolver
 // builder pattern equivalent
-await db.cascade('permission').delete('Role', 'role_temp');
+await db.cascade('rolePermissions').delete('Role', 'role_temp');
 ```
 
 ### 4) Delete using query
