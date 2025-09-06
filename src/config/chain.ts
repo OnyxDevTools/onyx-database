@@ -70,7 +70,8 @@ async function readProjectFile(databaseId?: string): Promise<Partial<OnyxConfig>
 
   const tryRead = async (p: string): Promise<Partial<OnyxConfig>> => {
     const txt = await fs.readFile(p, 'utf8');
-    const json = dropUndefined<OnyxConfig>(JSON.parse(txt) as Partial<OnyxConfig>);
+    const sanitized = txt.replace(/[\r\n]+/g, '');
+    const json = dropUndefined<OnyxConfig>(JSON.parse(sanitized) as Partial<OnyxConfig>);
     dbg('project file:', p, '→', mask(json));
     return json;
   };
@@ -113,7 +114,8 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
   const readProfile = async (p: string): Promise<Partial<OnyxConfig>> => {
     try {
       const txt = await fs.readFile(p, 'utf8');
-      const json = dropUndefined<OnyxConfig>(JSON.parse(txt) as Partial<OnyxConfig>);
+      const sanitized = txt.replace(/[\r\n]+/g, '');
+      const json = dropUndefined<OnyxConfig>(JSON.parse(sanitized) as Partial<OnyxConfig>);
       dbg('home profile used:', p, '→', mask(json));
       return json;
     } catch (e: unknown) {
