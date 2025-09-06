@@ -1,4 +1,5 @@
 // filename: examples/save/batch-save.ts
+
 import process from 'node:process';
 import { onyx } from '@onyx.dev/onyx-database';
 import { Schema, tables } from 'onyx/types';
@@ -17,7 +18,7 @@ async function main(): Promise<void> {
 
   await db.batchSave(tables.User, users, 2);
 
-  console.log('Batch saved users:', users.length);
+  console.log('Batch saved users:', users.length); //Batch saved users: 5
 }
 
 main().catch((err) => {

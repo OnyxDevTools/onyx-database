@@ -10,13 +10,13 @@ async function main(): Promise<void> {
 
   await seed();
 
-  const logs = await db
+  const admins = await db
     .from(tables.User)
     .where(eq("roles.name", "Admin"))
     .resolve('roles')
     .list();
 
-  console.log(JSON.stringify(logs, null, 2));
+  console.log(JSON.stringify(admins, null, 2));
 }
 
 main().catch((err) => {

@@ -1,4 +1,5 @@
 // filename: examples/query/order-by.ts
+
 import process from 'node:process';
 import { onyx, desc } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
@@ -8,6 +9,7 @@ async function main(): Promise<void> {
 
   const users = await db
     .from(tables.User)
+    .selectFields("id", "email", "createdAt")
     .orderBy(desc('createdAt'))
     .limit(3)
     .list();

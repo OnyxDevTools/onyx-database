@@ -12,7 +12,7 @@ async function main(): Promise<void> {
     .setUpdates({ isActive: false })
     .update() as number;
 
-  console.log(`Updated ${updated} record(s).`);
+  console.log(`Updated ${updated} record(s).`); //Updated 1 record(s).
 }
 
 main().catch((err) => {

@@ -6,13 +6,13 @@ import { seed } from '../seed';
 async function main(): Promise<void> {
   const user = await seed() //creates user with roles and permissions
 
-  const db = onyx.init<Schema>({requestLoggingEnabled: true, responseLoggingEnabled: true});
+  const db = onyx.init<Schema>();
 
   // Example query: resolve profile and roles → permissions
   const users = await db
     .from(tables.User)
     .where(eq('id', user.id))
-    .resolve(['profile', 'roles.permissions'])
+    .resolve('profile', 'roles.permissions')
     .limit(5)
     .list();
 
