@@ -72,11 +72,15 @@
       "resolvers": [
         {
           "name": "roles",
-          "resolver": "db.from(\"UserRole\")\n .where(eq(\"userId\", this.id))\n .list()"
+          "resolver": "db.from(\"Role\")\n  .where(\n    inOp(\"id\", \n        db.from(\"UserRole\")\n            .where(eq(\"userId\", this.id))\n            .list()\n            .values('roleId')\n    )\n)\n .list()"
         },
         {
           "name": "profile",
           "resolver": "db.from(\"UserProfile\")\n .where(eq(\"userId\", this.id))\n .firstOrNull()"
+        },
+        {
+          "name": "userRoles",
+          "resolver": "db.from(\"UserRole\")\n  .where(eq(\"userId\", this.id))\n  .list()"
         }
       ],
       "triggers": [],
@@ -238,6 +242,10 @@
       "resolvers": [
         {
           "name": "permissions",
+          "resolver": "db.from(\"Permission\")\n  .where(\n    inOp(\"id\", \n        db.from(\"RolePermission\")\n            .where(eq(\"roleId\", this.id))\n            .list()\n            .values('permissionId')\n    )\n)\n .list()"
+        },
+        {
+          "name": "rolePermissions",
           "resolver": "db.from(\"RolePermission\")\n .where(eq(\"roleId\", this.id))\n .list()"
         }
       ],
