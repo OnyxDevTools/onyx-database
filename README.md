@@ -83,7 +83,9 @@ const db = onyx.init({
 The `partition` option sets a default partition for queries, `findById`, and
 deletes by primary key. Save operations use the partition field on the entity
 itself. Enable `requestLoggingEnabled` to log each request and its body to the
-console. Enable `responseLoggingEnabled` to log responses and bodies.
+console. Enable `responseLoggingEnabled` to log responses and bodies. Setting
+the `ONYX_DEBUG=true` environment variable enables both request and response
+logging even if these flags are not set.
 
 ### Option C) Node-only config files
 
