@@ -352,19 +352,18 @@ await db.cascade('userRoles:UserRole(userId, id)').save('User', {
 //   source – field on the top level entity used as the key
 
 // Using the CascadeRelationshipBuilder
-const programsCascade = db
+const permission = { id: 'perm_edit_content', description: 'Edit content' };
+const permissionsCascade = db
   .cascadeBuilder()
-  .graph('programs')
-  .graphType('StreamingProgram')
-  .targetField('channelId')
+  .graph('permissions')
+  .graphType('Permission')
+  .targetField('roleId')
   .sourceField('id');
 
-await db.cascade(programsCascade).save('StreamingChannel', {
-  id: 'news_003',
-  category: 'news',
-  name: 'News 24',
-  updatedAt: new Date(),
-  programs: [program], // program defined earlier
+await db.cascade(permissionsCascade).save('Role', {
+  id: 'role_editor',
+  name: 'Editor',
+  permissions: [permission],
 });
 ```
 
