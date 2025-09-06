@@ -1,6 +1,6 @@
 // filename: examples/delete/basic.ts
 import process from 'node:process';
-import { onyx, eq } from '@onyx.dev/onyx-database';
+import { onyx } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
 
 async function main(): Promise<void> {
