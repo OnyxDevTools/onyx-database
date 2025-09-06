@@ -53,8 +53,11 @@ export class HttpClient {
       throw new Error('global fetch is not available; provide OnyxConfig.fetch');
     }
     this.defaults = Object.assign({}, opts.defaultHeaders);
-    this.requestLoggingEnabled = !!opts.requestLoggingEnabled;
-    this.responseLoggingEnabled = !!opts.responseLoggingEnabled;
+    const envDebug =
+      (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+        ?.env?.ONYX_DEBUG === 'true';
+    this.requestLoggingEnabled = !!opts.requestLoggingEnabled || envDebug;
+    this.responseLoggingEnabled = !!opts.responseLoggingEnabled || envDebug;
   }
 
   headers(extra?: Record<string, string>): Record<string, string> {
