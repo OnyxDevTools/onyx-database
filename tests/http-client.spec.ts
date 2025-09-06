@@ -173,6 +173,26 @@ describe('HttpClient', () => {
     logSpy.mockRestore();
   });
 
+  it('logs request and response when ONYX_DEBUG=true without explicit flags', async () => {
+    process.env.ONYX_DEBUG = 'true';
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        statusText: 'OK',
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
+    await client.request('POST', '/dbg', { a: 1 });
+    expect(logSpy).toHaveBeenNthCalledWith(1, `POST ${base}/dbg`);
+    expect(logSpy).toHaveBeenNthCalledWith(2, JSON.stringify({ a: 1 }));
+    expect(logSpy).toHaveBeenNthCalledWith(3, '200 OK');
+    expect(logSpy).toHaveBeenNthCalledWith(4, JSON.stringify({ ok: true }));
+    logSpy.mockRestore();
+    delete process.env.ONYX_DEBUG;
+  });
+
   it('omits Content-Type on body-less DELETE and parses JSON', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
