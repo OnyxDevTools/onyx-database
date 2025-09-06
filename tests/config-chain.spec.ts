@@ -79,6 +79,29 @@ describe('config chain database selection', () => {
     }
   });
 
+  it('parses profile values with stray newlines', async () => {
+    const homeDir = path.join(homedir(), '.onyx');
+    await mkdir(homeDir, { recursive: true });
+    const file = path.join(homeDir, 'onyx-database.json');
+    const data = `{
+  "baseUrl": "http://home",
+  "databaseId": "hid",
+  "apiKey": "
+key",
+  "apiSecret": "
+secret"
+}`;
+    await writeFile(file, data);
+    try {
+      const cfg = await resolveConfig();
+      expect(cfg.databaseId).toBe('hid');
+      expect(cfg.apiKey).toBe('key');
+      expect(cfg.apiSecret).toBe('secret');
+    } finally {
+      await unlink(file);
+    }
+  });
+
   it('throws when required config is missing', async () => {
     delete process.env.ONYX_DATABASE_ID;
     delete process.env.ONYX_DATABASE_API_KEY;
