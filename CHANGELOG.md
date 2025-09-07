@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.1.4
+
+### Patch Changes
+
+- 752ace9: inital publish
+
 ## 0.1.3
 
 ### Patch Changes
