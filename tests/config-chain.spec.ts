@@ -1,20 +1,27 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { resolveConfig } from '../src/config/chain';
 import { OnyxConfigError } from '../src/errors/config-error';
 import { mkdtemp, writeFile, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 
-for (const k of Object.keys(process.env)) {
-  if (k.startsWith('ONYX_DATABASE') || k === 'ONYX_CONFIG_PATH') delete process.env[k];
-}
-const origCwd = process.cwd();
-
-afterEach(() => {
-  vi.unstubAllEnvs();
+const clearEnv = (): void => {
   for (const k of Object.keys(process.env)) {
     if (k.startsWith('ONYX_DATABASE') || k === 'ONYX_CONFIG_PATH') delete process.env[k];
   }
+};
+
+clearEnv();
+const origCwd = process.cwd();
+
+beforeEach(() => {
+  vi.unstubAllEnvs();
+  clearEnv();
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  clearEnv();
   process.chdir(origCwd);
   vi.doUnmock('node:os');
 });
