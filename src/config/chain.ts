@@ -171,12 +171,16 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   const haveApiSecret = !!(input?.apiSecret ?? env.apiSecret);
 
   let file: Partial<OnyxConfig> = {};
+  let fileSource: string | undefined;
   if (!(haveDbId && haveApiKey && haveApiSecret)) {
     const project = await readProjectFile(targetId);
     if (Object.keys(project).length) {
       file = project;
+      fileSource = 'project file';
     } else {
-      file = await readHomeProfile(targetId);
+      const home = await readHomeProfile(targetId);
+      file = home;
+      if (Object.keys(home).length) fileSource = 'home profile';
     }
   }
 
@@ -227,6 +231,30 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   }
 
   const resolved: ResolvedConfig = { baseUrl, databaseId, apiKey, apiSecret, fetch: fetchImpl };
+  const source = {
+    databaseId: input?.databaseId
+      ? 'explicit config'
+      : env.databaseId
+      ? 'env'
+      : file.databaseId
+      ? fileSource ?? 'file'
+      : 'unknown',
+    apiKey: input?.apiKey
+      ? 'explicit config'
+      : env.apiKey
+      ? 'env'
+      : file.apiKey
+      ? fileSource ?? 'file'
+      : 'unknown',
+    apiSecret: input?.apiSecret
+      ? 'explicit config'
+      : env.apiSecret
+      ? 'env'
+      : file.apiSecret
+      ? fileSource ?? 'file'
+      : 'unknown',
+  };
+  dbg('credential source:', JSON.stringify(source));
   dbg('resolved:', mask(resolved));
   return resolved;
 }
