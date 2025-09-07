@@ -16,7 +16,8 @@
       "internalConsoleOptions": "openOnSessionStart",
       "autoAttachChildProcesses": false,
       "env": {
-         "ONYX_DEBUG": "false"
+         "ONYX_DEBUG": "true",
+         "ONYX_CONFIG_PATH": "../onyx-database.json"
       }
     }
   ]
