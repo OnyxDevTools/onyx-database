@@ -1,32 +1,27 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { resolveConfig } from '../src/config/chain';
 import { OnyxConfigError } from '../src/errors/config-error';
 import { mkdtemp, writeFile, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 
-const origEnv = { ...process.env };
-for (const k of Object.keys(origEnv)) {
-  if (k.startsWith('ONYX_DATABASE') || k === 'ONYX_CONFIG_PATH') {
-    delete origEnv[k as keyof typeof origEnv];
-    delete process.env[k];
-  }
+for (const k of Object.keys(process.env)) {
+  if (k.startsWith('ONYX_DATABASE') || k === 'ONYX_CONFIG_PATH') delete process.env[k];
 }
 const origCwd = process.cwd();
-const origHome = process.env.HOME;
 
 afterEach(() => {
-  process.env = { ...origEnv };
+  vi.unstubAllEnvs();
   process.chdir(origCwd);
-  if (origHome) process.env.HOME = origHome; else delete process.env.HOME;
+  vi.doUnmock('node:os');
 });
 
 describe('config chain database selection', () => {
   it('uses env when database id matches', async () => {
-    process.env.ONYX_DATABASE_ID = 'envdb';
-    process.env.ONYX_DATABASE_BASE_URL = 'http://env';
-    process.env.ONYX_DATABASE_API_KEY = 'k';
-    process.env.ONYX_DATABASE_API_SECRET = 's';
+    vi.stubEnv('ONYX_DATABASE_ID', 'envdb');
+    vi.stubEnv('ONYX_DATABASE_BASE_URL', 'http://env');
+    vi.stubEnv('ONYX_DATABASE_API_KEY', 'k');
+    vi.stubEnv('ONYX_DATABASE_API_SECRET', 's');
     const cfg = await resolveConfig({ databaseId: 'envdb' });
     expect(cfg.baseUrl).toBe('http://env');
     expect(cfg.apiKey).toBe('k');
@@ -42,7 +37,7 @@ describe('config chain database selection', () => {
     );
 
     const home = await mkdtemp(path.join(tmpdir(), 'home-'));
-    process.env.HOME = home;
+    vi.stubEnv('HOME', home);
     await mkdir(path.join(home, '.onyx'), { recursive: true });
     await writeFile(
       path.join(home, '.onyx', 'onyx-database-idb.json'),
@@ -56,7 +51,7 @@ describe('config chain database selection', () => {
 
   it('supplements env with home profile when database id missing', async () => {
     const home = await mkdtemp(path.join(tmpdir(), 'home-'));
-    process.env.HOME = home;
+    vi.stubEnv('HOME', home);
     vi.doMock('node:os', () => ({ homedir: () => home }));
     const homeDir = path.join(home, '.onyx');
     await mkdir(homeDir, { recursive: true });
@@ -66,8 +61,8 @@ describe('config chain database selection', () => {
       JSON.stringify({ baseUrl: 'http://home', databaseId: 'hid', apiKey: 'hk', apiSecret: 'hs' }),
     );
 
-    process.env.ONYX_DATABASE_API_KEY = 'ek';
-    process.env.ONYX_DATABASE_API_SECRET = 'es';
+    vi.stubEnv('ONYX_DATABASE_API_KEY', 'ek');
+    vi.stubEnv('ONYX_DATABASE_API_SECRET', 'es');
 
     try {
       const cfg = await resolveConfig();
@@ -77,13 +72,12 @@ describe('config chain database selection', () => {
       expect(cfg.baseUrl).toBe('http://home');
     } finally {
       await unlink(file);
-      vi.doUnmock('node:os');
     }
   });
 
   it('parses profile values with stray newlines', async () => {
     const home = await mkdtemp(path.join(tmpdir(), 'home-'));
-    process.env.HOME = home;
+    vi.stubEnv('HOME', home);
     vi.doMock('node:os', () => ({ homedir: () => home }));
     const homeDir = path.join(home, '.onyx');
     await mkdir(homeDir, { recursive: true });
@@ -104,7 +98,6 @@ secret"
       expect(cfg.apiSecret).toBe('secret');
     } finally {
       await unlink(file);
-      vi.doUnmock('node:os');
     }
   });
 
@@ -116,8 +109,8 @@ secret"
       file,
       JSON.stringify({ baseUrl: 'http://path', databaseId: 'pid', apiKey: 'fk', apiSecret: 'fs' }),
     );
-    process.env.ONYX_CONFIG_PATH = 'creds.json';
-    process.env.ONYX_DATABASE_API_KEY = 'envk';
+    vi.stubEnv('ONYX_CONFIG_PATH', 'creds.json');
+    vi.stubEnv('ONYX_DATABASE_API_KEY', 'envk');
     const cfg = await resolveConfig();
     expect(cfg.databaseId).toBe('pid');
     expect(cfg.apiKey).toBe('fk');
@@ -131,7 +124,7 @@ secret"
       file,
       JSON.stringify({ baseUrl: 'http://abs', databaseId: 'aid', apiKey: 'ak', apiSecret: 'as' }),
     );
-    process.env.ONYX_CONFIG_PATH = file;
+    vi.stubEnv('ONYX_CONFIG_PATH', file);
     const cfg = await resolveConfig();
     expect(cfg.databaseId).toBe('aid');
     expect(cfg.apiKey).toBe('ak');
@@ -139,20 +132,16 @@ secret"
 
   it('throws when required config is missing', async () => {
     const home = await mkdtemp(path.join(tmpdir(), 'home-'));
-    process.env.HOME = home;
+    vi.stubEnv('HOME', home);
     vi.doMock('node:os', () => ({ homedir: () => home }));
-    delete process.env.ONYX_DATABASE_ID;
-    delete process.env.ONYX_DATABASE_API_KEY;
-    delete process.env.ONYX_DATABASE_API_SECRET;
     await expect(resolveConfig()).rejects.toBeInstanceOf(OnyxConfigError);
-    vi.doUnmock('node:os');
   });
 
   it('logs credential source when ONYX_DEBUG=true', async () => {
-    process.env.ONYX_DEBUG = 'true';
-    process.env.ONYX_DATABASE_ID = 'envdb';
-    process.env.ONYX_DATABASE_API_KEY = 'k';
-    process.env.ONYX_DATABASE_API_SECRET = 's';
+    vi.stubEnv('ONYX_DEBUG', 'true');
+    vi.stubEnv('ONYX_DATABASE_ID', 'envdb');
+    vi.stubEnv('ONYX_DATABASE_API_KEY', 'k');
+    vi.stubEnv('ONYX_DATABASE_API_SECRET', 's');
     const spy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     await resolveConfig();
     const call = spy.mock.calls.find(([msg]) =>
