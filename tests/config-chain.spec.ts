@@ -60,6 +60,8 @@ describe('config chain database selection', () => {
   });
 
   it('supplements env with home profile when database id missing', async () => {
+    const proj = await mkdtemp(path.join(tmpdir(), 'proj-'));
+    process.chdir(proj);
     const home = await mkdtemp(path.join(tmpdir(), 'home-'));
     vi.stubEnv('HOME', home);
     vi.doMock('node:os', () => ({ homedir: () => home }));
@@ -87,6 +89,8 @@ describe('config chain database selection', () => {
   });
 
   it('parses profile values with stray newlines', async () => {
+    const proj = await mkdtemp(path.join(tmpdir(), 'proj-'));
+    process.chdir(proj);
     const home = await mkdtemp(path.join(tmpdir(), 'home-'));
     vi.stubEnv('HOME', home);
     vi.doMock('node:os', () => ({ homedir: () => home }));
@@ -145,6 +149,8 @@ secret"
   });
 
   it('throws when required config is missing', async () => {
+    const proj = await mkdtemp(path.join(tmpdir(), 'proj-'));
+    process.chdir(proj);
     const home = await mkdtemp(path.join(tmpdir(), 'home-'));
     vi.stubEnv('HOME', home);
     vi.doMock('node:os', () => ({ homedir: () => home }));
