@@ -25,7 +25,15 @@ const isNode = !!gProcess?.versions?.node;
 // Optional debug logger — enable with ONYX_DEBUG=true (Node only)
 const dbg = (...args: unknown[]): void => {
   if (gProcess?.env?.ONYX_DEBUG == "true") {
-    gProcess.stderr?.write?.(`[onyx-config] ${args.map(String).join(' ')}\n`);
+    const fmt = (v: unknown): string => {
+      if (typeof v === 'string') return v;
+      try {
+        return JSON.stringify(v);
+      } catch {
+        return String(v);
+      }
+    };
+    gProcess.stderr?.write?.(`[onyx-config] ${args.map(fmt).join(' ')}\n`);
   }
 };
 
