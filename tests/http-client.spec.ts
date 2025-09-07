@@ -1,9 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { inspect } from 'node:util';
 import { HttpClient, parseJsonAllowNaN } from '../src/core/http';
 import { OnyxHttpError } from '../src/errors/http-error';
 
 // filename: tests/http-client.spec.ts
+
+beforeEach(() => {
+  delete process.env.ONYX_DEBUG;
+});
 
 describe('parseJsonAllowNaN', () => {
   it('parses valid JSON normally', () => {
