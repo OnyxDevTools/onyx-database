@@ -1,3 +1,4 @@
+# filename: .github/workflows/release.yml
 name: Release
 
 on:
@@ -6,6 +7,11 @@ on:
       - main
     tags:
       - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
 
 jobs:
   version:
@@ -20,9 +26,14 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
+      - run: npm run build
       - run: npm test
       - run: npm run test:smoke
-      - uses: changesets/action@v1
+      - name: Open/Update Changesets Version PR
+        uses: changesets/action@v1
+        with:
+          version: npm run changeset version
+          # No publish here; publish happens on tag below
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -31,11 +42,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
       - run: npm ci
-      - run: npm run release -- --dry-run
+      - run: npm run build
+      - run: npm test
+      - run: npm run test:smoke
+      - name: Publish to npm (with provenance)
+        run: npm publish --access public
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
