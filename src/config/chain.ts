@@ -190,38 +190,44 @@ async function readConfigPath(p: string): Promise<Partial<OnyxConfig>> {
 /**
  * Resolve configuration using precedence:
  *   explicit config (highest) >
- *   env (when ONYX_DATABASE_ID matches) > project file > home profile
- *   When ONYX_CONFIG_PATH is set, only that file (plus explicit config) is used.
+ *   env vars >
+ *   ONYX_CONFIG_PATH file >
+ *   project file >
+ *   home profile
  */
 export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig> {
   const configPath = gProcess?.env?.ONYX_CONFIG_PATH;
-  const env = configPath ? {} : readEnv(input?.databaseId);
-  const targetId = input?.databaseId ?? env.databaseId;
+  const env = readEnv(input?.databaseId);
 
-  const haveDbId = !!(input?.databaseId ?? env.databaseId);
-  const haveApiKey = !!(input?.apiKey ?? env.apiKey);
-  const haveApiSecret = !!(input?.apiSecret ?? env.apiSecret);
-
-  let file: Partial<OnyxConfig> = {};
-  let fileSource: string | undefined;
+  let cfgPath: Partial<OnyxConfig> = {};
   if (configPath) {
-    file = await readConfigPath(configPath);
-    if (Object.keys(file).length) fileSource = 'env ONYX_CONFIG_PATH';
-  } else if (!(haveDbId && haveApiKey && haveApiSecret)) {
-    const project = await readProjectFile(targetId);
-    if (Object.keys(project).length) {
-      file = project;
-      fileSource = 'project file';
-    } else {
-      const home = await readHomeProfile(targetId);
-      file = home;
-      if (Object.keys(home).length) fileSource = 'home profile';
-    }
+    cfgPath = await readConfigPath(configPath);
+  }
+
+  const targetId = input?.databaseId ?? env.databaseId ?? cfgPath.databaseId;
+
+  let haveDbId = !!(input?.databaseId ?? env.databaseId ?? cfgPath.databaseId);
+  let haveApiKey = !!(input?.apiKey ?? env.apiKey ?? cfgPath.apiKey);
+  let haveApiSecret = !!(input?.apiSecret ?? env.apiSecret ?? cfgPath.apiSecret);
+
+  let project: Partial<OnyxConfig> = {};
+  if (!(haveDbId && haveApiKey && haveApiSecret)) {
+    project = await readProjectFile(targetId);
+    if (project.databaseId) haveDbId = true;
+    if (project.apiKey) haveApiKey = true;
+    if (project.apiSecret) haveApiSecret = true;
+  }
+
+  let home: Partial<OnyxConfig> = {};
+  if (!(haveDbId && haveApiKey && haveApiSecret)) {
+    home = await readHomeProfile(targetId);
   }
 
   const merged: Partial<OnyxConfig> = {
     baseUrl: DEFAULT_BASE_URL,
-    ...dropUndefined<OnyxConfig>(file),
+    ...dropUndefined<OnyxConfig>(home),
+    ...dropUndefined<OnyxConfig>(project),
+    ...dropUndefined<OnyxConfig>(cfgPath),
     ...dropUndefined<OnyxConfig>(env),
     ...dropUndefined<OnyxConfig>(input),
   };
@@ -247,21 +253,20 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   if (!apiSecret) missing.push('apiSecret');
   if (missing.length) {
     dbg('validation failed. merged:', mask(merged));
-    const sources = configPath
-      ? [configPath, 'explicit config']
-      : [
-          'env (when ONYX_DATABASE_ID matches)',
-          ...(isNode
-            ? [
-                './onyx-database-<databaseId>.json',
-                './onyx-database.json',
-                '~/.onyx/onyx-database-<databaseId>.json',
-                '~/.onyx/onyx-database.json',
-                '~/onyx-database.json',
-              ]
-            : []),
-          'explicit config',
-        ];
+    const sources = [
+      'env',
+      configPath ?? 'env ONYX_CONFIG_PATH',
+      ...(isNode
+        ? [
+            './onyx-database-<databaseId>.json',
+            './onyx-database.json',
+            '~/.onyx/onyx-database-<databaseId>.json',
+            '~/.onyx/onyx-database.json',
+            '~/onyx-database.json',
+          ]
+        : []),
+      'explicit config',
+    ];
     throw new OnyxConfigError(
       `Missing required config: ${missing.join(', ')}. Sources: ${sources.join(', ')}`,
     );
@@ -273,22 +278,34 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
       ? 'explicit config'
       : env.databaseId
       ? 'env'
-      : file.databaseId
-      ? fileSource ?? 'file'
+      : cfgPath.databaseId
+      ? 'env ONYX_CONFIG_PATH'
+      : project.databaseId
+      ? 'project file'
+      : home.databaseId
+      ? 'home profile'
       : 'unknown',
     apiKey: input?.apiKey
       ? 'explicit config'
       : env.apiKey
       ? 'env'
-      : file.apiKey
-      ? fileSource ?? 'file'
+      : cfgPath.apiKey
+      ? 'env ONYX_CONFIG_PATH'
+      : project.apiKey
+      ? 'project file'
+      : home.apiKey
+      ? 'home profile'
       : 'unknown',
     apiSecret: input?.apiSecret
       ? 'explicit config'
       : env.apiSecret
       ? 'env'
-      : file.apiSecret
-      ? fileSource ?? 'file'
+      : cfgPath.apiSecret
+      ? 'env ONYX_CONFIG_PATH'
+      : project.apiSecret
+      ? 'project file'
+      : home.apiSecret
+      ? 'home profile'
       : 'unknown',
   };
   dbg('credential source:', JSON.stringify(source));
