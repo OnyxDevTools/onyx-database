@@ -17,6 +17,11 @@ jobs:
   version:
     if: startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
+    env:
+      ONYX_DATABASE_ID: ${{ secrets.ONYX_DATABASE_ID }}
+      ONYX_DATABASE_API_KEY: ${{ secrets.ONYX_DATABASE_API_KEY }}
+      ONYX_DATABASE_API_SECRET: ${{ secrets.ONYX_DATABASE_API_SECRET }}
+      ONYX_DEBUG: "true"
     steps:
       - uses: actions/checkout@v4
         with:
