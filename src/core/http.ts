@@ -84,18 +84,20 @@ export class HttpClient {
       throw new OnyxConfigError('path must start with /');
     }
     const url = `${this.baseUrl}${path}`;
+    const headers = this.headers({
+      ...(method === 'DELETE' ? { Prefer: 'return=representation' } : {}),
+      ...(extraHeaders ?? {}),
+    });
+    if (body == null) delete headers['Content-Type'];
     if (this.requestLoggingEnabled) {
       console.log(`${method} ${url}`);
       if (body != null) {
         const logBody = typeof body === 'string' ? body : JSON.stringify(body);
         console.log(logBody);
       }
+      const headerLog = { ...headers, 'x-onyx-secret': '[REDACTED]' };
+      console.log('Headers:', headerLog);
     }
-    const headers = this.headers({
-      ...(method === 'DELETE' ? { Prefer: 'return=representation' } : {}),
-      ...(extraHeaders ?? {}),
-    });
-    if (body == null) delete headers['Content-Type'];
     const payload =
       body == null ? undefined : typeof body === 'string' ? body : JSON.stringify(body);
     const init = {
