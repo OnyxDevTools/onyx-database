@@ -7,7 +7,7 @@ import { tmpdir, homedir } from 'node:os';
 
 const origEnv = { ...process.env };
 for (const k of Object.keys(origEnv)) {
-  if (k.startsWith('ONYX_DATABASE')) {
+  if (k.startsWith('ONYX_DATABASE') || k === 'ONYX_CONFIG_PATH') {
     delete origEnv[k as keyof typeof origEnv];
     delete process.env[k];
   }
