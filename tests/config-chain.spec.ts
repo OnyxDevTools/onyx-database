@@ -71,6 +71,7 @@ describe('config chain database selection', () => {
       JSON.stringify({ baseUrl: 'http://home', databaseId: 'hid', apiKey: 'hk', apiSecret: 'hs' }),
     );
 
+    vi.stubEnv('ONYX_DATABASE_ID', '');
     vi.stubEnv('ONYX_DATABASE_API_KEY', 'ek');
     vi.stubEnv('ONYX_DATABASE_API_SECRET', 'es');
 
@@ -102,6 +103,9 @@ secret"
 }`;
     await writeFile(file, data);
     try {
+      vi.stubEnv('ONYX_DATABASE_ID', '');
+      vi.stubEnv('ONYX_DATABASE_API_KEY', '');
+      vi.stubEnv('ONYX_DATABASE_API_SECRET', '');
       const cfg = await resolveConfig();
       expect(cfg.databaseId).toBe('hid');
       expect(cfg.apiKey).toBe('key');
@@ -144,6 +148,9 @@ secret"
     const home = await mkdtemp(path.join(tmpdir(), 'home-'));
     vi.stubEnv('HOME', home);
     vi.doMock('node:os', () => ({ homedir: () => home }));
+    vi.stubEnv('ONYX_DATABASE_ID', '');
+    vi.stubEnv('ONYX_DATABASE_API_KEY', '');
+    vi.stubEnv('ONYX_DATABASE_API_SECRET', '');
     await expect(resolveConfig()).rejects.toBeInstanceOf(OnyxConfigError);
   });
 
