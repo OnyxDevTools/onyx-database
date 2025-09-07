@@ -85,7 +85,8 @@ deletes by primary key. Save operations use the partition field on the entity
 itself. Enable `requestLoggingEnabled` to log each request and its body to the
 console. Enable `responseLoggingEnabled` to log responses and bodies. Setting
 the `ONYX_DEBUG=true` environment variable enables both request and response
-logging even if these flags are not set.
+logging even if these flags are not set. It also logs the source of resolved
+credentials (env, project file, home profile, or explicit config).
 
 ### Option C) Node-only config files
 

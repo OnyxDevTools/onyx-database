@@ -106,5 +106,19 @@ secret"
     delete process.env.ONYX_DATABASE_API_SECRET;
     await expect(resolveConfig()).rejects.toBeInstanceOf(OnyxConfigError);
   });
+
+  it('logs credential source when ONYX_DEBUG=true', async () => {
+    process.env.ONYX_DEBUG = 'true';
+    process.env.ONYX_DATABASE_ID = 'envdb';
+    process.env.ONYX_DATABASE_API_KEY = 'k';
+    process.env.ONYX_DATABASE_API_SECRET = 's';
+    const spy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    await resolveConfig();
+    const call = spy.mock.calls.find(([msg]) =>
+      msg.includes('credential source: {"databaseId":"env","apiKey":"env","apiSecret":"env"}'),
+    );
+    expect(call).toBeTruthy();
+    spy.mockRestore();
+  });
 });
 
