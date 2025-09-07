@@ -105,10 +105,18 @@ describe('HttpClient', () => {
     });
     await client.request('POST', '/log', { a: 1 });
     await client.request('POST', '/log2', '{"b":2}');
+    const hdr = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'x-onyx-key': creds.apiKey,
+      'x-onyx-secret': '[REDACTED]',
+    };
     expect(logSpy).toHaveBeenNthCalledWith(1, `POST ${base}/log`);
     expect(logSpy).toHaveBeenNthCalledWith(2, JSON.stringify({ a: 1 }));
-    expect(logSpy).toHaveBeenNthCalledWith(3, `POST ${base}/log2`);
-    expect(logSpy).toHaveBeenNthCalledWith(4, '{"b":2}');
+    expect(logSpy).toHaveBeenNthCalledWith(3, 'Headers:', hdr);
+    expect(logSpy).toHaveBeenNthCalledWith(4, `POST ${base}/log2`);
+    expect(logSpy).toHaveBeenNthCalledWith(5, '{"b":2}');
+    expect(logSpy).toHaveBeenNthCalledWith(6, 'Headers:', hdr);
     logSpy.mockRestore();
   });
 
@@ -126,8 +134,14 @@ describe('HttpClient', () => {
       requestLoggingEnabled: true,
     });
     await client.request('GET', '/no-body');
-    expect(logSpy).toHaveBeenCalledWith(`GET ${base}/no-body`);
-    expect(logSpy).toHaveBeenCalledTimes(1);
+    const hdr = {
+      Accept: 'application/json',
+      'x-onyx-key': creds.apiKey,
+      'x-onyx-secret': '[REDACTED]',
+    };
+    expect(logSpy).toHaveBeenNthCalledWith(1, `GET ${base}/no-body`);
+    expect(logSpy).toHaveBeenNthCalledWith(2, 'Headers:', hdr);
+    expect(logSpy).toHaveBeenCalledTimes(2);
     logSpy.mockRestore();
   });
 
@@ -185,10 +199,17 @@ describe('HttpClient', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const client = new HttpClient({ baseUrl: base, ...creds, fetchImpl: fetchMock });
     await client.request('POST', '/dbg', { a: 1 });
+    const hdr = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'x-onyx-key': creds.apiKey,
+      'x-onyx-secret': '[REDACTED]',
+    };
     expect(logSpy).toHaveBeenNthCalledWith(1, `POST ${base}/dbg`);
     expect(logSpy).toHaveBeenNthCalledWith(2, JSON.stringify({ a: 1 }));
-    expect(logSpy).toHaveBeenNthCalledWith(3, '200 OK');
-    expect(logSpy).toHaveBeenNthCalledWith(4, JSON.stringify({ ok: true }));
+    expect(logSpy).toHaveBeenNthCalledWith(3, 'Headers:', hdr);
+    expect(logSpy).toHaveBeenNthCalledWith(4, '200 OK');
+    expect(logSpy).toHaveBeenNthCalledWith(5, JSON.stringify({ ok: true }));
     logSpy.mockRestore();
     delete process.env.ONYX_DEBUG;
   });
