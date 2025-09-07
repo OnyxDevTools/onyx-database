@@ -46,7 +46,7 @@ The package is dual-module (ESM + CJS) and has **no runtime or peer dependencies
 
 ## Initialize the client
 
-This SDK resolves credentials automatically from **environment variables** (when `process.env` is available), **project or home config files** _(Node.js only)_, or explicit config. Call `onyx.init({ databaseId: 'database-id' })` to target a specific database, or omit the `databaseId` to use the default. You can also pass credentials directly via config.
+This SDK resolves credentials automatically using the chain **explicit config ➜ environment variables ➜ `ONYX_CONFIG_PATH` file ➜ project config file ➜ home profile** _(Node.js only for file-based sources)_. Call `onyx.init({ databaseId: 'database-id' })` to target a specific database, or omit the `databaseId` to use the default. You can also pass credentials directly via config.
 
 ### Option A) Environment variables (recommended for production)
 
@@ -86,11 +86,11 @@ itself. Enable `requestLoggingEnabled` to log each request and its body to the
 console. Enable `responseLoggingEnabled` to log responses and bodies. Setting
 the `ONYX_DEBUG=true` environment variable enables both request and response
 logging even if these flags are not set. It also logs the source of resolved
-credentials (env, config path, project file, home profile, or explicit config).
+credentials (explicit config, env vars, config path file, project file, or home profile).
 
 ### Option C) Node-only config files
 
-Set `ONYX_CONFIG_PATH` to a JSON file containing your credentials to bypass the default search. When unset, the resolver checks for JSON files matching the `OnyxConfig` shape in the following order:
+Set `ONYX_CONFIG_PATH` to a JSON file containing your credentials. This file is checked after environment variables and before project and home files. When unset, the resolver checks for JSON files matching the `OnyxConfig` shape in the following order:
 
 - `./onyx-database-<databaseId>.json`
 - `./onyx-database.json`

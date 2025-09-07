@@ -119,7 +119,7 @@ secret"
     }
   });
 
-  it('uses file from ONYX_CONFIG_PATH and ignores env vars', async () => {
+  it('env vars override ONYX_CONFIG_PATH file', async () => {
     const dir = await mkdtemp(path.join(tmpdir(), 'cfg-'));
     process.chdir(dir);
     const file = path.join(dir, 'creds.json');
@@ -131,8 +131,27 @@ secret"
     vi.stubEnv('ONYX_DATABASE_API_KEY', 'envk');
     const cfg = await resolveConfig();
     expect(cfg.databaseId).toBe('pid');
-    expect(cfg.apiKey).toBe('fk');
+    expect(cfg.apiKey).toBe('envk');
     expect(cfg.baseUrl).toBe('http://path');
+  });
+
+  it('ONYX_CONFIG_PATH overrides project file', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'proj-'));
+    process.chdir(dir);
+    await writeFile(
+      path.join(dir, 'onyx-database.json'),
+      JSON.stringify({ baseUrl: 'http://proj', databaseId: 'idp', apiKey: 'pk', apiSecret: 'ps' }),
+    );
+    const cfgFile = path.join(dir, 'creds.json');
+    await writeFile(
+      cfgFile,
+      JSON.stringify({ baseUrl: 'http://cfg', databaseId: 'idc', apiKey: 'ck', apiSecret: 'cs' }),
+    );
+    vi.stubEnv('ONYX_CONFIG_PATH', 'creds.json');
+    const cfg = await resolveConfig();
+    expect(cfg.databaseId).toBe('idc');
+    expect(cfg.apiKey).toBe('ck');
+    expect(cfg.baseUrl).toBe('http://cfg');
   });
 
   it('supports absolute ONYX_CONFIG_PATH', async () => {
