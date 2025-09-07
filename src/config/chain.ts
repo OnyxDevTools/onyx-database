@@ -52,7 +52,10 @@ function readEnv(targetId?: string): Partial<OnyxConfig> {
   const pick = (...keys: string[]): string | undefined => {
     for (const k of keys) {
       const v = env[k];
-      if (typeof v === 'string' && v.trim() !== '') return v.trim();
+      if (typeof v === 'string') {
+        const cleaned = v.replace(/[\r\n]+/g, '').trim();
+        if (cleaned !== '') return cleaned;
+      }
     }
     return undefined;
   };
