@@ -50,10 +50,10 @@ function readEnv(targetId?: string): Partial<OnyxConfig> {
   };
 
   const envId = pick('ONYX_DATABASE_ID');
-  if (targetId && envId && targetId !== envId) return {};
+  if (targetId && envId !== targetId) return {};
   const res = dropUndefined<OnyxConfig>({
     baseUrl: pick('ONYX_DATABASE_BASE_URL'),
-    databaseId: targetId ?? envId,
+    databaseId: envId,
     apiKey: pick('ONYX_DATABASE_API_KEY'),
     apiSecret: pick('ONYX_DATABASE_API_SECRET'),
   });
