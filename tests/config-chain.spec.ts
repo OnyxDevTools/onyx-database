@@ -12,6 +12,9 @@ const origCwd = process.cwd();
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  for (const k of Object.keys(process.env)) {
+    if (k.startsWith('ONYX_DATABASE') || k === 'ONYX_CONFIG_PATH') delete process.env[k];
+  }
   process.chdir(origCwd);
   vi.doUnmock('node:os');
 });
