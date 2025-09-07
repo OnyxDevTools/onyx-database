@@ -3,7 +3,7 @@ import { resolveConfig } from '../src/config/chain';
 import { OnyxConfigError } from '../src/errors/config-error';
 import { mkdtemp, writeFile, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
-import { tmpdir, homedir } from 'node:os';
+import { tmpdir } from 'node:os';
 
 const origEnv = { ...process.env };
 for (const k of Object.keys(origEnv)) {
@@ -55,7 +55,10 @@ describe('config chain database selection', () => {
   });
 
   it('supplements env with home profile when database id missing', async () => {
-    const homeDir = path.join(homedir(), '.onyx');
+    const home = await mkdtemp(path.join(tmpdir(), 'home-'));
+    process.env.HOME = home;
+    vi.doMock('node:os', () => ({ homedir: () => home }));
+    const homeDir = path.join(home, '.onyx');
     await mkdir(homeDir, { recursive: true });
     const file = path.join(homeDir, 'onyx-database.json');
     await writeFile(
@@ -74,11 +77,15 @@ describe('config chain database selection', () => {
       expect(cfg.baseUrl).toBe('http://home');
     } finally {
       await unlink(file);
+      vi.doUnmock('node:os');
     }
   });
 
   it('parses profile values with stray newlines', async () => {
-    const homeDir = path.join(homedir(), '.onyx');
+    const home = await mkdtemp(path.join(tmpdir(), 'home-'));
+    process.env.HOME = home;
+    vi.doMock('node:os', () => ({ homedir: () => home }));
+    const homeDir = path.join(home, '.onyx');
     await mkdir(homeDir, { recursive: true });
     const file = path.join(homeDir, 'onyx-database.json');
     const data = `{
@@ -97,6 +104,7 @@ secret"
       expect(cfg.apiSecret).toBe('secret');
     } finally {
       await unlink(file);
+      vi.doUnmock('node:os');
     }
   });
 
@@ -130,10 +138,14 @@ secret"
   });
 
   it('throws when required config is missing', async () => {
+    const home = await mkdtemp(path.join(tmpdir(), 'home-'));
+    process.env.HOME = home;
+    vi.doMock('node:os', () => ({ homedir: () => home }));
     delete process.env.ONYX_DATABASE_ID;
     delete process.env.ONYX_DATABASE_API_KEY;
     delete process.env.ONYX_DATABASE_API_SECRET;
     await expect(resolveConfig()).rejects.toBeInstanceOf(OnyxConfigError);
+    vi.doUnmock('node:os');
   });
 
   it('logs credential source when ONYX_DEBUG=true', async () => {
