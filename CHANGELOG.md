@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.1.2
+
+### Patch Changes
+
+- cc889cb: initial publish
+
 ## 0.1.1
 
 ### Patch Changes
