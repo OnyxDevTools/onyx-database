@@ -50,7 +50,7 @@ The package is dual-module (ESM + CJS) and has **no runtime or peer dependencies
 
 ## Initialize the client
 
-This SDK resolves credentials automatically using the chain **environment ➜ project file ➜ home profile** (highest to lowest precedence). Set `ONYX_CONFIG_PATH` to a JSON file to skip the default chain. Call `onyx.init({ databaseId: 'database-id' })` to target a specific database, or omit the `databaseId` to use the default. You can also pass credentials directly via config.
+This SDK resolves credentials automatically using the chain **explicit config ➜ environment variables ➜ `ONYX_CONFIG_PATH` file ➜ project file ➜ home profile** (highest to lowest precedence). Call `onyx.init({ databaseId: 'database-id' })` to target a specific database, or omit the `databaseId` to use the default. You can also pass credentials directly via config.
 
 ### Option A) Environment variables (recommended for production)
 
@@ -69,7 +69,7 @@ const db = onyx.init({ databaseId: 'YOUR_DATABASE_ID' }); // uses env when ID ma
 
 ### Option B) Config file via `ONYX_CONFIG_PATH`
 
-Set `ONYX_CONFIG_PATH` to a relative or absolute path to a JSON file containing your `baseUrl`, `databaseId`, `apiKey`, and `apiSecret`. When set, the resolver loads only this file.
+Set `ONYX_CONFIG_PATH` to a relative or absolute path to a JSON file containing your `baseUrl`, `databaseId`, `apiKey`, and `apiSecret`. The resolver loads this file after environment variables. If any values are missing, project and home files are checked as fallbacks.
 
 ### Option C) Project file (checked into *your app* repo)
 
