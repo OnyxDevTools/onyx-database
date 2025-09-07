@@ -100,6 +100,35 @@ secret"
     }
   });
 
+  it('uses file from ONYX_CONFIG_PATH and ignores env vars', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'cfg-'));
+    process.chdir(dir);
+    const file = path.join(dir, 'creds.json');
+    await writeFile(
+      file,
+      JSON.stringify({ baseUrl: 'http://path', databaseId: 'pid', apiKey: 'fk', apiSecret: 'fs' }),
+    );
+    process.env.ONYX_CONFIG_PATH = 'creds.json';
+    process.env.ONYX_DATABASE_API_KEY = 'envk';
+    const cfg = await resolveConfig();
+    expect(cfg.databaseId).toBe('pid');
+    expect(cfg.apiKey).toBe('fk');
+    expect(cfg.baseUrl).toBe('http://path');
+  });
+
+  it('supports absolute ONYX_CONFIG_PATH', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'abs-'));
+    const file = path.join(dir, 'creds.json');
+    await writeFile(
+      file,
+      JSON.stringify({ baseUrl: 'http://abs', databaseId: 'aid', apiKey: 'ak', apiSecret: 'as' }),
+    );
+    process.env.ONYX_CONFIG_PATH = file;
+    const cfg = await resolveConfig();
+    expect(cfg.databaseId).toBe('aid');
+    expect(cfg.apiKey).toBe('ak');
+  });
+
   it('throws when required config is missing', async () => {
     delete process.env.ONYX_DATABASE_ID;
     delete process.env.ONYX_DATABASE_API_KEY;

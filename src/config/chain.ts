@@ -158,12 +158,33 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
   return {};
 }
 
+async function readConfigPath(p: string): Promise<Partial<OnyxConfig>> {
+  if (!isNode) return {};
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const cwd = gProcess?.cwd?.() ?? '.';
+  const resolved = path.isAbsolute(p) ? p : path.resolve(cwd, p);
+  try {
+    const txt = await fs.readFile(resolved, 'utf8');
+    const sanitized = txt.replace(/[\r\n]+/g, '');
+    const json = dropUndefined<OnyxConfig>(JSON.parse(sanitized) as Partial<OnyxConfig>);
+    dbg('config path:', resolved, '→', mask(json));
+    return json;
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new OnyxConfigError(`Failed to read ${resolved}: ${msg}`);
+  }
+}
+
 /**
  * Resolve configuration using precedence:
- *   explicit config (highest) > env (when ONYX_DATABASE_ID matches)
+ *   explicit config (highest) >
+ *   env (when ONYX_DATABASE_ID matches) > project file > home profile
+ *   When ONYX_CONFIG_PATH is set, only that file (plus explicit config) is used.
  */
 export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig> {
-  const env = readEnv(input?.databaseId);
+  const configPath = gProcess?.env?.ONYX_CONFIG_PATH;
+  const env = configPath ? {} : readEnv(input?.databaseId);
   const targetId = input?.databaseId ?? env.databaseId;
 
   const haveDbId = !!(input?.databaseId ?? env.databaseId);
@@ -172,7 +193,10 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
 
   let file: Partial<OnyxConfig> = {};
   let fileSource: string | undefined;
-  if (!(haveDbId && haveApiKey && haveApiSecret)) {
+  if (configPath) {
+    file = await readConfigPath(configPath);
+    if (Object.keys(file).length) fileSource = 'env ONYX_CONFIG_PATH';
+  } else if (!(haveDbId && haveApiKey && haveApiSecret)) {
     const project = await readProjectFile(targetId);
     if (Object.keys(project).length) {
       file = project;
@@ -212,19 +236,21 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   if (!apiSecret) missing.push('apiSecret');
   if (missing.length) {
     dbg('validation failed. merged:', mask(merged));
-    const sources = [
-      'env (when ONYX_DATABASE_ID matches)',
-      ...(isNode
-        ? [
-            './onyx-database-<databaseId>.json',
-            './onyx-database.json',
-            '~/.onyx/onyx-database-<databaseId>.json',
-            '~/.onyx/onyx-database.json',
-            '~/onyx-database.json',
-          ]
-        : []),
-      'explicit config',
-    ];
+    const sources = configPath
+      ? [configPath, 'explicit config']
+      : [
+          'env (when ONYX_DATABASE_ID matches)',
+          ...(isNode
+            ? [
+                './onyx-database-<databaseId>.json',
+                './onyx-database.json',
+                '~/.onyx/onyx-database-<databaseId>.json',
+                '~/.onyx/onyx-database.json',
+                '~/onyx-database.json',
+              ]
+            : []),
+          'explicit config',
+        ];
     throw new OnyxConfigError(
       `Missing required config: ${missing.join(', ')}. Sources: ${sources.join(', ')}`,
     );
