@@ -1,5 +1,12 @@
 # @onyx.dev/onyx-database
 
+## 0.1.3
+
+### Patch Changes
+
+- 96ba940: first publish
+- f82dec3: first publish
+
 ## 0.1.2
 
 ### Patch Changes
