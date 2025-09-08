@@ -1,6 +1,6 @@
 {
   "name": "@onyx.dev/onyx-database",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "TypeScript client SDK for Onyx Database",
   "keywords": [
     "database",
