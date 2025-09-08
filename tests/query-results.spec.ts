@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { QueryBuilder } from '../src/builders/query-builder';
+import { QueryResults } from '../src/builders/query-results';
 
 function makeExec() {
   return {
@@ -102,5 +103,21 @@ describe('QueryResults', () => {
     const empty = new (res.constructor as any)([], null);
     expect(empty.firstOrNull()).toBeNull();
     expect(() => empty.first()).toThrow();
+  });
+
+  it('accepts non-iterable records', () => {
+    const qr = new QueryResults({ id: 1 } as any, null);
+    expect(qr.first()).toEqual({ id: 1 });
+    expect(qr.size()).toBe(1);
+  });
+
+  it('accepts iterable and array-like inputs', () => {
+    const fromSet = new QueryResults(new Set([{ id: 1 }, { id: 2 }]) as any, null);
+    expect(fromSet.size()).toBe(2);
+    const arrayLike = { 0: { id: 3 }, length: 1 } as any;
+    const fromArrayLike = new QueryResults(arrayLike, null);
+    expect(fromArrayLike.first()).toEqual({ id: 3 });
+    const fromNull = new QueryResults(undefined as any, null);
+    expect(fromNull.size()).toBe(0);
   });
 });
