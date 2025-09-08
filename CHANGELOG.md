@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.1.6
+
+### Patch Changes
+
+- 8093058: add spread support to query results
+
 ## 0.1.5
 
 ### Patch Changes
