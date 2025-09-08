@@ -27,8 +27,24 @@ export class QueryResults<T> extends Array<T> {
     * const results = new QueryResults(users, token, t => fetchMore(t));
     * ```
     */
-  constructor(records: T[], nextPage: string | null, fetcher?: (token: string) => Promise<QueryResults<T>>) {
-    super(...records);
+  constructor(
+    records: Iterable<T> | ArrayLike<T> | T | null | undefined,
+    nextPage: string | null,
+    fetcher?: (token: string) => Promise<QueryResults<T>>,
+  ) {
+    const items: T[] = (() => {
+      if (records == null) return [];
+      if (Array.isArray(records)) return records;
+      if (typeof (records as any)[Symbol.iterator] === 'function') {
+        return Array.from(records as Iterable<T>);
+      }
+      if (typeof (records as any).length === 'number') {
+        return Array.from(records as ArrayLike<T>);
+      }
+      return [records as T];
+    })();
+
+    super(...items);
     Object.setPrototypeOf(this, new.target.prototype);
     this.nextPage = nextPage;
     this.fetcher = fetcher;
