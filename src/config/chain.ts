@@ -46,6 +46,11 @@ function dropUndefined<T extends object>(obj: Partial<T> | undefined): Partial<T
   return out as Partial<T>;
 }
 
+// Lazy import helper to hide Node-only modules from bundlers
+async function nodeImport<T>(spec: string): Promise<T> {
+  return import(/* @vite-ignore */ spec) as Promise<T>;
+}
+
 function readEnv(targetId?: string): Partial<OnyxConfig> {
   if (!gProcess?.env) return {};
   const env = gProcess.env;
@@ -75,8 +80,8 @@ function readEnv(targetId?: string): Partial<OnyxConfig> {
 
 async function readProjectFile(databaseId?: string): Promise<Partial<OnyxConfig>> {
   if (!isNode) return {};
-  const fs = await import('node:fs/promises');
-  const path = await import('node:path');
+  const fs = await nodeImport<typeof import('node:fs/promises')>('node:fs/promises');
+  const path = await nodeImport<typeof import('node:path')>('node:path');
   const cwd = gProcess?.cwd?.() ?? '.';
 
   const tryRead = async (p: string): Promise<Partial<OnyxConfig>> => {
@@ -107,9 +112,9 @@ async function readProjectFile(databaseId?: string): Promise<Partial<OnyxConfig>
 
 async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>> {
   if (!isNode) return {};
-  const fs = await import('node:fs/promises');
-  const os = await import('node:os');
-  const path = await import('node:path');
+  const fs = await nodeImport<typeof import('node:fs/promises')>('node:fs/promises');
+  const os = await nodeImport<typeof import('node:os')>('node:os');
+  const path = await nodeImport<typeof import('node:path')>('node:path');
 
   const home = os.homedir();
   const dir = path.join(home, '.onyx');
@@ -171,8 +176,8 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
 
 async function readConfigPath(p: string): Promise<Partial<OnyxConfig>> {
   if (!isNode) return {};
-  const fs = await import('node:fs/promises');
-  const path = await import('node:path');
+  const fs = await nodeImport<typeof import('node:fs/promises')>('node:fs/promises');
+  const path = await nodeImport<typeof import('node:path')>('node:path');
   const cwd = gProcess?.cwd?.() ?? '.';
   const resolved = path.isAbsolute(p) ? p : path.resolve(cwd, p);
   try {
