@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.1.5
+
+### Patch Changes
+
+- 016feed: edge compatibility patch
+
 ## 0.1.4
 
 ### Patch Changes
