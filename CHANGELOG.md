@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.1.7
+
+### Patch Changes
+
+- 8ae8c22: added support for remote paging when running results.forEach
+
 ## 0.1.6
 
 ### Patch Changes
