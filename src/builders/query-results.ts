@@ -99,13 +99,40 @@ export class QueryResults<T> extends Array<T> {
   /**
    * Iterates over each record on the current page only.
    * @param action - Function to invoke for each record.
+   * @param thisArg - Optional `this` binding for the callback.
    * @example
    * ```ts
    * results.forEachOnPage(u => console.log(u.id));
    * ```
    */
-  forEachOnPage(action: (item: T) => void): void {
-    this.forEach(action);
+  forEachOnPage(
+    action: (item: T, index: number, array: QueryResults<T>) => void,
+    thisArg?: unknown,
+  ): void {
+    super.forEach((value, index) => {
+      action.call(thisArg as any, value, index, this);
+    });
+  }
+
+  /**
+   * Iterates over every record across all pages sequentially.
+   * @param action - Function executed for each record. Returning `false`
+   *                 stops iteration early.
+   * @param thisArg - Optional `this` binding for the callback.
+   * @example
+   * ```ts
+   * await results.forEach(u => {
+   *   console.log(u.id);
+   * });
+   * ```
+   */
+  override forEach(action: (item: T, index: number, array: T[]) => void, thisArg?: unknown): Promise<void> {
+    let index = 0;
+    return this.forEachAll(async item => {
+      const result = await (action as any).call(thisArg as any, item, index, this);
+      index += 1;
+      return result as boolean | void;
+    });
   }
 
   /**

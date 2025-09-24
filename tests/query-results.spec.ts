@@ -67,6 +67,25 @@ describe('QueryResults', () => {
     const sizeDirect = await qb4.list().size();
     expect(sizeDirect).toBe(2);
 
+    const execForPromise = makeExec();
+    const qb5 = new QueryBuilder(execForPromise as any, 'users');
+    const fromPromise: number[] = [];
+    await qb5.list().forEach(r => {
+      fromPromise.push(r.id);
+    });
+    expect(fromPromise).toEqual([1, 2, 3]);
+    expect(execForPromise.queryPage).toHaveBeenCalledTimes(2);
+
+    const execForLimitedPromise = makeExec();
+    const qb6 = new QueryBuilder(execForLimitedPromise as any, 'users');
+    const limitedPromise: number[] = [];
+    await qb6.list().forEach(r => {
+      limitedPromise.push(r.id);
+      return false;
+    });
+    expect(limitedPromise).toEqual([1]);
+    expect(execForLimitedPromise.queryPage).toHaveBeenCalledTimes(1);
+
     expect(await res.maxOfInt(r => r.id)).toBe(3);
     expect(await res.sumOfInt(r => r.id)).toBe(6);
     expect(await res.minOfInt(r => r.id)).toBe(1);
@@ -86,6 +105,25 @@ describe('QueryResults', () => {
       seen.push(r.id);
     });
     expect(seen).toEqual([1, 2, 3]);
+
+    const viaForEach: number[] = [];
+    await res.forEach(r => {
+      viaForEach.push(r.id);
+    });
+    expect(viaForEach).toEqual([1, 2, 3]);
+
+    const viaForEachLimit: number[] = [];
+    await res.forEach(r => {
+      viaForEachLimit.push(r.id);
+      return r.id < 2;
+    });
+    expect(viaForEachLimit).toEqual([1, 2]);
+
+    const context = { total: 0 };
+    await res.forEach(function (this: typeof context, r) {
+      this.total += r.id;
+    }, context);
+    expect(context.total).toBe(6);
 
     const limited: number[] = [];
     await res.forEachAll(r => {
