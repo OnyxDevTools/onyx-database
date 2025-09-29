@@ -366,7 +366,29 @@ await db.cascade('permissions:Permission(roleId, id)').save('Role', {
 });
 ```
 
-### 3) Delete (by primary key)
+### 3) Update existing rows
+
+```ts
+import { onyx, eq } from '@onyx.dev/onyx-database';
+
+const db = onyx.init();
+
+const updatedCount = await db
+  .from('User')
+  .where(eq('id', 'user_123'))
+  .setUpdates({ status: 'inactive' })
+  .update();
+
+console.log(`Updated ${updatedCount} record(s).`);
+```
+
+`.update()` returns the number of rows that were modified. Call `.setUpdates()`
+before `.update()` to provide the fields you want to change.
+
+A runnable version of this snippet lives at
+[`examples/query/update.ts`](../examples/query/update.ts).
+
+### 4) Delete (by primary key)
 
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
@@ -382,7 +404,7 @@ await db.delete('Role', 'role_temp', { relationships: ['rolePermissions'] });
 await db.cascade('rolePermissions').delete('Role', 'role_temp');
 ```
 
-### 4) Delete using query
+### 5) Delete using query
 
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
@@ -396,7 +418,7 @@ const delCount = await db
 
 ```
 
-### 5) Documents API (binary assets)
+### 6) Documents API (binary assets)
 
 ```ts
 import { onyx, type OnyxDocument } from '@onyx.dev/onyx-database';
