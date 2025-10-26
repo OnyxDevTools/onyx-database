@@ -9,7 +9,7 @@ async function main(): Promise<void> {
 
   const users = await db
     .from(tables.User)
-    .selectFields("id", "email", "createdAt")
+    .select("id", "email", "createdAt")
     .orderBy(desc('createdAt'))
     .limit(3)
     .list();
