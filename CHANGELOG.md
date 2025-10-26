@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.1.8
+
+### Patch Changes
+
+- 7205f0e: refactored selectFields to be named select
+
 ## 0.1.7
 
 ### Patch Changes

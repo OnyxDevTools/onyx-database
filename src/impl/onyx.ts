@@ -150,7 +150,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
       null,
       this.defaultPartition,
     );
-    qb.selectFields(...fields);
+    qb.select(...fields);
     return qb;
   }
 
@@ -439,7 +439,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this;
   }
 
-  selectFields(...fields: Array<string | string[]>): IQueryBuilder<T> {
+  select(...fields: Array<string | string[]>): IQueryBuilder<T> {
     const flat = fields.flatMap((f) => (Array.isArray(f) ? f : [f]));
     this.fields = flat.length > 0 ? flat : null;
     return this;
