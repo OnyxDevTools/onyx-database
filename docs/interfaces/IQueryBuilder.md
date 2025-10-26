@@ -376,9 +376,9 @@ Defined in: types/builders.ts:14
 
 ***
 
-### selectFields()
+### select()
 
-> **selectFields**(`fields`): `IQueryBuilder`\<`T`\>
+> **select**(`fields`): `IQueryBuilder`\<`T`\>
 
 Defined in: types/builders.ts:13
 

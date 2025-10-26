@@ -234,10 +234,10 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * @param fields List of field names to include.
    * @example
    * ```ts
-   * builder.selectFields('id', 'name');
+   * builder.select('id', 'name');
    * ```
    */
-  selectFields(...fields: Array<string | string[]>): IQueryBuilder<T> {
+  select(...fields: Array<string | string[]>): IQueryBuilder<T> {
     const flat = fields.flatMap((f) => (Array.isArray(f) ? f : [f]));
     this.fields = flat.length > 0 ? flat : null;
     return this;

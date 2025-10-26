@@ -23,9 +23,9 @@ describe('QueryBuilder', () => {
     const qb = new QueryBuilder(exec as any, null);
     const other = new ConditionBuilderImpl({ field: 'f', operator: 'EQUAL', value: 6 });
     qb.from('users')
-      .selectFields('id', 'name')
-      .selectFields(['email'])
-      .selectFields()
+      .select('id', 'name')
+      .select(['email'])
+      .select()
       .resolve('rel1', 'rel2')
       .resolve(['rel3'])
       .resolve()

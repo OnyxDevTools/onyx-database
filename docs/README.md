@@ -181,7 +181,7 @@ export interface UserProfile {
 
 const user = await db
   .from(tables.User)
-  .selectFields('id', 'username')
+  .select('id', 'username')
   .resolve('roles.permissions', 'profile')
   .firstOrNull();
 
