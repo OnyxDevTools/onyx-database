@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.1.9
+
+### Patch Changes
+
+- e51dc9d: removed selectFields in favor of select"
+
 ## 0.1.8
 
 ### Patch Changes
