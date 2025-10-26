@@ -51,10 +51,10 @@ export interface IQueryBuilder<T = unknown> {
    * Selects a subset of fields to return.
    * @example
    * ```ts
-   * const emails = await db.from('User').selectFields('email').list();
+   * const emails = await db.from('User').select('email').list();
    * ```
    */
-  selectFields(...fields: Array<string | string[]>): IQueryBuilder<T>;
+  select(...fields: Array<string | string[]>): IQueryBuilder<T>;
   /**
    * Resolves related values by name.
    * @example
@@ -110,7 +110,7 @@ export interface IQueryBuilder<T = unknown> {
   * Ensures only distinct records are returned.
   * @example
   * ```ts
-   * const roles = await db.from('User').selectFields('role').distinct().list();
+   * const roles = await db.from('User').select('role').distinct().list();
    * ```
    */
   distinct(): IQueryBuilder<T>;
