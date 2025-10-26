@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 8ae8c22: refactored selectFields to be named select
+- 7205f0e: refactored selectFields to be named select
 
 ## 0.1.7
 
