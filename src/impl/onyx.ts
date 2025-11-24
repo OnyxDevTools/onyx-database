@@ -54,6 +54,18 @@ function toSingleCondition(criteria: QueryCriteria): QueryCondition {
   return { conditionType: 'SingleCondition', criteria };
 }
 
+function flattenStrings(values: Array<string | string[]>): string[] {
+  const flat: string[] = [];
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      flat.push(...value);
+    } else if (typeof value === 'string') {
+      flat.push(value);
+    }
+  }
+  return flat;
+}
+
 function toCondition(input: IConditionBuilder | QueryCriteria): QueryCondition {
   if (typeof (input as IConditionBuilder).toCondition === 'function') {
     return (input as IConditionBuilder).toCondition();
@@ -440,13 +452,13 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   }
 
   select(...fields: Array<string | string[]>): IQueryBuilder<T> {
-    const flat = fields.flatMap((f) => (Array.isArray(f) ? f : [f]));
+    const flat = flattenStrings(fields);
     this.fields = flat.length > 0 ? flat : null;
     return this;
   }
 
   resolve(...values: Array<string | string[]>): IQueryBuilder<T> {
-    const flat = values.flatMap((v) => (Array.isArray(v) ? v : [v]));
+    const flat = flattenStrings(values);
     this.resolvers = flat.length > 0 ? flat : null;
     return this;
   }
