@@ -112,6 +112,18 @@ function toSingleCondition(criteria: QueryCriteria): QueryCondition {
   return { conditionType: 'SingleCondition', criteria };
 }
 
+function flattenStrings(values: Array<string | string[]>): string[] {
+  const flat: string[] = [];
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      flat.push(...value);
+    } else if (typeof value === 'string') {
+      flat.push(value);
+    }
+  }
+  return flat;
+}
+
 /**
  * Normalize builder or criteria input into a QueryCondition.
  *
@@ -236,9 +248,9 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * ```ts
    * builder.select('id', 'name');
    * ```
-   */
+  */
   select(...fields: Array<string | string[]>): IQueryBuilder<T> {
-    const flat = fields.flatMap((f) => (Array.isArray(f) ? f : [f]));
+    const flat = flattenStrings(fields);
     this.fields = flat.length > 0 ? flat : null;
     return this;
   }
@@ -251,9 +263,9 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * ```ts
    * builder.resolve('owner', 'profile');
    * ```
-   */
+  */
   resolve(...values: Array<string | string[]>): IQueryBuilder<T> {
-    const flat = values.flatMap((v) => (Array.isArray(v) ? v : [v]));
+    const flat = flattenStrings(values);
     this.resolvers = flat.length > 0 ? flat : null;
     return this;
   }
