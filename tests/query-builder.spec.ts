@@ -111,6 +111,39 @@ describe('QueryBuilder', () => {
     await qbUpd.update();
   });
 
+  it('preserves resolvers when provided as strings or spread arrays', async () => {
+    const exec = {
+      count: vi.fn(),
+      queryPage: vi.fn().mockResolvedValue({ records: [], nextPage: null }),
+      update: vi.fn(),
+      deleteByQuery: vi.fn(),
+      stream: vi.fn(),
+    };
+    const qb = new QueryBuilder(exec as any, 'users');
+
+    await qb.resolve('roles').list();
+    expect(exec.queryPage).toHaveBeenLastCalledWith(
+      'users',
+      expect.objectContaining({ resolvers: ['roles'] }),
+      { pageSize: undefined, nextPage: undefined, partition: undefined },
+    );
+
+    await qb.resolve('roles', 'permissions').list();
+    expect(exec.queryPage).toHaveBeenLastCalledWith(
+      'users',
+      expect.objectContaining({ resolvers: ['roles', 'permissions'] }),
+      { pageSize: undefined, nextPage: undefined, partition: undefined },
+    );
+
+    const resolverList = ['roles'];
+    await qb.resolve(...resolverList).list();
+    expect(exec.queryPage).toHaveBeenLastCalledWith(
+      'users',
+      expect.objectContaining({ resolvers: ['roles'] }),
+      { pageSize: undefined, nextPage: undefined, partition: undefined },
+    );
+  });
+
   it('fetches first record or null and aliases one()', async () => {
     const exec = {
       count: vi.fn(),
