@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.2.0
+
+### Minor Changes
+
+- 93cbd78: added support for .resolve(...items)"\
+
 ## 0.1.9
 
 ### Patch Changes
