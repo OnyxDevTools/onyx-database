@@ -52,6 +52,9 @@ Thumbs.db
 onyx-database.json
 **/onyx-database.json
 
+# Generated Onyx types (via scripts/gen-onyx.sh defaults)
+onyx-ui
+onyx-api
 
 
 
