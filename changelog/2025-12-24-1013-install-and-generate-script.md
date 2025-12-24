@@ -1,4 +1,4 @@
-# Change: add install-and-generate helper script
+# Change: add gen-onyx helper script
 
 - Date: 2025-12-24 10:13 AM PT
 - Author/Agent: codex
