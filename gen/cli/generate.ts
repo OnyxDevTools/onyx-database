@@ -15,6 +15,33 @@ function isTypesFilePath(p?: string): boolean {
   );
 }
 
+type OutCollector = {
+  typesOutFile?: string | string[];
+  typesOutDir?: string | string[];
+};
+
+function appendVal(current: string | string[] | undefined, val: string): string | string[] {
+  if (!current) return val;
+  return Array.isArray(current) ? [...current, val] : [current, val];
+}
+
+function addOut(
+  opts: OutCollector,
+  raw: string | undefined,
+  forceFile = false,
+): OutCollector {
+  if (!raw) throw new Error('Missing value for output flag');
+  const parts = raw.split(',').map((p) => p.trim()).filter(Boolean);
+  for (const val of parts) {
+    if (forceFile || isTypesFilePath(val)) {
+      opts.typesOutFile = appendVal(opts.typesOutFile, val);
+    } else {
+      opts.typesOutDir = appendVal(opts.typesOutDir, val);
+    }
+  }
+  return opts;
+}
+
 function parseArgs(argv: string[]): GenerateOptions {
   const opts: GenerateOptions = {};
   const next = (i: number) => argv[i + 1];
@@ -24,27 +51,19 @@ function parseArgs(argv: string[]): GenerateOptions {
     switch (a) {
       case '--out':
       case '--outDir': { // legacy alias
-        const val = next(i);
-        if (!val) throw new Error(`Missing value for ${a}`);
-        if (isTypesFilePath(val)) opts.typesOutFile = val;
-        else opts.typesOutDir = val;
+        addOut(opts, next(i));
         i++;
         break;
       }
       case '--types-out':
       case '--typesOut': {
-        const val = next(i);
-        if (!val) throw new Error(`Missing value for ${a}`);
-        if (isTypesFilePath(val)) opts.typesOutFile = val;
-        else opts.typesOutDir = val;
+        addOut(opts, next(i));
         i++;
         break;
       }
       case '--types-file':
       case '--typesFile': {
-        const val = next(i);
-        if (!val) throw new Error(`Missing value for ${a}`);
-        opts.typesOutFile = val;
+        addOut(opts, next(i), true);
         i++;
         break;
       }
@@ -143,16 +162,17 @@ Usage:
   onyx-gen [options]
 
 Output selection:
-  --out <path>                     If <path> ends with ".ts", writes exactly to that file.
-                                   Otherwise treats <path> as a directory.
-  --types-out <dir|file>           Same as --out (file-or-dir).
-  --types-file <file.ts>           Explicit file output.
+  --out <path[,path2,...]>         If a value ends with ".ts", writes exactly to that file.
+                                   Otherwise treats it as a directory. Comma-separate or repeat to
+                                   write multiple outputs. Default: ./onyx/types.ts
+  --types-out <dir|file>[,more]    Same as --out (file-or-dir).
+  --types-file <file.ts>[,more]    Explicit file output(s).
   --base, --baseName <name>        Base filename (without ext) when writing to a directory (default: onyx.schema)
   --json-out <dir>                 JSON output directory (used only with --emit-json)
 
 Source selection:
-  --source <auto|api|file>         Where to get schema (default: auto)
-  --schema <path>                  Path to schema JSON when --source=file (or to force local)
+  --source <auto|api|file>         Where to get schema (default: file)
+  --schema <path>                  Path to schema JSON when --source=file (default: ./onyx.schema.json)
 
 Type emission:
   --timestamps <string|date|number>  Timestamp representation in types (default: date)
@@ -169,6 +189,7 @@ Other:
   -h, --help                       Show this help
 
 Notes:
+  • Running with no flags defaults to: --source file --schema ./onyx.schema.json --out ./onyx/types.ts
   • Env/config for --source=api uses the same resolver as onyx.init()
     (env vars, ./onyx-database.json, ~/.onyx/onyx-database-<id>.json, etc.).
 `);
