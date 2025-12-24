@@ -1,5 +1,13 @@
 # @onyx.dev/onyx-database
 
+## 0.2.1
+
+### Patch Changes
+
+- d56d683: added support for multi output dirs for onyx-gen, and did routine version upgrades"
+- 06ecabd: added support for multi output dirs for onyx-gen, and did routine version upgrades
+- 761ea6c: added support for onyx-gen --out dir1/types.ts,dir2/types.ts
+
 ## 0.2.0
 
 ### Minor Changes
