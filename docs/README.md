@@ -132,6 +132,14 @@ Or from a local schema file you export from the console:
 npx onyx-gen --source file --schema ./onyx.schema.json --out ./src/onyx/types.ts --name OnyxSchema
 ```
 
+Run it with no flags to use the defaults: `onyx-gen` reads `./onyx.schema.json` and writes to `./onyx/types.ts`.
+
+You can also emit to multiple paths in one run (comma-separated or by repeating `--out`):
+
+```bash
+onyx-gen --out ./src/onyx/types.ts,./apps/admin/src/onyx/types.ts
+```
+
 Use in code:
 
 ```ts

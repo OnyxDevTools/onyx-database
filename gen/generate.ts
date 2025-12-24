@@ -18,16 +18,18 @@ export interface GenerateOptions {
 
   /**
    * Types output directory (when writing into a directory).
-   * Default: "generated". Back-compat alias: `outDir`.
+   * Back-compat alias: `outDir`.
+   * Note: if no output is provided, default output is "./onyx/types.ts".
    */
-  typesOutDir?: string;
+  typesOutDir?: string | string[];
 
   /**
    * Write the generated types to THIS EXACT FILE (absolute or relative path).
    * If provided and points to a ".ts" file, this takes precedence over `typesOutDir`.
    * Example: "./onyx/types.ts"
+   * Note: if no output is provided, default output is "./onyx/types.ts".
    */
-  typesOutFile?: string;
+  typesOutFile?: string | string[];
 
   /**
    * JSON output directory (only used when `emitJson: true`).
@@ -66,8 +68,11 @@ export interface GenerateOptions {
   quiet?: boolean;
 
   /** @deprecated Legacy single outDir; still accepted to avoid breaking scripts. */
-  outDir?: string;
+  outDir?: string | string[];
 }
+
+const DEFAULT_SCHEMA_PATH = './onyx.schema.json';
+const DEFAULT_TYPES_OUT = './onyx/types.ts';
 
 const DEFAULTS: Required<
   Omit<
@@ -81,7 +86,7 @@ const DEFAULTS: Required<
     | 'typesOutFile'
   >
 > = {
-  source: 'auto',
+  source: 'file',
   outBaseName: 'onyx.schema',
   emitJson: false,
   overwrite: true,
@@ -90,6 +95,23 @@ const DEFAULTS: Required<
   optional: 'non-null',
   quiet: false,
 };
+
+function toArray(val?: string | string[]): string[] {
+  if (!val) return [];
+  return Array.isArray(val) ? val : [val];
+}
+
+function isTypesFilePath(p?: string): boolean {
+  if (!p) return false;
+  return (
+    p.endsWith('.ts') ||
+    p.endsWith('.mts') ||
+    p.endsWith('.cts') ||
+    p.endsWith('.d.ts') ||
+    p.endsWith('.d.mts') ||
+    p.endsWith('.d.cts')
+  );
+}
 
 async function readFileJson<T = unknown>(path: string): Promise<T> {
   const fs = await import('node:fs/promises');
@@ -154,20 +176,25 @@ async function fetchSchemaFromApi(
  */
 export async function generateTypes(
   options?: GenerateOptions,
-): Promise<{ typesPath: string; jsonPath?: string }> {
+): Promise<{
+  typesPath: string;
+  jsonPath?: string;
+  typesPaths: string[];
+  jsonPaths?: string[];
+}> {
   const path = await import('node:path');
   const opts = { ...DEFAULTS, ...(options ?? {}) };
 
-  // Back-compat: allow legacy outDir to set typesOutDir if not provided
-  const typesDir = opts.typesOutDir ?? opts.outDir ?? 'generated';
+  const resolvedSchemaPath =
+    opts.schemaPath ?? (opts.source === 'file' ? DEFAULT_SCHEMA_PATH : undefined);
 
   let schema: OnyxIntrospection | null = null;
 
-  if (opts.source === 'file' || (opts.source === 'auto' && opts.schemaPath)) {
-    if (!opts.schemaPath) throw new Error('schemaPath is required when source="file"');
+  if (opts.source === 'file' || (opts.source === 'auto' && resolvedSchemaPath)) {
+    if (!resolvedSchemaPath) throw new Error('schemaPath is required when source="file"');
     if (!opts.quiet)
-      process.stderr.write(`[onyx-gen] reading schema from file: ${opts.schemaPath}\n`);
-    schema = await readFileJson<OnyxIntrospection>(opts.schemaPath);
+      process.stderr.write(`[onyx-gen] reading schema from file: ${resolvedSchemaPath}\n`);
+    schema = await readFileJson<OnyxIntrospection>(resolvedSchemaPath);
   }
 
   if (!schema) {
@@ -188,32 +215,28 @@ export async function generateTypes(
     throw new Error('Invalid schema: missing "tables" array.');
   }
 
-  // Decide file-vs-dir for types
-  const outIsFile =
-    typeof opts.typesOutFile === 'string' &&
-    (opts.typesOutFile.endsWith('.ts') ||
-      opts.typesOutFile.endsWith('.mts') ||
-      opts.typesOutFile.endsWith('.cts') ||
-      opts.typesOutFile.endsWith('.d.ts') ||
-      opts.typesOutFile.endsWith('.d.mts') ||
-      opts.typesOutFile.endsWith('.d.cts'));
+  const outTargets = [
+    ...toArray(opts.typesOutFile),
+    ...toArray(opts.typesOutDir),
+    ...toArray(opts.outDir),
+  ]
+    .map((p) => p.trim())
+    .filter(Boolean);
 
-  let typesPath: string;
-  let jsonBaseName: string; // used only when emitJson = true
-  let typesDirAbs: string;
-
-  if (outIsFile) {
-    const typesOutFile = opts.typesOutFile as string;
-    typesPath = path.resolve(process.cwd(), typesOutFile);
-    typesDirAbs = path.dirname(typesPath);
-    await ensureDir(typesDirAbs);
-    jsonBaseName = path.basename(typesPath, path.extname(typesPath));
-  } else {
-    typesDirAbs = path.resolve(process.cwd(), typesDir);
-    await ensureDir(typesDirAbs);
-    typesPath = path.join(typesDirAbs, `${opts.outBaseName}.ts`);
-    jsonBaseName = opts.outBaseName;
+  if (outTargets.length === 0) {
+    outTargets.push(DEFAULT_TYPES_OUT);
   }
+
+  type OutputTarget = { typesPath: string; typesDirAbs: string; jsonBaseName: string };
+  const outputs: OutputTarget[] = outTargets.map((target) => {
+    const outIsFile = isTypesFilePath(target);
+    const typesPath = outIsFile
+      ? path.resolve(process.cwd(), target)
+      : path.join(path.resolve(process.cwd(), target), `${opts.outBaseName}.ts`);
+    const typesDirAbs = outIsFile ? path.dirname(typesPath) : path.resolve(process.cwd(), target);
+    const jsonBaseName = outIsFile ? path.basename(typesPath, path.extname(typesPath)) : opts.outBaseName;
+    return { typesPath, typesDirAbs, jsonBaseName };
+  });
 
   const types = emitTypes(schema, {
     schemaTypeName: opts.schemaTypeName,
@@ -221,24 +244,36 @@ export async function generateTypes(
     modelNamePrefix: opts.prefix ?? '',
     optionalStrategy: opts.optional,
   });
-  await writeFile(typesPath, `${types}\n`, opts.overwrite);
+  const typesPaths: string[] = [];
+  for (const out of outputs) {
+    await ensureDir(out.typesDirAbs);
+    await writeFile(out.typesPath, `${types}\n`, opts.overwrite);
+    typesPaths.push(out.typesPath);
+  }
 
-  let jsonPath: string | undefined;
+  let jsonPaths: string[] | undefined;
   if (opts.emitJson) {
-    const jsonOutDirAbs = path.resolve(
-      process.cwd(),
-      opts.jsonOutDir ?? (outIsFile ? typesDirAbs : typesDirAbs),
-    );
-    await ensureDir(jsonOutDirAbs);
-    jsonPath = path.join(jsonOutDirAbs, `${jsonBaseName}.json`);
     const jsonPretty = JSON.stringify(schema, null, 2);
-    await writeFile(jsonPath, `${jsonPretty}\n`, opts.overwrite);
+    jsonPaths = [];
+    for (const out of outputs) {
+      const jsonOutDirAbs = path.resolve(process.cwd(), opts.jsonOutDir ?? out.typesDirAbs);
+      await ensureDir(jsonOutDirAbs);
+      const jsonPath = path.join(jsonOutDirAbs, `${out.jsonBaseName}.json`);
+      await writeFile(jsonPath, `${jsonPretty}\n`, opts.overwrite);
+      jsonPaths.push(jsonPath);
+    }
   }
 
   if (!opts.quiet) {
-    process.stderr.write(`[onyx-gen] wrote ${typesPath}\n`);
-    if (jsonPath) process.stderr.write(`[onyx-gen] wrote ${jsonPath}\n`);
+    for (const p of typesPaths) {
+      process.stderr.write(`[onyx-gen] wrote ${p}\n`);
+    }
+    if (jsonPaths) {
+      for (const jp of jsonPaths) {
+        process.stderr.write(`[onyx-gen] wrote ${jp}\n`);
+      }
+    }
   }
 
-  return { typesPath, jsonPath };
+  return { typesPath: typesPaths[0], jsonPath: jsonPaths?.[0], typesPaths, jsonPaths };
 }
