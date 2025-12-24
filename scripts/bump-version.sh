@@ -3,6 +3,8 @@
 # Interactive one-step bump + publish trigger.
 # Prompts you for bump type and message, then:
 #   - creates a changeset
+#   - installs deps + runs tests (fail fast before any commits)
+#   - enforces 100% coverage (per project threshold) before continuing
 #   - applies version bump
 #   - commits & pushes to main
 #   - tags and pushes the tag
@@ -52,21 +54,28 @@ EOF
 
 info "Created changeset: ${CHANGESET_FILE}"
 
-# --- Commit changeset to main ---
+# --- Ensure on main before committing ---
 if [[ "${CURRENT_BRANCH}" != "${MAIN_BRANCH}" ]]; then
   info "Switching to ${MAIN_BRANCH}..."
   cmd git checkout "${MAIN_BRANCH}"
 fi
+
+# --- Install & test before committing ---
+info "Installing deps..."
+cmd npm install
+
+info "Running tests (enforces coverage thresholds)..."
+# Vitest config requires 100% coverage; this will fail the script if unmet.
+cmd npm test
+
+info "Building..."
+cmd npm run build
+
+# --- Commit changeset to main ---
 info "Adding changeset..."
 cmd git add "${CHANGESET_FILE}"
 cmd git commit -m "chore: changeset (${BUMP_TYPE}): ${MESSAGE}"
 cmd git push origin "${MAIN_BRANCH}"
-
-# --- Install & build ---
-info "Installing deps..."
-cmd npm ci
-info "Building..."
-cmd npm run build
 
 # --- Apply version bump ---
 info "Applying changeset version bump..."

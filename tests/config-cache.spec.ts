@@ -7,6 +7,7 @@ const cfg = { baseUrl: 'http://env', databaseId: 'id', apiKey: 'k', apiSecret: '
 afterEach(() => {
   onyx.clearCacheConfig();
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('config cache', () => {
