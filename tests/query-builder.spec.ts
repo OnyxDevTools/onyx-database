@@ -212,4 +212,16 @@ describe('QueryBuilder', () => {
     qb.from('users');
     expect(() => qb.where({} as any)).toThrow('Invalid condition passed to builder.');
   });
+
+  it('ignores non-string inputs when flattening selects/resolvers', () => {
+    const exec = makeExec();
+    const qb = new QueryBuilder(exec as any, 'users');
+    // @ts-expect-error runtime ignores non-string entries
+    qb.select('id', ['name'], 123);
+    // @ts-expect-error runtime ignores non-string entries
+    qb.resolve('rel1', ['rel2'], null);
+    const select = (qb as any).toSelectQuery();
+    expect(select.fields).toEqual(['id', 'name']);
+    expect(select.resolvers).toEqual(['rel1', 'rel2']);
+  });
 });
