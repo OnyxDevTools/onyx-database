@@ -1,0 +1,11 @@
+{
+  "tables": [
+    {
+      "name": "Example",
+      "attributes": [
+        { "name": "id", "type": "String", "isNullable": false },
+        { "name": "createdAt", "type": "Timestamp", "isNullable": false }
+      ]
+    }
+  ]
+}
