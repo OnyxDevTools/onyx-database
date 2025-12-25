@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.2.6
+
+### Patch Changes
+
+- 1574198: added ability to have two generated types output files
+
 ## 0.2.5
 
 ### Patch Changes
