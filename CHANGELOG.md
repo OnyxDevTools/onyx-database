@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.2.2
+
+### Patch Changes
+
+- 3497aae: added ability to generate types to two destinations
+
 ## 0.2.1
 
 ### Patch Changes
