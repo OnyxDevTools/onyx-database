@@ -64,5 +64,45 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run test:smoke
+      - name: Generate npm OTP
+        id: otp
+        run: |
+          node - <<'NODE'
+          const { createHmac } = require('crypto');
+
+          const secretBase32 = process.env.NPM_TOTP_SECRET;
+          if (!secretBase32) {
+            console.error('Missing NPM_TOTP_SECRET secret');
+            process.exit(1);
+          }
+
+          const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+          const clean = secretBase32.replace(/=+$/g, '').toUpperCase();
+          let bits = '';
+          for (const ch of clean) {
+            const idx = alphabet.indexOf(ch);
+            if (idx === -1) continue;
+            bits += idx.toString(2).padStart(5, '0');
+          }
+          const bytes = [];
+          for (let i = 0; i + 8 <= bits.length; i += 8) {
+            bytes.push(parseInt(bits.slice(i, i + 8), 2));
+          }
+          const key = Buffer.from(bytes);
+
+          const step = 30;
+          const counter = Buffer.alloc(8);
+          counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 1000 / step)));
+          const hmac = createHmac('sha1', key).update(counter).digest();
+          const offset = hmac[hmac.length - 1] & 0xf;
+          const code = ((hmac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000)
+            .toString()
+            .padStart(6, '0');
+
+          require('fs').appendFileSync(process.env.GITHUB_OUTPUT, `code=${code}\n`);
+          console.log('Generated OTP for npm publish');
+          NODE
+        env:
+          NPM_TOTP_SECRET: ${{ secrets.NPM_TOTP_SECRET }}
       - name: Publish to npm (with provenance)
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --otp ${{ steps.otp.outputs.code }}
