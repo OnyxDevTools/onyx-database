@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.2.4
+
+### Patch Changes
+
+- b9ae08b: ability to onyx-gen to multiple types files
+
 ## 0.2.3
 
 ### Patch Changes
