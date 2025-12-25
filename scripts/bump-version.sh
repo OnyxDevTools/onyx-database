@@ -68,6 +68,9 @@ info "Running tests (enforces coverage thresholds)..."
 # Vitest config requires 100% coverage; this will fail the script if unmet.
 cmd npm test
 
+info "Linting..."
+cmd npm run lint
+
 info "Building..."
 cmd npm run build
 
