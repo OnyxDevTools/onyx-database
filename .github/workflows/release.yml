@@ -59,12 +59,10 @@ jobs:
           node-version: 20
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
+          always-auth: true
       - run: npm ci
       - run: npm run build
       - run: npm test
       - run: npm run test:smoke
       - name: Publish to npm (with provenance)
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
+        run: npm publish --provenance --access public
