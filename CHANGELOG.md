@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.2.7
+
+### Patch Changes
+
+- e915044: add ability to onyx-gen to muliple files
+
 ## 0.2.6
 
 ### Patch Changes
