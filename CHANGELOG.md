@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.2.5
+
+### Patch Changes
+
+- 99143aa: multi onyx-gen outputs
+
 ## 0.2.4
 
 ### Patch Changes
