@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.2.9
+
+### Patch Changes
+
+- de9473b: ability to onyx-gen to multiple files
+
 ## 0.2.8
 
 ### Patch Changes
