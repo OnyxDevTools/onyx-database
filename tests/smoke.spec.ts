@@ -3,13 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { onyx, eq, contains, startsWith, gt } from '../src';
 import { resolveConfig } from '../src/config/chain';
 
-let hasConfig = false;
-try {
-  await resolveConfig();
-  hasConfig = true;
-} catch {
-  hasConfig = false;
-}
+const hasConfig = await resolveConfig()
 
 describe.runIf(hasConfig)('smoke e2e', () => {
   it('creates, queries, and deletes a user', async () => {
