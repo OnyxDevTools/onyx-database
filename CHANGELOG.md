@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.2.8
+
+### Patch Changes
+
+- 01de90a: add ability to onyx-gen to multiple output files
+
 ## 0.2.7
 
 ### Patch Changes
