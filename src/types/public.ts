@@ -274,7 +274,7 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   /**
    * Create or update a secret. Provide a new `key` in the body to rename.
    */
-  upsertSecret(key: string, input: SecretUpsertRequest): Promise<SecretMetadata>;
+  putSecret(key: string, input: SecretSaveRequest): Promise<SecretMetadata>;
 
   /**
    * Delete a secret by key.
@@ -326,7 +326,7 @@ export interface OnyxFacade {
 export interface SecretMetadata {
   key: string;
   purpose?: string;
-  updatedAt: string;
+  updatedAt: Date;
 }
 
 export interface SecretRecord extends SecretMetadata {
@@ -338,7 +338,7 @@ export interface SecretsListResponse {
   meta: { totalRecords: number };
 }
 
-export interface SecretUpsertRequest {
+export interface SecretSaveRequest {
   key?: string;
   purpose?: string;
   value?: string;

@@ -81,7 +81,7 @@ describe('OnyxDatabaseImpl helpers', () => {
 
     await db.listSecrets();
     await db.getSecret('api-key');
-    await db.upsertSecret('api-key', { value: 'secret', purpose: 'p' });
+    await db.putSecret('api-key', { value: 'secret', purpose: 'p' });
     await db.deleteSecret('api-key');
 
     expect(request).toHaveBeenNthCalledWith(1, 'GET', '/database/db/secrets');

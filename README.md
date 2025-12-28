@@ -419,7 +419,7 @@ const list = await db.listSecrets();
 const secret = await db.getSecret('api-key');
 
 // Create or update a secret (and optionally rename by setting `key` in the body)
-await db.upsertSecret('api-key', {
+await db.putSecret('api-key', {
   value: 'super-secret',
   purpose: 'Access to external API',
 });
