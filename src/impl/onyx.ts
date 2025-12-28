@@ -20,7 +20,7 @@ import type {
   QueryPage,
 } from '../types/protocol';
 import type { Sort, StreamAction, OnyxDocument, FetchImpl } from '../types/common';
-import type { SecretMetadata, SecretRecord, SecretsListResponse, SecretUpsertRequest } from '../types/public';
+import type { SecretMetadata, SecretRecord, SecretsListResponse, SecretSaveRequest } from '../types/public';
 import { CascadeRelationshipBuilder } from '../builders/cascade-relationship-builder';
 import { OnyxError } from '../errors/onyx-error';
 import { OnyxHttpError } from '../errors/http-error';
@@ -78,6 +78,9 @@ function toCondition(input: IConditionBuilder | QueryCriteria): QueryCondition {
   throw new Error('Invalid condition passed to builder.');
 }
 
+type SecretMetadataPayload = Omit<SecretMetadata, 'updatedAt'> & { updatedAt: string | Date };
+type SecretRecordPayload = Omit<SecretRecord, 'updatedAt'> & { updatedAt: string | Date };
+
 function serializeDates(value: unknown): unknown {
   if (value instanceof Date) return value.toISOString();
   if (Array.isArray(value)) return value.map(serializeDates);
@@ -89,6 +92,14 @@ function serializeDates(value: unknown): unknown {
     return out;
   }
   return value;
+}
+
+function normalizeSecretMetadata(input: SecretMetadataPayload): SecretMetadata {
+  return { ...input, updatedAt: new Date(input.updatedAt) };
+}
+
+function normalizeSecretRecord(input: SecretRecordPayload): SecretRecord {
+  return { ...input, updatedAt: new Date(input.updatedAt) };
 }
 
 /** -------------------------
@@ -281,19 +292,30 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async listSecrets(): Promise<SecretsListResponse> {
     const { http, databaseId } = await this.ensureClient();
     const path = `/database/${encodeURIComponent(databaseId)}/secrets`;
-    return http.request('GET', path);
+    const response = await http.request<SecretsListResponse & { records: SecretMetadataPayload[] }>(
+      'GET',
+      path,
+    );
+    const records = (response.records ?? []).map(normalizeSecretMetadata);
+    return {
+      ...response,
+      records,
+      meta: response.meta ?? { totalRecords: records.length },
+    };
   }
 
   async getSecret(key: string): Promise<SecretRecord> {
     const { http, databaseId } = await this.ensureClient();
     const path = `/database/${encodeURIComponent(databaseId)}/secret/${encodeURIComponent(key)}`;
-    return http.request('GET', path);
+    const record = await http.request<SecretRecordPayload>('GET', path);
+    return normalizeSecretRecord(record);
   }
 
-  async upsertSecret(key: string, input: SecretUpsertRequest): Promise<SecretMetadata> {
+  async putSecret(key: string, input: SecretSaveRequest): Promise<SecretMetadata> {
     const { http, databaseId } = await this.ensureClient();
     const path = `/database/${encodeURIComponent(databaseId)}/secret/${encodeURIComponent(key)}`;
-    return http.request('PUT', path, serializeDates(input));
+    const response = await http.request<SecretMetadataPayload>('PUT', path, serializeDates(input));
+    return normalizeSecretMetadata(response);
   }
 
   async deleteSecret(key: string): Promise<{ key: string }> {
