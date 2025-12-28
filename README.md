@@ -406,7 +406,29 @@ const delCount = await db
 
 ```
 
-### 5) Documents API (binary assets)
+### 5) Secrets API
+
+```ts
+import { onyx } from '@onyx.dev/onyx-database';
+const db = onyx.init();
+
+// List secret metadata
+const list = await db.listSecrets();
+
+// Read a decrypted secret value
+const secret = await db.getSecret('api-key');
+
+// Create or update a secret (and optionally rename by setting `key` in the body)
+await db.upsertSecret('api-key', {
+  value: 'super-secret',
+  purpose: 'Access to external API',
+});
+
+// Delete a secret
+await db.deleteSecret('api-key');
+```
+
+### 6) Documents API (binary assets)
 
 ```ts
 import { onyx, type OnyxDocument } from '@onyx.dev/onyx-database';
@@ -429,7 +451,7 @@ const image = await db.getDocument('logo.png', { width: 128, height: 128 });
 await db.deleteDocument('logo.png');
 ```
 
-### 6) Streaming (live changes)
+### 7) Streaming (live changes)
 
 ```ts
 import { onyx, eq } from '@onyx.dev/onyx-database';

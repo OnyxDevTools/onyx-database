@@ -20,6 +20,7 @@ import type {
   QueryPage,
 } from '../types/protocol';
 import type { Sort, StreamAction, OnyxDocument, FetchImpl } from '../types/common';
+import type { SecretMetadata, SecretRecord, SecretsListResponse, SecretUpsertRequest } from '../types/public';
 import { CascadeRelationshipBuilder } from '../builders/cascade-relationship-builder';
 import { OnyxError } from '../errors/onyx-error';
 import { OnyxHttpError } from '../errors/http-error';
@@ -274,6 +275,30 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/document/${encodeURIComponent(
       documentId,
     )}`;
+    return http.request('DELETE', path);
+  }
+
+  async listSecrets(): Promise<SecretsListResponse> {
+    const { http, databaseId } = await this.ensureClient();
+    const path = `/database/${encodeURIComponent(databaseId)}/secrets`;
+    return http.request('GET', path);
+  }
+
+  async getSecret(key: string): Promise<SecretRecord> {
+    const { http, databaseId } = await this.ensureClient();
+    const path = `/database/${encodeURIComponent(databaseId)}/secret/${encodeURIComponent(key)}`;
+    return http.request('GET', path);
+  }
+
+  async upsertSecret(key: string, input: SecretUpsertRequest): Promise<SecretMetadata> {
+    const { http, databaseId } = await this.ensureClient();
+    const path = `/database/${encodeURIComponent(databaseId)}/secret/${encodeURIComponent(key)}`;
+    return http.request('PUT', path, serializeDates(input));
+  }
+
+  async deleteSecret(key: string): Promise<{ key: string }> {
+    const { http, databaseId } = await this.ensureClient();
+    const path = `/database/${encodeURIComponent(databaseId)}/secret/${encodeURIComponent(key)}`;
     return http.request('DELETE', path);
   }
 
