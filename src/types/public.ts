@@ -272,7 +272,7 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   getSecret(key: string): Promise<SecretRecord>;
 
   /**
-   * Create or update a secret. Provide a new `key` in the body to rename.
+   * Create or update a secret.
    */
   putSecret(key: string, input: SecretSaveRequest): Promise<SecretMetadata>;
 
@@ -339,7 +339,6 @@ export interface SecretsListResponse {
 }
 
 export interface SecretSaveRequest {
-  key?: string;
   purpose?: string;
   value?: string;
 }

@@ -418,7 +418,7 @@ const list = await db.listSecrets();
 // Read a decrypted secret value
 const secret = await db.getSecret('api-key');
 
-// Create or update a secret (and optionally rename by setting `key` in the body)
+// Create or update a secret
 await db.putSecret('api-key', {
   value: 'super-secret',
   purpose: 'Access to external API',
