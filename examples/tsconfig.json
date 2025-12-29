@@ -18,6 +18,8 @@
     "save/**/*.ts",
     "delete/**/*.ts",
     "document/**/*.ts",
-    "onyx/**/*.ts"
+    "onyx/**/*.ts",
+    "stream/**/*.ts",
+    "secrets/**/*.ts"
   ]
 }
