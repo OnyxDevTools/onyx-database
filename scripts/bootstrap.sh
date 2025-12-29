@@ -63,8 +63,8 @@ log "Building library and CLI (dist/)…"
 log "Ensuring examples dependencies (links local package via file:..)…"
 (
   cd "${EXAMPLES_DIR}"
-  # Install if node_modules missing or onyx-gen shim absent
-  if [[ ! -d "node_modules" || ! -x "${EXAMPLES_BIN}/onyx-gen" ]]; then
+  # Install if node_modules missing or CLI shims absent
+  if [[ ! -d "node_modules" || ! -x "${EXAMPLES_BIN}/onyx-gen" || ! -x "${EXAMPLES_BIN}/onyx-schema" ]]; then
     run npm install
   else
     log "examples/node_modules present; skipping npm install"
