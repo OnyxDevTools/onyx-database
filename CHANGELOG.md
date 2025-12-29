@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 0.3.0
+
+### Minor Changes
+
+- 45b2e9b: exposed secrets and schema api
+
 ## 0.2.10
 
 ### Patch Changes
