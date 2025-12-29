@@ -84,8 +84,20 @@ describe('OnyxDatabaseImpl helpers', () => {
     await db.putSecret('api-key', { value: 'secret', purpose: 'p' });
     await db.deleteSecret('api-key');
 
-    expect(request).toHaveBeenNthCalledWith(1, 'GET', '/database/db/secrets');
-    expect(request).toHaveBeenNthCalledWith(2, 'GET', '/database/db/secret/api-key');
+    expect(request).toHaveBeenNthCalledWith(
+      1,
+      'GET',
+      '/database/db/secret',
+      undefined,
+      { 'Content-Type': 'application/json' },
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      2,
+      'GET',
+      '/database/db/secret/api-key',
+      undefined,
+      { 'Content-Type': 'application/json' },
+    );
     expect(request).toHaveBeenNthCalledWith(
       3,
       'PUT',

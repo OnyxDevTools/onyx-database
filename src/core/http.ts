@@ -88,7 +88,10 @@ export class HttpClient {
       ...(method === 'DELETE' ? { Prefer: 'return=representation' } : {}),
       ...(extraHeaders ?? {}),
     });
-    if (body == null) delete headers['Content-Type'];
+    const hasExplicitContentType =
+      (extraHeaders && 'Content-Type' in extraHeaders) ||
+      Object.prototype.hasOwnProperty.call(this.defaults, 'Content-Type');
+    if (body == null && !hasExplicitContentType) delete headers['Content-Type'];
     if (this.requestLoggingEnabled) {
       console.log(`${method} ${url}`);
       if (body != null) {
