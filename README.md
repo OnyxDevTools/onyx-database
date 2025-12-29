@@ -122,6 +122,9 @@ Generate directly from the API (using the same credential resolver as `init()`):
 npx onyx-gen --source api --out ./src/onyx/types.ts --name OnyxSchema
 ```
 
+With `--source api`, `onyx-gen` calls the Schema API (same as `onyx-schema get`) using the
+standard config chain (env, project file, home profile).
+
 Timestamp attributes are emitted as `Date` fields by default. When saving,
 `Date` values are automatically serialized to ISO timestamp strings. Pass
 `--timestamps string` to keep timestamps as ISO strings in generated types.
