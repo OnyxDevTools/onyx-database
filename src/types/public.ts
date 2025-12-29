@@ -262,6 +262,48 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   deleteDocument(documentId: string): Promise<unknown>;
 
   /**
+   * Fetch the current schema for the configured database.
+   *
+   * @example
+   * ```ts
+   * const schema = await db.getSchema();
+   * const userOnly = await db.getSchema({ tables: ['User'] });
+   * ```
+   */
+  getSchema(options?: { tables?: string | string[] }): Promise<SchemaRevision>;
+
+  /**
+   * Retrieve the schema revision history for the configured database.
+   */
+  getSchemaHistory(): Promise<SchemaHistoryEntry[]>;
+
+  /**
+   * Update the schema for the configured database.
+   *
+   * @example
+   * ```ts
+   * await db.updateSchema({
+   *   revisionDescription: 'Add profile table',
+   *   entities: [
+   *     {
+   *       name: 'Profile',
+   *       identifier: { name: 'id', generator: 'UUID' },
+   *       attributes: [
+   *         { name: 'displayName', type: 'String', isNullable: false }
+   *       ]
+   *     }
+   *   ]
+   * }, { publish: true });
+   * ```
+   */
+  updateSchema(schema: SchemaUpsertRequest, options?: { publish?: boolean }): Promise<SchemaRevision>;
+
+  /**
+   * Validate a schema definition without applying it to the database.
+   */
+  validateSchema(schema: SchemaUpsertRequest): Promise<SchemaValidationResult>;
+
+  /**
    * List stored secrets for the configured database.
    */
   listSecrets(): Promise<SecretsListResponse>;
@@ -341,6 +383,99 @@ export interface SecretsListResponse {
 export interface SecretSaveRequest {
   purpose?: string;
   value?: string;
+}
+
+export type SchemaDataType =
+  | 'String'
+  | 'Boolean'
+  | 'Char'
+  | 'Byte'
+  | 'Short'
+  | 'Int'
+  | 'Float'
+  | 'Double'
+  | 'Long'
+  | 'Timestamp'
+  | 'EmbeddedObject'
+  | 'EmbeddedList';
+
+export type SchemaIdentifierGenerator = 'None' | 'Sequence' | 'UUID';
+
+export interface SchemaIdentifier {
+  name: string;
+  generator?: SchemaIdentifierGenerator;
+  type?: SchemaDataType | string;
+}
+
+export interface SchemaAttribute {
+  name: string;
+  type: SchemaDataType | string;
+  isNullable?: boolean;
+}
+
+export type SchemaIndexType = 'DEFAULT' | 'LUCENE' | string;
+
+export interface SchemaIndex {
+  name: string;
+  type?: SchemaIndexType;
+  minimumScore?: number;
+}
+
+export interface SchemaResolver {
+  name: string;
+  resolver: string;
+}
+
+export type SchemaTriggerEvent =
+  | 'PreInsert'
+  | 'PostInsert'
+  | 'PrePersist'
+  | 'PostPersist'
+  | 'PreUpdate'
+  | 'PostUpdate'
+  | 'PreDelete'
+  | 'PostDelete'
+  | string;
+
+export interface SchemaTrigger {
+  name: string;
+  event: SchemaTriggerEvent;
+  trigger: string;
+}
+
+export interface SchemaEntity {
+  name: string;
+  identifier?: SchemaIdentifier;
+  partition?: string;
+  attributes?: SchemaAttribute[];
+  indexes?: SchemaIndex[];
+  resolvers?: SchemaResolver[];
+  triggers?: SchemaTrigger[];
+}
+
+export interface SchemaRevisionMetadata {
+  revisionId?: string;
+  createdAt?: Date;
+  publishedAt?: Date;
+}
+
+export interface SchemaRevision {
+  databaseId: string;
+  revisionDescription?: string;
+  entities: SchemaEntity[];
+  meta?: SchemaRevisionMetadata;
+}
+
+export type SchemaHistoryEntry = SchemaRevision;
+
+export type SchemaUpsertRequest = Omit<SchemaRevision, 'databaseId' | 'meta'> & {
+  databaseId?: string;
+};
+
+export interface SchemaValidationResult {
+  valid?: boolean;
+  schema?: SchemaRevision;
+  errors?: Array<{ message: string }>;
 }
 
 export * from './common';

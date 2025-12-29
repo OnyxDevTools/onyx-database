@@ -20,7 +20,16 @@ import type {
   QueryPage,
 } from '../types/protocol';
 import type { Sort, StreamAction, OnyxDocument, FetchImpl } from '../types/common';
-import type { SecretMetadata, SecretRecord, SecretsListResponse, SecretSaveRequest } from '../types/public';
+import type {
+  SchemaHistoryEntry,
+  SchemaRevision,
+  SchemaUpsertRequest,
+  SchemaValidationResult,
+  SecretMetadata,
+  SecretRecord,
+  SecretsListResponse,
+  SecretSaveRequest,
+} from '../types/public';
 import { CascadeRelationshipBuilder } from '../builders/cascade-relationship-builder';
 import { OnyxError } from '../errors/onyx-error';
 import { OnyxHttpError } from '../errors/http-error';
@@ -80,6 +89,17 @@ function toCondition(input: IConditionBuilder | QueryCriteria): QueryCondition {
 
 type SecretMetadataPayload = Omit<SecretMetadata, 'updatedAt'> & { updatedAt: string | Date };
 type SecretRecordPayload = Omit<SecretRecord, 'updatedAt'> & { updatedAt: string | Date };
+type SchemaRevisionPayload = Omit<SchemaRevision, 'meta'> & {
+  meta?: {
+    revisionId?: string;
+    createdAt?: string | Date;
+    publishedAt?: string | Date;
+  };
+  createdAt?: string | Date;
+  publishedAt?: string | Date;
+  revisionId?: string;
+};
+type SchemaValidationPayload = SchemaValidationResult & { schema?: SchemaRevisionPayload };
 
 function serializeDates(value: unknown): unknown {
   if (value instanceof Date) return value.toISOString();
@@ -100,6 +120,30 @@ function normalizeSecretMetadata(input: SecretMetadataPayload): SecretMetadata {
 
 function normalizeSecretRecord(input: SecretRecordPayload): SecretRecord {
   return { ...input, updatedAt: new Date(input.updatedAt) };
+}
+
+function normalizeDate(value?: string | Date): Date | undefined {
+  if (value == null) return undefined;
+  if (value instanceof Date) return value;
+  const ts = new Date(value);
+  return Number.isNaN(ts.getTime()) ? undefined : ts;
+}
+
+function normalizeSchemaRevision(input: SchemaRevisionPayload, fallbackDatabaseId: string): SchemaRevision {
+  const { meta, createdAt, publishedAt, revisionId, ...rest } = input;
+  const mergedMeta = {
+    revisionId: meta?.revisionId ?? revisionId,
+    createdAt: normalizeDate(meta?.createdAt ?? createdAt),
+    publishedAt: normalizeDate(meta?.publishedAt ?? publishedAt),
+  };
+  const cleanedMeta =
+    mergedMeta.revisionId || mergedMeta.createdAt || mergedMeta.publishedAt ? mergedMeta : undefined;
+  return {
+    ...rest,
+    databaseId: input.databaseId ?? fallbackDatabaseId,
+    meta: cleanedMeta,
+    entities: input.entities ?? [],
+  };
 }
 
 /** -------------------------
@@ -287,6 +331,61 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
       documentId,
     )}`;
     return http.request('DELETE', path);
+  }
+
+  async getSchema(options?: { tables?: string | string[] }): Promise<SchemaRevision> {
+    const { http, databaseId } = await this.ensureClient();
+    const params = new URLSearchParams();
+    const tables = options?.tables;
+    const tableList = Array.isArray(tables)
+      ? tables
+      : typeof tables === 'string'
+        ? tables.split(',')
+        : [];
+    const normalizedTables = tableList.map((t) => t.trim()).filter(Boolean);
+    if (normalizedTables.length) {
+      params.append('tables', normalizedTables.map(encodeURIComponent).join(','));
+    }
+    const path = `/schemas/${encodeURIComponent(databaseId)}${
+      params.size ? `?${params.toString()}` : ''
+    }`;
+    const res = await http.request<SchemaRevisionPayload>('GET', path);
+    return normalizeSchemaRevision(res, databaseId);
+  }
+
+  async getSchemaHistory(): Promise<SchemaHistoryEntry[]> {
+    const { http, databaseId } = await this.ensureClient();
+    const path = `/schemas/history/${encodeURIComponent(databaseId)}`;
+    const res = await http.request<SchemaRevisionPayload[]>('GET', path);
+    return Array.isArray(res) ? res.map((entry) => normalizeSchemaRevision(entry, databaseId)) : [];
+  }
+
+  async updateSchema(
+    schema: SchemaUpsertRequest,
+    options?: { publish?: boolean },
+  ): Promise<SchemaRevision> {
+    const { http, databaseId } = await this.ensureClient();
+    const params = new URLSearchParams();
+    if (options?.publish) params.append('publish', 'true');
+    const path = `/schemas/${encodeURIComponent(databaseId)}${
+      params.size ? `?${params.toString()}` : ''
+    }`;
+    const body = { ...schema, databaseId: schema.databaseId ?? databaseId };
+    const res = await http.request<SchemaRevisionPayload>('PUT', path, serializeDates(body));
+    return normalizeSchemaRevision(res, databaseId);
+  }
+
+  async validateSchema(schema: SchemaUpsertRequest): Promise<SchemaValidationResult> {
+    const { http, databaseId } = await this.ensureClient();
+    const path = `/schemas/${encodeURIComponent(databaseId)}/validate`;
+    const body = { ...schema, databaseId: schema.databaseId ?? databaseId };
+    const res = await http.request<SchemaValidationPayload>('POST', path, serializeDates(body));
+    const normalizedSchema = res.schema ? normalizeSchemaRevision(res.schema, databaseId) : undefined;
+    return {
+      ...res,
+      valid: res.valid ?? true,
+      schema: normalizedSchema,
+    };
   }
 
   async listSecrets(): Promise<SecretsListResponse> {
