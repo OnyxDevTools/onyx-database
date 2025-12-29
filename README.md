@@ -134,6 +134,27 @@ npx onyx-gen --source file --schema ./onyx.schema.json --out ./src/onyx/types.ts
 
 Run it with no flags to use the defaults: `onyx-gen` reads `./onyx.schema.json` and writes to `./onyx/types.ts`.
 
+### Manage schemas from the CLI
+
+Publish or download schema JSON directly via API using the `onyx-schema` helper:
+
+```bash
+# Publish ./onyx.schema.json with publish=true by default
+onyx-schema publish
+
+# Overwrite ./onyx.schema.json with the remote schema
+onyx-schema get
+
+# Fetch only selected tables
+onyx-schema get ./generated.schema.json --tables=User,Profile
+
+# Validate a schema file without publishing
+onyx-schema validate ./onyx.schema.json
+```
+
+The CLI reuses the same configuration resolution as `onyx.init()` (env vars,
+project config, and home profile files).
+
 You can also emit to multiple paths in one run (comma-separated or by repeating `--out`):
 
 ```bash
@@ -406,7 +427,53 @@ const delCount = await db
 
 ```
 
-### 5) Secrets API
+### 5) Schema API
+
+```ts
+import { onyx } from '@onyx.dev/onyx-database';
+const db = onyx.init();
+
+// Fetch current schema (optionally filter by tables)
+const schema = await db.getSchema({ tables: ['User', 'Profile'] });
+
+// Review history
+const history = await db.getSchemaHistory();
+
+// Validate changes without applying
+await db.validateSchema({
+  revisionDescription: 'Add profile triggers',
+  entities: [
+    {
+      name: 'Profile',
+      identifier: { name: 'id', generator: 'UUID' },
+      attributes: [
+        { name: 'id', type: 'String', isNullable: false },
+        { name: 'userId', type: 'String', isNullable: false },
+      ],
+    },
+  ],
+});
+
+// Update and optionally publish
+await db.updateSchema(
+  {
+    revisionDescription: 'Publish profile changes',
+    entities: [
+      {
+        name: 'Profile',
+        identifier: { name: 'id', generator: 'UUID' },
+        attributes: [
+          { name: 'id', type: 'String', isNullable: false },
+          { name: 'userId', type: 'String', isNullable: false },
+        ],
+      },
+    ],
+  },
+  { publish: true },
+);
+```
+
+### 6) Secrets API
 
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
@@ -428,7 +495,7 @@ await db.putSecret('api-key', {
 await db.deleteSecret('api-key');
 ```
 
-### 6) Documents API (binary assets)
+### 7) Documents API (binary assets)
 
 ```ts
 import { onyx, type OnyxDocument } from '@onyx.dev/onyx-database';
@@ -451,7 +518,7 @@ const image = await db.getDocument('logo.png', { width: 128, height: 128 });
 await db.deleteDocument('logo.png');
 ```
 
-### 7) Streaming (live changes)
+### 8) Streaming (live changes)
 
 ```ts
 import { onyx, eq } from '@onyx.dev/onyx-database';
