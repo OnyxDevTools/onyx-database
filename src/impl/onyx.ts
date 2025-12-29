@@ -291,10 +291,12 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
 
   async listSecrets(): Promise<SecretsListResponse> {
     const { http, databaseId } = await this.ensureClient();
-    const path = `/database/${encodeURIComponent(databaseId)}/secrets`;
+    const path = `/database/${encodeURIComponent(databaseId)}/secret`;
     const response = await http.request<SecretsListResponse & { records: SecretMetadataPayload[] }>(
       'GET',
       path,
+      undefined,
+      { 'Content-Type': 'application/json' },
     );
     const records = (response.records ?? []).map(normalizeSecretMetadata);
     return {
@@ -307,7 +309,9 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async getSecret(key: string): Promise<SecretRecord> {
     const { http, databaseId } = await this.ensureClient();
     const path = `/database/${encodeURIComponent(databaseId)}/secret/${encodeURIComponent(key)}`;
-    const record = await http.request<SecretRecordPayload>('GET', path);
+    const record = await http.request<SecretRecordPayload>('GET', path, undefined, {
+      'Content-Type': 'application/json',
+    });
     return normalizeSecretRecord(record);
   }
 
@@ -321,7 +325,15 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async deleteSecret(key: string): Promise<{ key: string }> {
     const { http, databaseId } = await this.ensureClient();
     const path = `/database/${encodeURIComponent(databaseId)}/secret/${encodeURIComponent(key)}`;
-    return http.request('DELETE', path);
+    const response = await http.request<{ key?: string } | { success?: boolean } | undefined>(
+      'DELETE',
+      path,
+    );
+    const deletedKey =
+      response && typeof response === 'object' && 'key' in response
+        ? (response as { key?: string }).key
+        : undefined;
+    return { key: deletedKey ?? key };
   }
 
   close(): void {
