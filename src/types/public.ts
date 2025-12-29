@@ -262,6 +262,26 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   deleteDocument(documentId: string): Promise<unknown>;
 
   /**
+   * List stored secrets for the configured database.
+   */
+  listSecrets(): Promise<SecretsListResponse>;
+
+  /**
+   * Fetch a decrypted secret value by key.
+   */
+  getSecret(key: string): Promise<SecretRecord>;
+
+  /**
+   * Create or update a secret.
+   */
+  putSecret(key: string, input: SecretSaveRequest): Promise<SecretMetadata>;
+
+  /**
+   * Delete a secret by key.
+   */
+  deleteSecret(key: string): Promise<{ key: string }>;
+
+  /**
    * Cancels active streams; safe to call multiple times.
    * @example
    * ```ts
@@ -301,6 +321,26 @@ export interface OnyxFacade {
    * credentials immediately.
    */
   clearCacheConfig(): void;
+}
+
+export interface SecretMetadata {
+  key: string;
+  purpose?: string;
+  updatedAt: Date;
+}
+
+export interface SecretRecord extends SecretMetadata {
+  value: string;
+}
+
+export interface SecretsListResponse {
+  records: SecretMetadata[];
+  meta: { totalRecords: number };
+}
+
+export interface SecretSaveRequest {
+  purpose?: string;
+  value?: string;
 }
 
 export * from './common';
