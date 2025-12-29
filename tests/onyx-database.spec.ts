@@ -62,4 +62,36 @@ describe('OnyxDatabaseImpl helpers', () => {
       expect.stringContaining('/data/db/User/1?partition=p1'),
     );
   });
+
+  it('calls secrets endpoints with expected paths', async () => {
+    const db = onyx.init({
+      baseUrl: 'https://api.test',
+      databaseId: 'db',
+      apiKey: 'k',
+      apiSecret: 's',
+      fetch: vi.fn(),
+    });
+    const request = vi.fn().mockResolvedValue({});
+    vi.spyOn(db as any, 'ensureClient').mockResolvedValue({
+      http: { request },
+      databaseId: 'db',
+      baseUrl: '',
+      fetchImpl: vi.fn(),
+    });
+
+    await db.listSecrets();
+    await db.getSecret('api-key');
+    await db.putSecret('api-key', { value: 'secret', purpose: 'p' });
+    await db.deleteSecret('api-key');
+
+    expect(request).toHaveBeenNthCalledWith(1, 'GET', '/database/db/secrets');
+    expect(request).toHaveBeenNthCalledWith(2, 'GET', '/database/db/secret/api-key');
+    expect(request).toHaveBeenNthCalledWith(
+      3,
+      'PUT',
+      '/database/db/secret/api-key',
+      { value: 'secret', purpose: 'p' },
+    );
+    expect(request).toHaveBeenNthCalledWith(4, 'DELETE', '/database/db/secret/api-key');
+  });
 });
