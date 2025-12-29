@@ -97,6 +97,10 @@ async function writeFileJson(filePath: string, data: unknown): Promise<void> {
 async function fetchSchema(filePath: string, tables?: string[]): Promise<void> {
   const db = onyx.init();
   const schema = await db.getSchema({ tables });
+  if (tables?.length) {
+    process.stdout.write(`${JSON.stringify(schema, null, 2)}\n`);
+    return;
+  }
   await writeFileJson(filePath, schema);
   process.stdout.write(`Schema written to ${filePath}.\n`);
 }

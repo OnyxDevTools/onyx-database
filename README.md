@@ -145,11 +145,43 @@ onyx-schema publish
 # Overwrite ./onyx.schema.json with the remote schema
 onyx-schema get
 
-# Fetch only selected tables
-onyx-schema get ./generated.schema.json --tables=User,Profile
+# Fetch only selected tables (prints to stdout; does not overwrite files)
+onyx-schema get --tables=User,Profile
+
+# Example subset output
+onyx-schema get --tables=User,Profile
+# {
+#   "tables": [
+#     {
+#       "name": "User",
+#       "attributes": [
+#         { "name": "id", "type": "string", "required": true },
+#         { "name": "email", "type": "string", "required": true }
+#       ]
+#     },
+#     {
+#       "name": "Profile",
+#       "attributes": [
+#         { "name": "id", "type": "string", "required": true },
+#         { "name": "userId", "type": "string", "required": true }
+#       ]
+#     }
+#   ]
+# }
 
 # Validate a schema file without publishing
 onyx-schema validate ./onyx.schema.json
+```
+
+When `--tables` is provided, the subset is printed to stdout instead of writing a
+file. Otherwise, the CLI writes to `./onyx.schema.json` by default.
+
+In this repo's `examples/` workspace, the following scripts wrap the same commands:
+
+```bash
+npm run schema:get       # fetch remote schema into ./onyx.schema.json
+npm run schema:validate  # validate the local schema file
+npm run schema:publish   # validate then publish the local schema
 ```
 
 The CLI reuses the same configuration resolution as `onyx.init()` (env vars,
