@@ -26,5 +26,18 @@ export default defineConfig([
     outDir: 'dist',
     treeshake: true,
     splitting: false
+  },
+  {
+    entry: { 'schema/cli/schema': 'schema/cli/schema.ts' },
+    dts: false,
+    clean: false,
+    format: ['cjs'],
+    target: 'node18',
+    sourcemap: true,
+    minify: false,
+    platform: 'node',
+    outDir: 'dist',
+    treeshake: true,
+    splitting: false
   }
 ]);

@@ -1,8 +1,10 @@
 // filename: gen/generate.ts
 import process from 'node:process';
-import { resolveConfig } from '../src/config/chain';
-import { HttpClient } from '../src/core/http';
+import { resolveConfig, type ResolvedConfig } from '../src/config/chain';
 import { emitTypes, type OnyxIntrospection, type EmitOptions, type OptionalStrategy } from './emit';
+import { onyx } from '../src';
+import type { SchemaEntity } from '../src/types/public';
+import type { SchemaEntity } from '../src/types/public';
 
 export interface GenerateOptions {
   /** Where to read schema from. */
@@ -141,33 +143,65 @@ function isIntrospection(x: unknown): x is OnyxIntrospection {
   return !!x && typeof x === 'object' && Array.isArray((x as { tables?: unknown }).tables);
 }
 
-async function fetchSchemaFromApi(
-  http: HttpClient,
-  databaseId: string,
-  candidates?: string[],
-): Promise<OnyxIntrospection> {
-  const defaultCandidates = [
-    `/schema/${encodeURIComponent(databaseId)}`,
-    `/data/${encodeURIComponent(databaseId)}/schema`,
-    `/meta/schema/${encodeURIComponent(databaseId)}`,
-    `/schema?databaseId=${encodeURIComponent(databaseId)}`,
-    `/meta/schema?databaseId=${encodeURIComponent(databaseId)}`,
-  ];
-  const paths = candidates && candidates.length ? candidates : defaultCandidates;
-
-  let lastErr: unknown;
-  for (const p of paths) {
-    try {
-      const res = await http.request<unknown>('GET', p);
-      if (isIntrospection(res)) return res;
-    } catch (e) {
-      lastErr = e;
-    }
+function normalizeAttributeType(
+  raw: unknown,
+): OnyxIntrospection['tables'][number]['attributes'][number]['type'] {
+  const t = typeof raw === 'string' ? raw : '';
+  switch (t) {
+    case 'String':
+      return 'String';
+    case 'Boolean':
+      return 'Boolean';
+    case 'Timestamp':
+      return 'Timestamp';
+    case 'EmbeddedList':
+      return 'EmbeddedList';
+    case 'EmbeddedObject':
+      return 'EmbeddedObject';
+    case 'Int':
+    case 'Byte':
+    case 'Short':
+    case 'Float':
+    case 'Double':
+    case 'Long':
+      return 'Int';
+    default:
+      return 'EmbeddedObject';
   }
-  const err = lastErr instanceof Error ? lastErr.message : String(lastErr ?? 'Unknown error');
-  throw new Error(
-    `Unable to fetch schema from API. Tried: ${paths.join(', ')}. Last error: ${err}`,
-  );
+}
+
+function toOnyxIntrospectionFromEntities(entities: SchemaEntity[]): OnyxIntrospection {
+  return {
+    tables: entities.map((entity) => ({
+      name: entity.name,
+      attributes: (entity.attributes ?? []).map((attr) => ({
+        name: attr.name,
+        type: normalizeAttributeType(attr.type),
+        isNullable: Boolean(attr.isNullable),
+      })),
+    })),
+  };
+}
+
+function normalizeIntrospection(raw: unknown): OnyxIntrospection {
+  if (isIntrospection(raw)) return raw;
+  const entities = (raw as { entities?: unknown }).entities;
+  if (Array.isArray(entities)) {
+    return toOnyxIntrospectionFromEntities(entities as SchemaEntity[]);
+  }
+  throw new Error('Invalid schema: missing "tables" array.');
+}
+
+async function fetchSchemaFromApi(config: ResolvedConfig): Promise<OnyxIntrospection> {
+  const db = onyx.init({
+    baseUrl: config.baseUrl,
+    databaseId: config.databaseId,
+    apiKey: config.apiKey,
+    apiSecret: config.apiSecret,
+    fetch: config.fetch,
+  });
+  const schema = await db.getSchema();
+  return normalizeIntrospection(schema);
 }
 
 /**
@@ -188,32 +222,27 @@ export async function generateTypes(
   const resolvedSchemaPath =
     opts.schemaPath ?? (opts.source === 'file' ? DEFAULT_SCHEMA_PATH : undefined);
 
-  let schema: OnyxIntrospection | null = null;
+  let schemaInput: unknown | null = null;
 
   if (opts.source === 'file' || (opts.source === 'auto' && resolvedSchemaPath)) {
     if (!resolvedSchemaPath) throw new Error('schemaPath is required when source="file"');
     if (!opts.quiet)
       process.stderr.write(`[onyx-gen] reading schema from file: ${resolvedSchemaPath}\n`);
-    schema = await readFileJson<OnyxIntrospection>(resolvedSchemaPath);
+    schemaInput = await readFileJson<unknown>(resolvedSchemaPath);
   }
 
-  if (!schema) {
+  if (!schemaInput) {
     if (opts.source === 'file') throw new Error('Failed to read schema from file');
     const cfg = await resolveConfig({});
-    const http = new HttpClient({
-      baseUrl: cfg.baseUrl,
-      apiKey: cfg.apiKey,
-      apiSecret: cfg.apiSecret,
-      fetchImpl: cfg.fetch,
-    });
+    if (!cfg.databaseId) {
+      throw new Error('Missing databaseId. Set ONYX_DATABASE_ID or pass to onyx.init().');
+    }
     if (!opts.quiet)
       process.stderr.write(`[onyx-gen] fetching schema from API for db ${cfg.databaseId}\n`);
-    schema = await fetchSchemaFromApi(http, cfg.databaseId, options?.apiPaths);
+    schemaInput = await fetchSchemaFromApi(cfg);
   }
 
-  if (!isIntrospection(schema)) {
-    throw new Error('Invalid schema: missing "tables" array.');
-  }
+  const schema = normalizeIntrospection(schemaInput);
 
   const outTargets = [
     ...toArray(opts.typesOutFile),

@@ -19,7 +19,8 @@
     }
   },
   "bin": {
-    "onyx-gen": "./dist/gen/cli/generate.cjs"
+    "onyx-gen": "./dist/gen/cli/generate.cjs",
+    "onyx-schema": "./dist/schema/cli/schema.cjs"
   },
   "files": [
     "dist",

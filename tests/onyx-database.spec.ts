@@ -106,4 +106,46 @@ describe('OnyxDatabaseImpl helpers', () => {
     );
     expect(request).toHaveBeenNthCalledWith(4, 'DELETE', '/database/db/secret/api-key');
   });
+
+  it('calls schema endpoints with expected paths', async () => {
+    const db = onyx.init({
+      baseUrl: 'https://api.test',
+      databaseId: 'db',
+      apiKey: 'k',
+      apiSecret: 's',
+      fetch: vi.fn(),
+    });
+    const request = vi.fn().mockResolvedValue({});
+    vi.spyOn(db as any, 'ensureClient').mockResolvedValue({
+      http: { request },
+      databaseId: 'db',
+      baseUrl: '',
+      fetchImpl: vi.fn(),
+    });
+
+    await db.getSchema();
+    await db.getSchema({ tables: ['user', 'profile'] });
+    await db.getSchemaHistory();
+    await db.updateSchema({ revisionDescription: 'test', entities: [] });
+    await db.updateSchema({ entities: [] }, { publish: true });
+    await db.validateSchema({ entities: [] });
+
+    expect(request).toHaveBeenNthCalledWith(1, 'GET', '/schemas/db');
+    expect(request).toHaveBeenNthCalledWith(2, 'GET', '/schemas/db?tables=user%2Cprofile');
+    expect(request).toHaveBeenNthCalledWith(3, 'GET', '/schemas/history/db');
+    expect(request).toHaveBeenNthCalledWith(
+      4,
+      'PUT',
+      '/schemas/db',
+      { revisionDescription: 'test', entities: [], databaseId: 'db' },
+    );
+    expect(request).toHaveBeenNthCalledWith(5, 'PUT', '/schemas/db?publish=true', {
+      entities: [],
+      databaseId: 'db',
+    });
+    expect(request).toHaveBeenNthCalledWith(6, 'POST', '/schemas/db/validate', {
+      entities: [],
+      databaseId: 'db',
+    });
+  });
 });
