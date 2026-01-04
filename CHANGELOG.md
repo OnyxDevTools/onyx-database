@@ -1,5 +1,12 @@
 # @onyx.dev/onyx-database
 
+## 1.0.0
+
+### Major Changes
+
+- 812d82c: added within, notWithin, and onyx-schema diff"
+- db0b53b: added within, notWithin, and onyx-schema diff
+
 ## 0.3.0
 
 ### Minor Changes
