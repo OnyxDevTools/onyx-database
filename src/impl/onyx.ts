@@ -20,6 +20,7 @@ import type {
   QueryPage,
 } from '../types/protocol';
 import type { Sort, StreamAction, OnyxDocument, FetchImpl } from '../types/common';
+import { normalizeCondition } from '../helpers/condition-normalizer';
 import type {
   SchemaHistoryEntry,
   SchemaRevision,
@@ -612,11 +613,15 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this.table;
   }
 
+  private serializableConditions(): QueryCondition | null {
+    return normalizeCondition(this.conditions);
+  }
+
   private toSelectQuery(): SelectQuery {
     return {
       type: 'SelectQuery',
       fields: this.fields,
-      conditions: this.conditions,
+      conditions: this.serializableConditions(),
       sort: this.sort,
       limit: this.limitValue,
       distinct: this.distinctValue,
@@ -624,6 +629,23 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
       partition: this.partitionValue ?? null,
       resolvers: this.resolvers,
     };
+  }
+
+  private toUpdateQuery(): UpdateQuery {
+    return {
+      type: 'UpdateQuery',
+      conditions: this.serializableConditions(),
+      updates: this.updates ?? {},
+      sort: this.sort,
+      limit: this.limitValue,
+      partition: this.partitionValue ?? null,
+    };
+  }
+
+  private toSerializableQueryObject(): (SelectQuery | UpdateQuery) & { table: string } {
+    const table = this.ensureTable();
+    const payload = this.mode === 'update' ? this.toUpdateQuery() : this.toSelectQuery();
+    return { ...payload, table };
   }
 
   from(table: string): IQueryBuilder<T> {
@@ -792,14 +814,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   async update(): Promise<unknown> {
     if (this.mode !== 'update') throw new Error('Call setUpdates(...) before update().');
     const table = this.ensureTable();
-    const update: UpdateQuery = {
-      type: 'UpdateQuery',
-      conditions: this.conditions,
-      updates: this.updates ?? {},
-      sort: this.sort,
-      limit: this.limitValue,
-      partition: this.partitionValue ?? null,
-    };
+    const update = this.toUpdateQuery();
     return this.db._update(table, update, this.partitionValue);
   }
 

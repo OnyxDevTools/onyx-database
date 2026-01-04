@@ -3,6 +3,7 @@ import { QueryBuilder } from '../src/builders/query-builder';
 import { ConditionBuilderImpl } from '../src/builders/condition-builder';
 import { OnyxError } from '../src/errors/onyx-error';
 import { onyx } from '../src/impl/onyx';
+import { inOp } from '../src/helpers/conditions';
 
 function makeExec() {
   return {
@@ -142,6 +143,40 @@ describe('QueryBuilder', () => {
       expect.objectContaining({ resolvers: ['roles'] }),
       { pageSize: undefined, nextPage: undefined, partition: undefined },
     );
+  });
+
+  it('serializes query builders nested in conditions', async () => {
+    const exec = {
+      count: vi.fn(),
+      queryPage: vi.fn().mockResolvedValue({ records: [], nextPage: null }),
+      update: vi.fn().mockResolvedValue('ok'),
+      deleteByQuery: vi.fn(),
+      stream: vi.fn(),
+    };
+    const innerSelect = new QueryBuilder(exec as any, 'child').select('id').limit(2);
+    const outerSelect = new QueryBuilder(exec as any, 'parent').where(inOp('childId', innerSelect));
+    await outerSelect.list();
+    const selectArg = exec.queryPage.mock.calls[0][1];
+    const nestedSelect = (selectArg.conditions as any).criteria.value;
+    expect(nestedSelect).toMatchObject({
+      type: 'SelectQuery',
+      table: 'child',
+      fields: ['id'],
+      limit: 2,
+    });
+
+    const innerUpdate = new QueryBuilder(exec as any, 'child').setUpdates({ done: true });
+    const outerUpdate = new QueryBuilder(exec as any, 'parent')
+      .setUpdates({ active: false })
+      .where(inOp('childId', innerUpdate));
+    await outerUpdate.update();
+    const updateArg = exec.update.mock.calls[0][1];
+    const nestedUpdate = (updateArg.conditions as any).criteria.value;
+    expect(nestedUpdate).toMatchObject({
+      type: 'UpdateQuery',
+      table: 'child',
+      updates: { done: true },
+    });
   });
 
   it('fetches first record or null and aliases one()', async () => {

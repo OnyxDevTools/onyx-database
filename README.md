@@ -322,13 +322,50 @@ Importable helpers for conditions and sort:
 
 ```ts
 import {
-  eq, neq, inOp, notIn, between,
+  eq, neq, within, notWithin, // preferred aliases for IN/NOT IN
+  inOp, notIn,           
+  between,
   gt, gte, lt, lte,
   like, notLike, contains, notContains,
   startsWith, notStartsWith, matches, notMatches,
   isNull, notNull,
   asc, desc
 } from '@onyx.dev/onyx-database';
+```
+
+- Prefer `within`/`notWithin` for inclusion checks (supports arrays, comma-separated strings, or inner queries).  
+- `inOp`/`notIn` remain available for backward compatibility and are exact aliases.
+
+### Inner queries (IN/NOT IN with sub-selects)
+
+You can pass another query builder to `within` or `notWithin` to create nested filters. The SDK serializes the inner query (including its table) before sending the request.
+
+```ts
+import { onyx, within, notWithin, eq, tables, Schema } from '@onyx.dev/onyx-database';
+
+const db = onyx.init<Schema>();
+
+// Users that HAVE the admin role
+const usersWithAdmin = await db
+  .from(tables.User)
+  .where(
+    within(
+      'id',
+      db.select('userId').from(tables.UserRole).where(eq('roleId', 'role-admin')),
+    ),
+  )
+  .list();
+
+// Roles that DO NOT include a specific permission
+const rolesMissingPermission = await db
+  .from(tables.Role)
+  .where(
+    notWithin(
+      'id',
+      db.from(tables.RolePermission).where(eq('permissionId', 'perm-manage-users')),
+    ),
+  )
+  .list();
 ```
 
 ---

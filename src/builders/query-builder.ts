@@ -1,15 +1,10 @@
 // filename: src/builders/query-builder.ts
 import type { IQueryBuilder, IConditionBuilder } from '../types/builders';
 import { QueryResults, QueryResultsPromise } from './query-results';
-import type {
-  QueryCondition,
-  QueryCriteria,
-  SelectQuery,
-  UpdateQuery,
-  QueryPage,
-} from '../types/protocol';
+import type { QueryCondition, QueryCriteria, SelectQuery, UpdateQuery, QueryPage } from '../types/protocol';
 import type { Sort, StreamAction } from '../types/common';
 import { OnyxError } from '../errors/onyx-error';
+import { normalizeCondition } from '../helpers/condition-normalizer';
 
 /**
  * Internal adapter the QueryBuilder uses to execute operations.
@@ -203,6 +198,13 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
   }
 
   /**
+   * Normalize nested query builders inside the current condition tree.
+   */
+  private serializableConditions(): QueryCondition | null {
+    return normalizeCondition(this.conditions);
+  }
+
+  /**
    * Convert current builder state to a SelectQuery object.
    *
    * @example
@@ -214,7 +216,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
     return {
       type: 'SelectQuery',
       fields: this.fields,
-      conditions: this.conditions,
+      conditions: this.serializableConditions(),
       sort: this.sort,
       limit: this.limitValue,
       distinct: this.distinctValue,
@@ -222,6 +224,26 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
       partition: this.partitionValue ?? null,
       resolvers: this.resolvers,
     };
+  }
+
+  private toUpdateQuery(): UpdateQuery {
+    return {
+      type: 'UpdateQuery',
+      conditions: this.serializableConditions(),
+      updates: this.updates ?? {},
+      sort: this.sort,
+      limit: this.limitValue,
+      partition: this.partitionValue ?? null,
+    };
+  }
+
+  /**
+   * Produce a serializable query payload (select or update) including table metadata.
+   */
+  private toSerializableQueryObject(): (SelectQuery | UpdateQuery) & { table: string } {
+    const table = this.ensureTable();
+    const payload = this.mode === 'update' ? this.toUpdateQuery() : this.toSelectQuery();
+    return { ...payload, table };
   }
 
   /** ----------------- IQueryBuilder API ----------------- */
@@ -556,14 +578,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
   async update(): Promise<unknown> {
     if (this.mode !== 'update') throw new Error('Call setUpdates(...) before update().');
     const table = this.ensureTable();
-    const update: UpdateQuery = {
-      type: 'UpdateQuery',
-      conditions: this.conditions,
-      updates: this.updates ?? {},
-      sort: this.sort,
-      limit: this.limitValue,
-      partition: this.partitionValue ?? null,
-    };
+    const update = this.toUpdateQuery();
     return this.exec.update(table, update, this.partitionValue);
   }
 

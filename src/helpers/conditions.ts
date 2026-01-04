@@ -1,22 +1,44 @@
 // filename: src/helpers/conditions.ts
 import { ConditionBuilderImpl } from '../builders/condition-builder';
+import type { IQueryBuilder } from '../types/builders';
 import type { QueryCriteria } from '../types/protocol';
 import type { QueryCriteriaOperator } from '../types/common';
 
 const c = (field: string, operator: QueryCriteriaOperator, value?: unknown) =>
-  new ConditionBuilderImpl(({ field, operator, value } as QueryCriteria));
+  new ConditionBuilderImpl({ field, operator, value } as QueryCriteria);
 
 export const eq = (field: string, value: unknown) => c(field, 'EQUAL', value);
 export const neq = (field: string, value: unknown) => c(field, 'NOT_EQUAL', value);
-export const inOp = (field: string, values: unknown[] | string) =>
-  c(
-    field,
-    'IN',
+export function inOp(field: string, values: string): ConditionBuilderImpl;
+export function inOp<T>(field: string, values: unknown[] | IQueryBuilder<T>): ConditionBuilderImpl;
+export function inOp(field: string, values: unknown[] | string | IQueryBuilder<unknown>): ConditionBuilderImpl {
+  const parsed =
     typeof values === 'string'
-      ? values.split(',').map((v) => v.trim()).filter((v) => v.length)
-      : values,
-  );
-export const notIn = (field: string, values: unknown[]) => c(field, 'NOT_IN', values);
+      ? values.split(',').map(v => v.trim()).filter(v => v.length)
+      : values;
+  return c(field, 'IN', parsed);
+}
+export function within<T>(
+  field: string,
+  values: string | unknown[] | IQueryBuilder<T>,
+): ConditionBuilderImpl {
+  return inOp(field, values as any);
+}
+export function notIn(field: string, values: string): ConditionBuilderImpl;
+export function notIn<T>(field: string, values: unknown[] | IQueryBuilder<T>): ConditionBuilderImpl;
+export function notIn(field: string, values: unknown[] | string | IQueryBuilder<unknown>): ConditionBuilderImpl {
+  const parsed =
+    typeof values === 'string'
+      ? values.split(',').map(v => v.trim()).filter(v => v.length)
+      : values;
+  return c(field, 'NOT_IN', parsed);
+}
+export function notWithin<T>(
+  field: string,
+  values: string | unknown[] | IQueryBuilder<T>,
+): ConditionBuilderImpl {
+  return notIn(field, values as any);
+}
 export const between = (field: string, lower: unknown, upper: unknown) => c(field, 'BETWEEN', [lower, upper]);
 export const gt = (field: string, value: unknown) => c(field, 'GREATER_THAN', value);
 export const gte = (field: string, value: unknown) => c(field, 'GREATER_THAN_EQUAL', value);
