@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { onyx } from '../src';
 import type { SchemaUpsertRequest } from '../src/types/public';
+import { inOp } from '../src/helpers/conditions';
 
 describe('OnyxDatabaseImpl helpers', () => {
   it('returns null on 404 from findById', async () => {
@@ -62,6 +63,43 @@ describe('OnyxDatabaseImpl helpers', () => {
       'GET',
       expect.stringContaining('/data/db/User/1?partition=p1'),
     );
+  });
+
+  it('normalizes nested query builders before sending requests', async () => {
+    const db = onyx.init({
+      baseUrl: 'https://api.test',
+      databaseId: 'db',
+      apiKey: 'k',
+      apiSecret: 's',
+      fetch: vi.fn(),
+    });
+    const queryPage = vi.fn().mockResolvedValue({ records: [], nextPage: null });
+    const update = vi.fn().mockResolvedValue('ok');
+    (db as any)._queryPage = queryPage;
+    (db as any)._update = update;
+
+    const innerSelect = db.select('id').from('Other').limit(1);
+    await db.from('Example').where(inOp('refId', innerSelect)).list();
+    const nestedSelect = (queryPage.mock.calls[0][1].conditions as any).criteria.value;
+    expect(nestedSelect).toMatchObject({
+      type: 'SelectQuery',
+      table: 'Other',
+      fields: ['id'],
+      limit: 1,
+    });
+
+    const innerUpdate = db.from('Other').setUpdates({ status: 'closed' });
+    await db
+      .from('Example')
+      .setUpdates({ status: 'open' })
+      .where(inOp('refId', innerUpdate))
+      .update();
+    const nestedUpdate = (update.mock.calls[0][1].conditions as any).criteria.value;
+    expect(nestedUpdate).toMatchObject({
+      type: 'UpdateQuery',
+      table: 'Other',
+      updates: { status: 'closed' },
+    });
   });
 
   it('calls secrets endpoints with expected paths', async () => {
