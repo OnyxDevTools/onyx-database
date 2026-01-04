@@ -120,7 +120,8 @@ function serializeDates(value: unknown): unknown {
 }
 
 function stripEntityText<T extends Record<string, unknown>>(input: T): Omit<T, 'entityText'> {
-  const { entityText: _entityText, ...rest } = input;
+  const { entityText, ...rest } = input;
+  void entityText;
   return rest;
 }
 
@@ -143,7 +144,8 @@ function normalizeSchemaRevision(
   input: SchemaRevisionPayloadWithEntityText,
   fallbackDatabaseId: string,
 ): SchemaRevision {
-  const { meta, createdAt, publishedAt, revisionId, entityText: _entityText, ...rest } = input;
+  const { meta, createdAt, publishedAt, revisionId, entityText, ...rest } = input;
+  void entityText;
   const mergedMeta = {
     revisionId: meta?.revisionId ?? revisionId,
     createdAt: normalizeDate(meta?.createdAt ?? createdAt),
