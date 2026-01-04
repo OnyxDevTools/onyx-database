@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { onyx } from '../src';
+import type { SchemaUpsertRequest } from '../src/types/public';
 
 describe('OnyxDatabaseImpl helpers', () => {
   it('returns null on 404 from findById', async () => {
@@ -126,9 +127,9 @@ describe('OnyxDatabaseImpl helpers', () => {
     await db.getSchema();
     await db.getSchema({ tables: ['user', 'profile'] });
     await db.getSchemaHistory();
-    await db.updateSchema({ revisionDescription: 'test', entities: [] });
-    await db.updateSchema({ entities: [] }, { publish: true });
-    await db.validateSchema({ entities: [] });
+    await db.updateSchema({ revisionDescription: 'test', entities: [], entityText: 'omit' } as SchemaUpsertRequest & { entityText: string });
+    await db.updateSchema({ entities: [], entityText: 'omit' } as SchemaUpsertRequest & { entityText: string }, { publish: true });
+    await db.validateSchema({ entities: [], entityText: 'omit' } as SchemaUpsertRequest & { entityText: string });
 
     expect(request).toHaveBeenNthCalledWith(1, 'GET', '/schemas/db');
     expect(request).toHaveBeenNthCalledWith(2, 'GET', '/schemas/db?tables=user%2Cprofile');
@@ -147,5 +148,54 @@ describe('OnyxDatabaseImpl helpers', () => {
       entities: [],
       databaseId: 'db',
     });
+  });
+
+  it('strips entityText from schema payloads and responses', async () => {
+    const db = onyx.init({
+      baseUrl: 'https://api.test',
+      databaseId: 'db',
+      apiKey: 'k',
+      apiSecret: 's',
+      fetch: vi.fn(),
+    });
+    const request = vi.fn().mockImplementation((method, path, body) => {
+      if (method === 'GET' && path === '/schemas/db') {
+        return { databaseId: 'db', entities: [], entityText: 'raw' };
+      }
+      if (method === 'GET' && path === '/schemas/history/db') {
+        return [{ databaseId: 'db', entities: [], entityText: 'raw-history' }];
+      }
+      if (method === 'PUT' && path.startsWith('/schemas/db')) {
+        expect(body).toEqual({ entities: [], databaseId: 'db' });
+        return { databaseId: 'db', entities: [], entityText: 'raw-update' };
+      }
+      if (method === 'POST' && path === '/schemas/db/validate') {
+        expect(body).toEqual({ entities: [], databaseId: 'db' });
+        return {
+          valid: true,
+          schema: { databaseId: 'db', entities: [], entityText: 'raw-validate' },
+        };
+      }
+      return {};
+    });
+    vi.spyOn(db as any, 'ensureClient').mockResolvedValue({
+      http: { request },
+      databaseId: 'db',
+      baseUrl: '',
+      fetchImpl: vi.fn(),
+    });
+
+    const schema = await db.getSchema();
+    expect((schema as any).entityText).toBeUndefined();
+
+    const history = await db.getSchemaHistory();
+    expect(history[0]).toBeDefined();
+    expect((history[0] as any).entityText).toBeUndefined();
+
+    const updated = await db.updateSchema({ entities: [], entityText: 'omit' } as SchemaUpsertRequest & { entityText: string });
+    expect((updated as any).entityText).toBeUndefined();
+
+    const validation = await db.validateSchema({ entities: [], entityText: 'omit' } as SchemaUpsertRequest & { entityText: string });
+    expect((validation.schema as any)?.entityText).toBeUndefined();
   });
 });
