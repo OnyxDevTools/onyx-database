@@ -174,6 +174,10 @@ onyx-schema get --tables=User,Profile
 
 # Validate a schema file without publishing
 onyx-schema validate ./onyx.schema.json
+
+# Diff local schema vs API
+onyx-schema diff ./onyx.schema.json
+# Prints added/removed/changed tables and attribute differences between the API schema and your local file.
 ```
 
 When `--tables` is provided, the subset is printed to stdout instead of writing a
