@@ -99,7 +99,11 @@ type SchemaRevisionPayload = Omit<SchemaRevision, 'meta'> & {
   publishedAt?: string | Date;
   revisionId?: string;
 };
+type SchemaRevisionPayloadWithEntityText = SchemaRevisionPayload & { entityText?: unknown };
 type SchemaValidationPayload = SchemaValidationResult & { schema?: SchemaRevisionPayload };
+type SchemaValidationPayloadWithEntityText = SchemaValidationPayload & {
+  schema?: SchemaRevisionPayloadWithEntityText;
+};
 
 function serializeDates(value: unknown): unknown {
   if (value instanceof Date) return value.toISOString();
@@ -112,6 +116,11 @@ function serializeDates(value: unknown): unknown {
     return out;
   }
   return value;
+}
+
+function stripEntityText<T extends Record<string, unknown>>(input: T): Omit<T, 'entityText'> {
+  const { entityText: _entityText, ...rest } = input;
+  return rest;
 }
 
 function normalizeSecretMetadata(input: SecretMetadataPayload): SecretMetadata {
@@ -129,8 +138,11 @@ function normalizeDate(value?: string | Date): Date | undefined {
   return Number.isNaN(ts.getTime()) ? undefined : ts;
 }
 
-function normalizeSchemaRevision(input: SchemaRevisionPayload, fallbackDatabaseId: string): SchemaRevision {
-  const { meta, createdAt, publishedAt, revisionId, ...rest } = input;
+function normalizeSchemaRevision(
+  input: SchemaRevisionPayloadWithEntityText,
+  fallbackDatabaseId: string,
+): SchemaRevision {
+  const { meta, createdAt, publishedAt, revisionId, entityText: _entityText, ...rest } = input;
   const mergedMeta = {
     revisionId: meta?.revisionId ?? revisionId,
     createdAt: normalizeDate(meta?.createdAt ?? createdAt),
@@ -349,14 +361,14 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/schemas/${encodeURIComponent(databaseId)}${
       params.size ? `?${params.toString()}` : ''
     }`;
-    const res = await http.request<SchemaRevisionPayload>('GET', path);
+    const res = await http.request<SchemaRevisionPayloadWithEntityText>('GET', path);
     return normalizeSchemaRevision(res, databaseId);
   }
 
   async getSchemaHistory(): Promise<SchemaHistoryEntry[]> {
     const { http, databaseId } = await this.ensureClient();
     const path = `/schemas/history/${encodeURIComponent(databaseId)}`;
-    const res = await http.request<SchemaRevisionPayload[]>('GET', path);
+    const res = await http.request<SchemaRevisionPayloadWithEntityText[]>('GET', path);
     return Array.isArray(res) ? res.map((entry) => normalizeSchemaRevision(entry, databaseId)) : [];
   }
 
@@ -370,17 +382,27 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/schemas/${encodeURIComponent(databaseId)}${
       params.size ? `?${params.toString()}` : ''
     }`;
-    const body = { ...schema, databaseId: schema.databaseId ?? databaseId };
-    const res = await http.request<SchemaRevisionPayload>('PUT', path, serializeDates(body));
+    const body = stripEntityText({ ...schema, databaseId: schema.databaseId ?? databaseId });
+    const res = await http.request<SchemaRevisionPayloadWithEntityText>(
+      'PUT',
+      path,
+      serializeDates(body),
+    );
     return normalizeSchemaRevision(res, databaseId);
   }
 
   async validateSchema(schema: SchemaUpsertRequest): Promise<SchemaValidationResult> {
     const { http, databaseId } = await this.ensureClient();
     const path = `/schemas/${encodeURIComponent(databaseId)}/validate`;
-    const body = { ...schema, databaseId: schema.databaseId ?? databaseId };
-    const res = await http.request<SchemaValidationPayload>('POST', path, serializeDates(body));
-    const normalizedSchema = res.schema ? normalizeSchemaRevision(res.schema, databaseId) : undefined;
+    const body = stripEntityText({ ...schema, databaseId: schema.databaseId ?? databaseId });
+    const res = await http.request<SchemaValidationPayloadWithEntityText>(
+      'POST',
+      path,
+      serializeDates(body),
+    );
+    const normalizedSchema = res.schema
+      ? normalizeSchemaRevision(res.schema, databaseId)
+      : undefined;
     return {
       ...res,
       valid: res.valid ?? true,

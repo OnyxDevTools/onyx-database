@@ -3,11 +3,12 @@
 import path from 'node:path';
 import process from 'node:process';
 import { onyx } from '../../src';
+import { computeSchemaDiff, formatSchemaDiff } from './diff';
 import type { SchemaUpsertRequest } from '../../src/types/public';
 
 const DEFAULT_SCHEMA_PATH = './onyx.schema.json';
 
-type Command = 'publish' | 'get' | 'validate' | 'help';
+type Command = 'publish' | 'get' | 'validate' | 'diff' | 'help';
 
 type ParsedArgs = {
   command: Command;
@@ -22,6 +23,7 @@ Usage:
   onyx-schema publish [file]
   onyx-schema get [file] [--tables tableA,tableB]
   onyx-schema validate [file]
+  onyx-schema diff [file]
 
 Options:
   [file]                 Path to schema JSON (default: ./onyx.schema.json)
@@ -42,7 +44,7 @@ function parseTables(value?: string): string[] | undefined {
 function parseArgs(argv: string[]): ParsedArgs {
   const cmd = (argv[2] ?? '').toLowerCase();
   let command: Command = 'help';
-  if (cmd === 'publish' || cmd === 'get' || cmd === 'validate') {
+  if (cmd === 'publish' || cmd === 'get' || cmd === 'validate' || cmd === 'diff') {
     command = cmd;
   }
 
@@ -131,6 +133,17 @@ async function publishSchema(filePath: string): Promise<void> {
   process.stdout.write(`Schema published for database ${revision.databaseId} from ${filePath}.\n`);
 }
 
+async function diffSchema(filePath: string): Promise<void> {
+  const db = onyx.init();
+  const [apiSchema, localSchema] = await Promise.all([
+    db.getSchema(),
+    readFileJson<SchemaUpsertRequest>(filePath),
+  ]);
+  const diff = computeSchemaDiff(apiSchema, localSchema);
+  const output = formatSchemaDiff(diff, filePath);
+  process.stdout.write(output);
+}
+
 (async () => {
   try {
     const parsed = parseArgs(process.argv);
@@ -143,6 +156,9 @@ async function publishSchema(filePath: string): Promise<void> {
         break;
       case 'validate':
         await validateSchema(parsed.filePath);
+        break;
+      case 'diff':
+        await diffSchema(parsed.filePath);
         break;
       default:
         printHelp();
