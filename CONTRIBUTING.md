@@ -13,6 +13,7 @@ Thanks for your interest in contributing! This project is a **zero-dependency**,
   - [Project goals \& guardrails](#project-goals--guardrails)
   - [Prerequisites](#prerequisites)
   - [Repository layout](#repository-layout)
+  - [Quick start on macOS (TypeScript SDK)](#quick-start-on-macos-typescript-sdk)
   - [Local setup](#local-setup)
   - [Build, typecheck, lint, test](#build-typecheck-lint-test)
   - [Examples workspace](#examples-workspace)
@@ -84,6 +85,29 @@ Be respectful and constructive. We welcome issues and PRs that improve the SDK, 
 
 ---
 
+## Quick start on macOS (TypeScript SDK)
+
+```bash
+xcode-select --install                                    # command line tools (once)
+brew install node@20 git                                  # Node.js 20+ with npm
+git clone https://github.com/OnyxDevTools/onyx-database.git
+cd onyx-database
+npm install                                               # install root deps
+npm run typecheck                                         # quick sanity check
+npm run build                                             # bundle SDK + CLI
+npm install -g .                                          # install local onyx-schema + onyx-gen CLIs
+cd examples
+npm install                                               # installs deps (links root SDK via file:..)
+# Download onyx-database.json from https://cloud.onyx.dev and save to ./onyx-database.json
+onyx-schema get ./onyx.schema.json                        # fetch schema with CLI (writes ./onyx.schema.json)
+onyx-gen                                                  # reads from default schema file: ./onyx.schema.json and writes to onyx/types.ts
+npm exec -- tsx seed.ts                                   # seed sample data
+npm exec -- tsx query/basic.ts                            # run a sample (requires onyx-database.json config)
+# Optional: set ONYX_DEBUG=true to log requests/responses
+```
+
+---
+
 ## Local setup
 
 ```bash
@@ -136,22 +160,17 @@ npm run gen:onyx   # generate types from onyx.schema.json to onyx/types.ts
 
 ## Schema codegen
 
-The `onyx-gen` CLI emits interfaces, a `Schema` map, and a `tables` enum. Examples:
+### CLI overview
 
-```bash
-# From API (uses same resolver as onyx.init)
-npx onyx-gen --source api --out ./src/onyx/types.ts --name OnyxSchema
+| Command                        | Purpose                                                          |
+| ---                            |                                                              --- |
+| `onyx-gen`                     | Generate TypeScript interfaces, `Schema` map, and `tables` enum. |
+| `onyx-schema get [file]`       | Fetch schema from API; writes file unless printing.              |
+| `onyx-schema publish [file]`   | Validate then publish schema JSON to the database.               |
+| `onyx-schema validate [file]`  | Validate schema locally without publishing.                      |
+| `onyx-schema diff [file]`      | Diff local schema vs API and print YAML diff.                    |
+| `onyx-schema info`             | Show resolved config sources and connection status.              |
 
-# From a local export
-npx onyx-gen --source file --schema ./onyx.schema.json --out ./src/onyx/types.ts --name OnyxSchema
-```
-
-Key flags:
-- `--out` accepts a directory **or** a `.ts` file path.
-- JSON is **not** emitted by default (enable with `--emit-json`).
-- `--timestamps` (`string|date|number`), `--prefix`, and `--optional` (`non-null|nullable|none`) control type style.
-
----
 
 ## Debugging in VS Code
 

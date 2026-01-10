@@ -21,7 +21,6 @@ jobs:
               - 'src/**'
             tests:
               - 'tests/**'
-      - run: echo "HERE-> ${{ secrets.CODECOV_TOKEN }}"
 
   ci:
     needs: changes

@@ -665,7 +665,45 @@ try {
 }
 ```
 
----
+## Onyx CLI
+
+
+```
++----------------------+-----------------------------------------------+--------------------------------------------------------------+
+| Command              | Flags                                         | Defaults / notes                                             |
++----------------------+-----------------------------------------------+--------------------------------------------------------------+
+| onyx-gen             | --source auto|api|file                        | Default: --source file; --schema ./onyx.schema.json;         |
+|                      | --schema <path>                               | --out ./onyx/types.ts (file or dir; repeatable; dir uses     |
+|                      | --out / --types-out / --types-file <dir|file> | --base onyx.schema); timestamps default: date; optional      |
+|                      | --base / --baseName <name>                    | strategy default: non-null; schema type name: OnyxSchema;    |
+|                      | --timestamps string|date|number               | emit-json disabled by default; --overwrite enabled; quiet=false. |
+|                      | --name / --schemaTypeName <T>                 | --api-path repeatable; --json-out derived from TS output.    |
+|                      | --prefix <Prefix>                             |                                                              |
+|                      | --optional non-null|nullable|none             |                                                              |
+|                      | --emit-json / --no-emit-json                  |                                                              |
+|                      | --json-out <dir>                              |                                                              |
+|                      | --api-path <path> (repeatable)                |                                                              |
+|                      | --overwrite / --no-overwrite                  |                                                              |
+|                      | -q / --quiet                                  |                                                              |
+|                      | -h / --help                                   |                                                              |
++----------------------+-----------------------------------------------+--------------------------------------------------------------+
+| onyx-schema get      | [file] (positional)                           | Default file: ./onyx.schema.json; writes file unless         |
+|                      | --tables a,b                                  | --tables or --print (then prints to stdout).                 |
+|                      | --print                                       |                                                              |
+|                      | -h / --help                                   |                                                              |
++----------------------+-----------------------------------------------+--------------------------------------------------------------+
+| onyx-schema publish  | [file] (positional)                           | Default file: ./onyx.schema.json; validates before publishing; |
+|                      | -h / --help                                   | uses onyx.init credential resolver.                          |
++----------------------+-----------------------------------------------+--------------------------------------------------------------+
+| onyx-schema validate | [file] (positional)                           | Default file: ./onyx.schema.json; exits non-zero on errors.  |
+|                      | -h / --help                                   |                                                              |
++----------------------+-----------------------------------------------+--------------------------------------------------------------+
+| onyx-schema diff     | [file] (positional)                           | Default file: ./onyx.schema.json; prints YAML diff vs API.   |
+|                      | -h / --help                                   |                                                              |
++----------------------+-----------------------------------------------+--------------------------------------------------------------+
+| onyx-schema info     | -h / --help                                   | Shows resolved config sources, config path, connection check.|
++----------------------+-----------------------------------------------+--------------------------------------------------------------+
+```
 
 ## Runtime & bundlers
 
