@@ -18,15 +18,37 @@ cmd()   { echo "+ $*"; "$@"; }
 
 # --- Repo checks ---
 [[ -f "package.json" ]] || abort "Run from the repo root (package.json not found)."
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  abort "Working tree not clean. Commit or stash changes first."
-fi
 
 PKG_NAME="$(node -e "console.log(require('./package.json').name || '')" 2>/dev/null || true)"
 [[ -n "$PKG_NAME" ]] || abort "Could not read package name from package.json."
 
 CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 MAIN_BRANCH="main"
+
+# --- Ensure on main before committing ---
+if [[ "${CURRENT_BRANCH}" != "${MAIN_BRANCH}" ]]; then
+  info "Switching to ${MAIN_BRANCH}..."
+  cmd git checkout "${MAIN_BRANCH}"
+fi
+
+# --- Install & test before committing ---
+info "Installing deps..."
+cmd npm install
+
+info "Running tests (enforces coverage thresholds)..."
+# Vitest config requires 100% coverage; this will fail the script if unmet.
+cmd npm test
+
+info "Linting..."
+cmd npm run lint
+
+info "Building..."
+cmd npm run build
+
+# --- Ensure clean working tree before creating changeset/version bump ---
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  abort "Working tree not clean. Commit or stash changes first."
+fi
 
 # --- Prompt for bump type ---
 echo "Select version bump type:"
@@ -53,26 +75,6 @@ ${MESSAGE}
 EOF
 
 info "Created changeset: ${CHANGESET_FILE}"
-
-# --- Ensure on main before committing ---
-if [[ "${CURRENT_BRANCH}" != "${MAIN_BRANCH}" ]]; then
-  info "Switching to ${MAIN_BRANCH}..."
-  cmd git checkout "${MAIN_BRANCH}"
-fi
-
-# --- Install & test before committing ---
-info "Installing deps..."
-cmd npm install
-
-info "Running tests (enforces coverage thresholds)..."
-# Vitest config requires 100% coverage; this will fail the script if unmet.
-cmd npm test
-
-info "Linting..."
-cmd npm run lint
-
-info "Building..."
-cmd npm run build
 
 # --- Commit changeset to main ---
 info "Adding changeset..."
