@@ -21,6 +21,7 @@ jobs:
               - 'src/**'
             tests:
               - 'tests/**'
+      - run: echo "HERE-> ${{ secrets.CODECOV_TOKEN }}"
 
   ci:
     needs: changes
@@ -35,7 +36,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-      - run: echo "${{ secrets.CODECOV_TOKEN }}"
       - run: npm ci
       - run: npm run audit
       - run: npm run lint
