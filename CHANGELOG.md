@@ -1,5 +1,12 @@
 # @onyx.dev/onyx-database
 
+## 1.0.1
+
+### Patch Changes
+
+- 659080f: Delete-by-id now returns a boolean success flag (examples updated), schema diff tests/coverage tightened, and minor config lint fixes
+- 602eba6: Delete-by-id now returns a boolean success flag (examples updated), schema diff tests/coverage tightened, and minor config lint fixes
+
 ## 1.0.0
 
 ### Major Changes
