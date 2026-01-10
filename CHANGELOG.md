@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 1.0.2
+
+### Patch Changes
+
+- 86e760d: delete by id returns true or false instead of object"
+
 ## 1.0.1
 
 ### Patch Changes
