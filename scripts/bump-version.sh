@@ -40,7 +40,9 @@ info "Running tests (enforces coverage thresholds)..."
 cmd npm test
 
 info "Running smoke test (phase gate)..."
-cmd npm test -- tests/smoke.spec.ts
+if ! ONYX_CONFIG_PATH="./examples/onyx-database.json" ONYX_SCHEMA_PATH="./examples/onyx.schema.json" npm run test:smoke; then
+  abort "Smoke test failed; fix before version bump."
+fi
 
 info "Linting..."
 cmd npm run lint

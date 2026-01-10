@@ -14,7 +14,7 @@ async function main(): Promise<void> {
         db
           .select('userId')
           .from(tables.UserRole)
-          .where(eq('roleId', 'role-admin')),
+          .where(eq('roleId', 'smoke-role')),
       ),
     )
     .list();
@@ -27,7 +27,7 @@ async function main(): Promise<void> {
     .where(
       notWithin(
         'id',
-        db.from(tables.RolePermission).where(eq('permissionId', 'perm-manage-users')),
+        db.from(tables.RolePermission).where(eq('permissionId', 'smoke-permission')),
       ),
     )
     .list();
