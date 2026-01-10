@@ -17,7 +17,8 @@
       "autoAttachChildProcesses": false,
       "env": {
          "ONYX_DEBUG": "true",
-         "ONYX_CONFIG_PATH": "../onyx-database.json"
+         "ONYX_CONFIG_PATH": "${workspaceFolder}/examples/onyx-database.json",
+         "ONYX_SCHEMA_PATH": "${workspaceFolder}/examples/onyx.schema.json"
       }
     }
   ]

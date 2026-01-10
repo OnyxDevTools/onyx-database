@@ -215,12 +215,13 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
    * @param table Table containing the entity.
    * @param primaryKey Primary key value.
    * @param options Optional partition and cascade relationships.
+   * @returns `true` when the delete request succeeds.
    */
-  delete<Table extends keyof Schema & string, T = Schema[Table]>(
+  delete<Table extends keyof Schema & string>(
     table: Table,
     primaryKey: string,
     options?: { partition?: string; relationships?: string[] }
-  ): Promise<T>;
+  ): Promise<boolean>;
 
   /**
    * Store a document (file blob) for later retrieval.
@@ -276,6 +277,19 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
    * Retrieve the schema revision history for the configured database.
    */
   getSchemaHistory(): Promise<SchemaHistoryEntry[]>;
+
+  /**
+   * Compare the current API schema with a local schema definition.
+   *
+   * @example
+   * ```ts
+   * const diff = await db.diffSchema(localSchema);
+   * if (!diff.newTables.length && !diff.removedTables.length && !diff.changedTables.length) {
+   *   console.log('Schemas match');
+   * }
+   * ```
+   */
+  diffSchema(localSchema: SchemaUpsertRequest): Promise<SchemaDiff>;
 
   /**
    * Update the schema for the configured database.
@@ -419,11 +433,13 @@ export interface SchemaIndex {
   name: string;
   type?: SchemaIndexType;
   minimumScore?: number;
+  [key: string]: unknown;
 }
 
 export interface SchemaResolver {
   name: string;
   resolver: string;
+  [key: string]: unknown;
 }
 
 export type SchemaTriggerEvent =
@@ -441,6 +457,7 @@ export interface SchemaTrigger {
   name: string;
   event: SchemaTriggerEvent;
   trigger: string;
+  [key: string]: unknown;
 }
 
 export interface SchemaEntity {
@@ -451,12 +468,14 @@ export interface SchemaEntity {
   indexes?: SchemaIndex[];
   resolvers?: SchemaResolver[];
   triggers?: SchemaTrigger[];
+  [key: string]: unknown;
 }
 
 export interface SchemaRevisionMetadata {
   revisionId?: string;
   createdAt?: Date;
   publishedAt?: Date;
+  [key: string]: unknown;
 }
 
 export interface SchemaRevision {
@@ -464,18 +483,76 @@ export interface SchemaRevision {
   revisionDescription?: string;
   entities: SchemaEntity[];
   meta?: SchemaRevisionMetadata;
+  [key: string]: unknown;
 }
 
 export type SchemaHistoryEntry = SchemaRevision;
 
 export type SchemaUpsertRequest = Omit<SchemaRevision, 'databaseId' | 'meta'> & {
   databaseId?: string;
+  [key: string]: unknown;
 };
 
 export interface SchemaValidationResult {
   valid?: boolean;
   schema?: SchemaRevision;
   errors?: Array<{ message: string }>;
+}
+
+export interface SchemaAttributeChange {
+  name: string;
+  from: { type?: string; isNullable?: boolean };
+  to: { type?: string; isNullable?: boolean };
+}
+
+export interface SchemaIndexChange {
+  name: string;
+  from: SchemaIndex;
+  to: SchemaIndex;
+}
+
+export interface SchemaResolverChange {
+  name: string;
+  from: SchemaResolver;
+  to: SchemaResolver;
+}
+
+export interface SchemaTriggerChange {
+  name: string;
+  from: SchemaTrigger;
+  to: SchemaTrigger;
+}
+
+export interface SchemaTableDiff {
+  name: string;
+  partition?: { from: string | null; to: string | null } | null;
+  identifier?: { from: SchemaIdentifier | null; to: SchemaIdentifier | null } | null;
+  attributes?: {
+    added: SchemaAttribute[];
+    removed: string[];
+    changed: SchemaAttributeChange[];
+  };
+  indexes?: {
+    added: SchemaIndex[];
+    removed: string[];
+    changed: SchemaIndexChange[];
+  };
+  resolvers?: {
+    added: SchemaResolver[];
+    removed: string[];
+    changed: SchemaResolverChange[];
+  };
+  triggers?: {
+    added: SchemaTrigger[];
+    removed: string[];
+    changed: SchemaTriggerChange[];
+  };
+}
+
+export interface SchemaDiff {
+  newTables: string[];
+  removedTables: string[];
+  changedTables: SchemaTableDiff[];
 }
 
 export * from './common';

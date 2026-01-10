@@ -42,6 +42,22 @@ npm i @onyx.dev/onyx-database
 
 The package is dual-module (ESM + CJS) and has **no runtime or peer dependencies**.
 
+To use the bundled CLIs (`onyx-gen` and `onyx-schema`) globally:
+
+```bash
+npm install -g @onyx.dev/onyx-database
+```
+
+To install the CLI globally from this repo checkout (useful for local development and testing):
+
+```bash
+# run from the repo root
+npm install
+npm run build
+npm uninstall -g @onyx.dev/onyx-database # optional: clear older global versions
+npm install -g .                         # installs the built onyx-schema and onyx-gen
+```
+
 ---
 
 ## Initialize the client
@@ -148,6 +164,9 @@ onyx-schema publish
 # Overwrite ./onyx.schema.json with the remote schema
 onyx-schema get
 
+# Print the remote schema without writing a file
+onyx-schema get --print
+
 # Fetch only selected tables (prints to stdout; does not overwrite files)
 onyx-schema get --tables=User,Profile
 
@@ -177,7 +196,7 @@ onyx-schema validate ./onyx.schema.json
 
 # Diff local schema vs API
 onyx-schema diff ./onyx.schema.json
-# Prints added/removed/changed tables and attribute differences between the API schema and your local file.
+# Prints YAML with added/removed/changed tables and attribute differences between the API schema and your local file.
 ```
 
 When `--tables` is provided, the subset is printed to stdout instead of writing a
@@ -193,6 +212,16 @@ npm run schema:publish   # validate then publish the local schema
 
 The CLI reuses the same configuration resolution as `onyx.init()` (env vars,
 project config, and home profile files).
+
+Programmatic diffing is also available:
+
+```ts
+import { onyx } from '@onyx.dev/onyx-database';
+
+const db = onyx.init();
+const diff = await db.diffSchema(localSchema); // SchemaUpsertRequest
+console.log(diff.changedTables);
+```
 
 You can also emit to multiple paths in one run (comma-separated or by repeating `--out`):
 

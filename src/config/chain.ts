@@ -11,6 +11,15 @@ export interface ResolvedConfig {
   apiSecret: string;
   fetch: FetchImpl;
 }
+export interface ConfigSourceInfo {
+  baseUrl: string;
+  databaseId: string;
+  apiKey: string;
+  apiSecret: string;
+  configPath?: string;
+  projectFile?: string;
+  homeProfile?: string;
+}
 
 const gProcess = (globalThis as {
   process?: {
@@ -78,18 +87,18 @@ function readEnv(targetId?: string): Partial<OnyxConfig> {
   return res;
 }
 
-async function readProjectFile(databaseId?: string): Promise<Partial<OnyxConfig>> {
-  if (!isNode) return {};
+async function readProjectFile(databaseId?: string): Promise<{ config: Partial<OnyxConfig>; path?: string }> {
+  if (!isNode) return { config: {} };
   const fs = await nodeImport<typeof import('node:fs/promises')>('node:fs/promises');
   const path = await nodeImport<typeof import('node:path')>('node:path');
   const cwd = gProcess?.cwd?.() ?? '.';
 
-  const tryRead = async (p: string): Promise<Partial<OnyxConfig>> => {
+  const tryRead = async (p: string): Promise<{ config: Partial<OnyxConfig>; path: string }> => {
     const txt = await fs.readFile(p, 'utf8');
     const sanitized = txt.replace(/[\r\n]+/g, '');
     const json = dropUndefined<OnyxConfig>(JSON.parse(sanitized) as Partial<OnyxConfig>);
     dbg('project file:', p, '→', mask(json));
-    return json;
+    return { config: json, path: p };
   };
 
   if (databaseId) {
@@ -106,12 +115,12 @@ async function readProjectFile(databaseId?: string): Promise<Partial<OnyxConfig>
     return await tryRead(fallback);
   } catch {
     dbg('project file not found:', fallback);
-    return {};
+    return { config: {} };
   }
 }
 
-async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>> {
-  if (!isNode) return {};
+async function readHomeProfile(databaseId?: string): Promise<{ config: Partial<OnyxConfig>; path?: string }> {
+  if (!isNode) return { config: {} };
   const fs = await nodeImport<typeof import('node:fs/promises')>('node:fs/promises');
   const os = await nodeImport<typeof import('node:os')>('node:os');
   const path = await nodeImport<typeof import('node:path')>('node:path');
@@ -127,13 +136,13 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
       return false;
     }
   };
-  const readProfile = async (p: string): Promise<Partial<OnyxConfig>> => {
+  const readProfile = async (p: string): Promise<{ config: Partial<OnyxConfig>; path: string }> => {
     try {
       const txt = await fs.readFile(p, 'utf8');
       const sanitized = txt.replace(/[\r\n]+/g, '');
       const json = dropUndefined<OnyxConfig>(JSON.parse(sanitized) as Partial<OnyxConfig>);
       dbg('home profile used:', p, '→', mask(json));
-      return json;
+      return { config: json, path: p };
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       throw new OnyxConfigError(`Failed to read ${p}: ${msg}`);
@@ -156,7 +165,7 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
 
   if (!(await fileExists(dir))) {
     dbg('~/.onyx does not exist:', dir);
-    return {};
+    return { config: {} };
   }
   const files = await fs.readdir(dir).catch(() => []);
   const matches = files.filter(f => f.startsWith('onyx-database-') && f.endsWith('.json'));
@@ -171,11 +180,11 @@ async function readHomeProfile(databaseId?: string): Promise<Partial<OnyxConfig>
   }
 
   dbg('no usable home profiles found in', dir);
-  return {};
+  return { config: {} };
 }
 
-async function readConfigPath(p: string): Promise<Partial<OnyxConfig>> {
-  if (!isNode) return {};
+async function readConfigPath(p: string): Promise<{ config: Partial<OnyxConfig>; path?: string }> {
+  if (!isNode) return { config: {} };
   const fs = await nodeImport<typeof import('node:fs/promises')>('node:fs/promises');
   const path = await nodeImport<typeof import('node:path')>('node:path');
   const cwd = gProcess?.cwd?.() ?? '.';
@@ -185,7 +194,7 @@ async function readConfigPath(p: string): Promise<Partial<OnyxConfig>> {
     const sanitized = txt.replace(/[\r\n]+/g, '');
     const json = dropUndefined<OnyxConfig>(JSON.parse(sanitized) as Partial<OnyxConfig>);
     dbg('config path:', resolved, '→', mask(json));
-    return json;
+    return { config: json, path: resolved };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     throw new OnyxConfigError(`Failed to read ${resolved}: ${msg}`);
@@ -206,7 +215,8 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
 
   let cfgPath: Partial<OnyxConfig> = {};
   if (configPath) {
-    cfgPath = await readConfigPath(configPath);
+    const cfgRes = await readConfigPath(configPath);
+    cfgPath = cfgRes.config;
   }
 
   const targetId = input?.databaseId ?? env.databaseId ?? cfgPath.databaseId;
@@ -217,7 +227,8 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
 
   let project: Partial<OnyxConfig> = {};
   if (!(haveDbId && haveApiKey && haveApiSecret)) {
-    project = await readProjectFile(targetId);
+    const projRes = await readProjectFile(targetId);
+    project = projRes.config;
     if (project.databaseId) haveDbId = true;
     if (project.apiKey) haveApiKey = true;
     if (project.apiSecret) haveApiSecret = true;
@@ -225,7 +236,8 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
 
   let home: Partial<OnyxConfig> = {};
   if (!(haveDbId && haveApiKey && haveApiSecret)) {
-    home = await readHomeProfile(targetId);
+    const homeRes = await readHomeProfile(targetId);
+    home = homeRes.config;
   }
 
   const merged: Partial<OnyxConfig> = {
@@ -316,6 +328,72 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   dbg('credential source:', JSON.stringify(source));
   dbg('resolved:', mask(resolved));
   return resolved;
+}
+
+export async function resolveConfigWithSource(
+  input?: OnyxConfig,
+): Promise<ResolvedConfig & { sources: ConfigSourceInfo }> {
+  const configPathEnv = gProcess?.env?.ONYX_CONFIG_PATH;
+  const env = readEnv(input?.databaseId);
+  const cfgPathRes = configPathEnv ? await readConfigPath(configPathEnv) : { config: {} };
+  const cfgPath = cfgPathRes.config;
+  const projectRes = await readProjectFile(input?.databaseId ?? env.databaseId ?? cfgPath.databaseId);
+  const project = projectRes.config;
+  const homeRes = await readHomeProfile(input?.databaseId ?? env.databaseId ?? cfgPath.databaseId);
+  const home = homeRes.config;
+
+  const base = await resolveConfig(input);
+  const sources: ConfigSourceInfo = {
+    baseUrl: input?.baseUrl
+      ? 'explicit config'
+      : env.baseUrl
+      ? 'env'
+      : cfgPath.baseUrl
+      ? 'env ONYX_CONFIG_PATH'
+      : project.baseUrl
+      ? 'project file'
+      : home.baseUrl
+      ? 'home profile'
+      : 'default',
+    databaseId: input?.databaseId
+      ? 'explicit config'
+      : env.databaseId
+      ? 'env'
+      : cfgPath.databaseId
+      ? 'env ONYX_CONFIG_PATH'
+      : project.databaseId
+      ? 'project file'
+      : home.databaseId
+      ? 'home profile'
+      : 'unknown',
+    apiKey: input?.apiKey
+      ? 'explicit config'
+      : env.apiKey
+      ? 'env'
+      : cfgPath.apiKey
+      ? 'env ONYX_CONFIG_PATH'
+      : project.apiKey
+      ? 'project file'
+      : home.apiKey
+      ? 'home profile'
+      : 'unknown',
+    apiSecret: input?.apiSecret
+      ? 'explicit config'
+      : env.apiSecret
+      ? 'env'
+      : cfgPath.apiSecret
+      ? 'env ONYX_CONFIG_PATH'
+      : project.apiSecret
+      ? 'project file'
+      : home.apiSecret
+      ? 'home profile'
+      : 'unknown',
+    configPath: cfgPathRes.path,
+    projectFile: projectRes.path,
+    homeProfile: homeRes.path,
+  };
+
+  return { ...base, sources };
 }
 
 // Redacts secrets for debug logging

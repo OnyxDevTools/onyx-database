@@ -22,6 +22,8 @@ import type {
 import type { Sort, StreamAction, OnyxDocument, FetchImpl } from '../types/common';
 import { normalizeCondition } from '../helpers/condition-normalizer';
 import type {
+  SchemaDiff,
+  SchemaEntity,
   SchemaHistoryEntry,
   SchemaRevision,
   SchemaUpsertRequest,
@@ -34,6 +36,7 @@ import type {
 import { CascadeRelationshipBuilder } from '../builders/cascade-relationship-builder';
 import { OnyxError } from '../errors/onyx-error';
 import { OnyxHttpError } from '../errors/http-error';
+import { computeSchemaDiff } from '../helpers/schema-diff';
 
 const DEFAULT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -144,8 +147,21 @@ function normalizeSchemaRevision(
   input: SchemaRevisionPayloadWithEntityText,
   fallbackDatabaseId: string,
 ): SchemaRevision {
-  const { meta, createdAt, publishedAt, revisionId, entityText, ...rest } = input;
+  const {
+    meta,
+    createdAt,
+    publishedAt,
+    revisionId,
+    entityText,
+    databaseId,
+    entities,
+    revisionDescription,
+    ...rest
+  } = input;
   void entityText;
+  const dbId = typeof databaseId === 'string' ? databaseId : fallbackDatabaseId;
+  const entityList = Array.isArray(entities) ? (entities as SchemaEntity[]) : [];
+  const revisionDesc = typeof revisionDescription === 'string' ? revisionDescription : undefined;
   const mergedMeta = {
     revisionId: meta?.revisionId ?? revisionId,
     createdAt: normalizeDate(meta?.createdAt ?? createdAt),
@@ -154,10 +170,11 @@ function normalizeSchemaRevision(
   const cleanedMeta =
     mergedMeta.revisionId || mergedMeta.createdAt || mergedMeta.publishedAt ? mergedMeta : undefined;
   return {
-    ...rest,
-    databaseId: input.databaseId ?? fallbackDatabaseId,
+    databaseId: dbId,
+    revisionDescription: revisionDesc,
+    entities: entityList,
     meta: cleanedMeta,
-    entities: input.entities ?? [],
+    ...rest,
   };
 }
 
@@ -302,11 +319,11 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     }
   }
 
-  async delete<Table extends keyof Schema & string, T = Schema[Table]>(
+  async delete<Table extends keyof Schema & string>(
     table: Table,
     primaryKey: string,
     options?: { partition?: string; relationships?: string[] },
-  ): Promise<T> {
+  ): Promise<boolean> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
     const partition = options?.partition ?? this.defaultPartition;
@@ -317,7 +334,8 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/${encodeURIComponent(
       table,
     )}/${encodeURIComponent(primaryKey)}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request<T>('DELETE', path);
+    await http.request<unknown>('DELETE', path);
+    return true;
   }
 
   async saveDocument(doc: OnyxDocument): Promise<unknown> {
@@ -373,6 +391,11 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/schemas/history/${encodeURIComponent(databaseId)}`;
     const res = await http.request<SchemaRevisionPayloadWithEntityText[]>('GET', path);
     return Array.isArray(res) ? res.map((entry) => normalizeSchemaRevision(entry, databaseId)) : [];
+  }
+
+  async diffSchema(localSchema: SchemaUpsertRequest): Promise<SchemaDiff> {
+    const apiSchema = await this.getSchema();
+    return computeSchemaDiff(apiSchema, localSchema);
   }
 
   async updateSchema(
@@ -918,7 +941,7 @@ class CascadeBuilderImpl<Schema = Record<string, unknown>>
   delete<Table extends keyof Schema & string>(
     table: Table,
     primaryKey: string,
-  ): Promise<Schema[Table]> {
+  ): Promise<boolean> {
     const opts = this.rels ? { relationships: this.rels } : undefined;
     return this.db.delete(table, primaryKey, opts);
   }

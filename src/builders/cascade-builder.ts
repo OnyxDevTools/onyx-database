@@ -102,7 +102,7 @@ export class CascadeBuilder<Schema = Record<string, unknown>> implements ICascad
   delete<Table extends keyof Schema & string>(
     table: Table,
     primaryKey: string,
-  ): Promise<Schema[Table]> {
+  ): Promise<boolean> {
     const opts =
       this.relationships.length ? { relationships: this.relationships } : undefined;
     return this.db.delete(table, primaryKey, opts);

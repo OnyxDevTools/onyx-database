@@ -102,7 +102,7 @@ npm install
 
 ```bash
 # Build ESM + CJS + d.ts (lib) and CLI
-npm run build
+npm run build  # from project root
 
 # TypeScript typecheck
 npm run typecheck
@@ -127,7 +127,7 @@ Common scripts:
 ```bash
 # from examples/
 npm run gen:onyx   # generate types from onyx.schema.json to onyx/types.ts
-npm start          # run the current example (tsx)
+../scripts/run-examples.sh          # run the current example (tsx)
 ```
 
 > Keep examples minimal and focused on library usage (not on repo internals).

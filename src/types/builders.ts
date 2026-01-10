@@ -334,7 +334,7 @@ export interface ICascadeBuilder<Schema = Record<string, unknown>> {
   delete<Table extends keyof Schema & string>(
     table: Table,
     primaryKey: string,
-  ): Promise<Schema[Table]>;
+  ): Promise<boolean>;
 }
 
 /** Builder for describing cascade relationship metadata. */
