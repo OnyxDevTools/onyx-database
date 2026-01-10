@@ -122,5 +122,10 @@ printf 'PASSED: %s%d%s\n' "$green" "$passed" "$reset"
 printf 'FAILED: %s%d%s\n' "$red" "$failed" "$reset"
 
 if ((failed > 0)); then
-  exit 1
+  # Exit with the number of failures (capped at 255 to satisfy POSIX exit codes)
+  exit_code=$failed
+  if ((exit_code > 255)); then
+    exit_code=255
+  fi
+  exit "$exit_code"
 fi

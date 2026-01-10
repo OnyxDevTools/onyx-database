@@ -39,11 +39,22 @@ info "Running tests (enforces coverage thresholds)..."
 # Vitest config requires 100% coverage; this will fail the script if unmet.
 cmd npm test
 
+info "Running smoke test (phase gate)..."
+cmd npm test -- tests/smoke.spec.ts
+
 info "Linting..."
 cmd npm run lint
 
 info "Building..."
 cmd npm run build
+
+info "Packaging dry-run (ensures publishability)..."
+cmd npm pack --dry-run >/dev/null
+
+info "Running examples (phase gate)..."
+if ! ./scripts/run-examples.sh; then
+  abort "Examples failed; fix before version bump."
+fi
 
 # --- Ensure clean working tree before creating changeset/version bump ---
 if ! git diff --quiet || ! git diff --cached --quiet; then

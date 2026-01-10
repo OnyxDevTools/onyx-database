@@ -57,6 +57,7 @@ describe.runIf(hasConfig)('smoke e2e', () => {
       },
       roles: [
         {
+          id: randomUUID(),
           userId,
           roleId: role.id,
           createdAt: startDateTime
