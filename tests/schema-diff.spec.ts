@@ -201,7 +201,6 @@ describe('schema diff', () => {
   });
 
   it('drops unchanged tables when pruning diffs', () => {
-    const diff: SchemaRevision = { databaseId: 'db', entities: [] };
     const output = formatSchemaDiff(
       {
         newTables: [],
