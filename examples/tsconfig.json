@@ -20,6 +20,7 @@
     "document/**/*.ts",
     "onyx/**/*.ts",
     "stream/**/*.ts",
-    "secrets/**/*.ts"
+    "secrets/**/*.ts",
+    "schema/**/*.ts"
   ]
 }

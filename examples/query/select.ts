@@ -13,6 +13,12 @@ async function main(): Promise<void> {
     .list();
 
   console.log(JSON.stringify(users, null, 2))
+  if (!users.length) {
+    throw new Error('Expected at least one user with selected fields');
+  }
+  if (users.some((u) => u.username == null || u.email == null)) {
+    throw new Error('Selected fields missing on returned users');
+  }
   /*
     [
       {
@@ -27,7 +33,11 @@ async function main(): Promise<void> {
    */
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

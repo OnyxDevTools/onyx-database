@@ -13,9 +13,16 @@ async function main(): Promise<void> {
     .update();
 
   console.log(`Updated ${updatedCount} record(s).`);
+  if (updatedCount <= 0) {
+    throw new Error('Expected at least one record to be updated');
+  }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

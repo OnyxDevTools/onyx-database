@@ -34,7 +34,11 @@ async function main(): Promise<void> {
   console.log(`\nshould be null: ${JSON.stringify(alsoUser, null, 2)}`); //should be null: null 
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

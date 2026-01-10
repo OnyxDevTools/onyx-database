@@ -15,7 +15,11 @@ async function main(): Promise<void> {
   db.close();
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

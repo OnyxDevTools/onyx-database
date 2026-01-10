@@ -34,7 +34,11 @@ async function main(): Promise<void> {
   setTimeout(() => handle.cancel(), 500);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

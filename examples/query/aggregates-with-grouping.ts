@@ -14,6 +14,13 @@ async function main(): Promise<void> {
 
   console.log(JSON.stringify(stats, null, 2));
 
+  if (!stats.length) {
+    throw new Error('Expected grouped aggregate results by isActive');
+  }
+  if (stats.some((g) => g['count(id)'] == null)) {
+    throw new Error('Missing count(id) in grouped aggregate results');
+  }
+
 // response looks like this:
 // [
 //   {
@@ -28,7 +35,11 @@ async function main(): Promise<void> {
 
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

@@ -15,6 +15,12 @@ async function main(): Promise<void> {
     .list();
 
   console.log(JSON.stringify(users, null, 2));
+  if (!users.length) {
+    throw new Error('Expected at least one user ordered by createdAt');
+  }
+  if (users.length > 3) {
+    throw new Error('Query returned more than the requested limit');
+  }
   /*
     [
       {
@@ -26,7 +32,11 @@ async function main(): Promise<void> {
   */
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

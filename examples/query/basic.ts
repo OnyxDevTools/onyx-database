@@ -14,6 +14,16 @@ async function main(): Promise<void> {
 
   console.log(JSON.stringify(activeUsers, null, 2));
 
+  if (!activeUsers.length) {
+    throw new Error('Expected at least one active user');
+  }
+  if (activeUsers.length > 5) {
+    throw new Error('Query returned more than the requested limit');
+  }
+  if (activeUsers.some((u) => u.isActive !== true)) {
+    throw new Error('Found inactive user in active user query');
+  }
+
   /* response: 
   [
     {
@@ -30,7 +40,11 @@ async function main(): Promise<void> {
   */
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

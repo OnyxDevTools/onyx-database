@@ -14,6 +14,9 @@ async function main(): Promise<void> {
       return;
     }
     console.log(JSON.stringify(user, null, 2));
+    if (user.id !== id) {
+      throw new Error('Fetched user id does not match requested id');
+    }
 
     /*
       {
@@ -33,7 +36,11 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

@@ -25,6 +25,9 @@ async function main(): Promise<void> {
     .list();
 
   console.log(JSON.stringify(logs, null, 2));
+  if (!logs.length) {
+    throw new Error('Expected audit logs to match compound query');
+  }
 
   /*
     [
@@ -53,7 +56,11 @@ async function main(): Promise<void> {
   */
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

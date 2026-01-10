@@ -36,7 +36,11 @@ async function main(): Promise<void> {
   console.log('Roles containing permission perm-manage-users:', rolesWithPermission);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

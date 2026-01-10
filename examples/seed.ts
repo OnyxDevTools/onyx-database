@@ -1,12 +1,72 @@
 // filename: examples/seed.ts
-import { onyx } from '@onyx.dev/onyx-database';
+import { randomUUID } from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { onyx, type SchemaUpsertRequest } from '@onyx.dev/onyx-database';
 import { tables, Schema, Role, Permission, RolePermission, User, AuditLog } from './onyx/types';
+
+const thisDir = path.dirname(fileURLToPath(import.meta.url));
+
+async function findSchemaPath(): Promise<string> {
+  const candidates = [
+    process.env.ONYX_SCHEMA_PATH ? path.resolve(process.env.ONYX_SCHEMA_PATH) : undefined,
+    path.resolve(thisDir, './onyx.schema.json'),
+    path.resolve(thisDir, '../onyx.schema.json'),
+  ].filter(Boolean) as string[];
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error(
+    `Schema file not found. Checked ${candidates.join(
+      ', ',
+    )}. Set ONYX_SCHEMA_PATH to point to your schema JSON.`,
+  );
+}
+
+async function ensureSchema(db: ReturnType<typeof onyx.init>): Promise<void> {
+  const requiredTables = [
+    tables.Role,
+    tables.Permission,
+    tables.RolePermission,
+    tables.User,
+    tables.UserProfile,
+    tables.AuditLog,
+  ];
+
+  const hasAllTables = async (): Promise<boolean> => {
+    const schema = await db.getSchema();
+    const existing = new Set(schema.entities.map((e) => e.name));
+    return requiredTables.every((t) => existing.has(t));
+  };
+
+  if (await hasAllTables()) return;
+
+  const schemaPath = await findSchemaPath();
+  const raw = await fs.readFile(schemaPath, 'utf8');
+  const schema = JSON.parse(raw) as SchemaUpsertRequest;
+  await db.updateSchema(schema, { publish: true });
+
+  if (!(await hasAllTables())) {
+    throw new Error('Required tables still missing after publishing root schema.');
+  }
+}
 
 export async function seed(): Promise<User> {
   const db = onyx.init<Schema>();
 
+  await ensureSchema(db);
+
   // Create Role
   const role = (await db.save(tables.Role, {
+    id: randomUUID(),
     name: 'Admin',
     description: 'Administrators with full access',
     isSystem: false,
@@ -15,12 +75,14 @@ export async function seed(): Promise<User> {
 
   // Create Permissions
   const wPermission = (await db.save(tables.Permission, {
+    id: randomUUID(),
     name: 'user.write',
     description: 'Create, update, and delete users',
     deletedAt: null,
   })) as Permission;
 
   const rPermission = (await db.save(tables.Permission, {
+    id: randomUUID(),
     name: 'user.read',
     description: 'get user(s)',
     deletedAt: null,
@@ -29,10 +91,12 @@ export async function seed(): Promise<User> {
   // Link RolePermissions
   await db.save(tables.RolePermission, [
     {
+      id: randomUUID(),
       roleId: role.id,
       permissionId: rPermission.id,
     },
     {
+      id: randomUUID(),
       roleId: role.id,
       permissionId: wPermission.id,
     },
@@ -40,6 +104,7 @@ export async function seed(): Promise<User> {
 
   // Create User
   const user = (await db.save(tables.User, {
+    id: randomUUID(),
     username: 'admin-user-1',
     email: 'admin@example.com',
     isActive: true,
@@ -49,6 +114,7 @@ export async function seed(): Promise<User> {
 
   // Create UserProfile
   await db.save(tables.UserProfile, {
+    id: randomUUID(),
     userId: user.id,
     firstName: 'Example',
     lastName: 'Admin',
@@ -63,6 +129,7 @@ export async function seed(): Promise<User> {
 
   // Link UserRole
   await db.save(tables.UserRole, {
+    id: randomUUID(),
     userId: user.id,
     roleId: role.id,
   });
@@ -230,3 +297,15 @@ export async function seedAuditLogs(): Promise<AuditLog[]> {
 
   return (await db.save(tables.AuditLog, logs)) as AuditLog[];
 }
+
+async function runIfInvokedDirectly(): Promise<void> {
+  const executedAsScript = import.meta.url === new URL(process.argv[1] ?? '', 'file://').href;
+  if (!executedAsScript) return;
+  await seed();
+  console.log('example: completed');
+}
+
+runIfInvokedDirectly().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

@@ -10,7 +10,7 @@
     "tsx": "^4.21.0"
   },
   "scripts": {
-    "gen:onyx": "onyx-gen --source file --schema ./onyx.schema.json --out ./onyx/types.ts --name OnyxSchema",
+    "gen:onyx": "onyx-gen",
     "schema:get": "onyx-schema get",
     "schema:publish": "onyx-schema publish",
     "schema:validate": "onyx-schema validate"

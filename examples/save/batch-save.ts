@@ -21,7 +21,11 @@ async function main(): Promise<void> {
   console.log('Batch saved users:', users.length); //Batch saved users: 5
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

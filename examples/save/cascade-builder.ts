@@ -33,7 +33,11 @@ async function main(): Promise<void> {
   console.log('Saved user with cascadeBuilder');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

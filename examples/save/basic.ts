@@ -16,9 +16,19 @@ async function main(): Promise<void> {
   });
 
   console.log('Saved user:', user);  //Saved user: {id: 'example-user-1', username: 'Example User', email: 'basic@example.com', isActive: true, createdAt: '2025-08-27T01:47:29.655Z', …}
+  if (!user || typeof (user as { id?: string }).id !== 'string') {
+    throw new Error('Saved user did not return an id');
+  }
+  if ((user as { email?: string }).email !== 'basic@example.com') {
+    throw new Error('Saved user email does not match input');
+  }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

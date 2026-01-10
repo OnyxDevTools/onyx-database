@@ -13,9 +13,20 @@ async function main(): Promise<void> {
     .list();
 
   console.log(JSON.stringify(stats, null, 2)); // [{"avg(age)": 24}]
+  if (!stats.length) {
+    throw new Error('Expected at least one aggregate result');
+  }
+  const avgValue = stats[0]?.['avg(age)'];
+  if (avgValue == null) {
+    throw new Error('Average age was not returned');
+  }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    console.log('example: completed');
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
