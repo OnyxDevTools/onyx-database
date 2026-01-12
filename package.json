@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.6",
-    "@size-limit/file": "^11.2.0",
+    "@size-limit/file": "^12.0.0",
     "@types/node": "^24.3.0",
     "@typescript-eslint/eslint-plugin": "^8.41.0",
     "@typescript-eslint/parser": "^8.41.0",
