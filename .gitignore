@@ -27,6 +27,7 @@ coverage/
 .nyc_output/
 .vitest/
 .eslintcache
+.next/
 
 # ───────────────────────────
 # OS / editor cruft
@@ -55,6 +56,5 @@ onyx-database.json
 # Generated Onyx types (via scripts/gen-onyx.sh defaults)
 onyx-ui
 onyx-api
-
 
 

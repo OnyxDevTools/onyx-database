@@ -101,6 +101,37 @@ const db = onyx.init({
 });
 ```
 
+### Edge / RSC usage (Next.js, Cloudflare Workers)
+
+For edge runtimes (Next.js Edge/RSC, Cloudflare Workers), import the edge entry. It avoids Node-only imports and only resolves credentials from environment variables or explicit config.
+
+```ts
+import { onyx } from '@onyx.dev/onyx-database/edge';
+
+const db = onyx.init(); // uses env vars in edge runtimes
+```
+
+File-based config (`ONYX_CONFIG_PATH`, project files, home profiles) is not available in edge runtimes. If you need file-based config, use the Node entry instead.
+
+**Cloudflare Worker example:**
+
+```ts
+import { onyx } from '@onyx.dev/onyx-database/edge';
+
+export default {
+  async fetch(_request: Request, env: Record<string, string>) {
+    const db = onyx.init({
+      baseUrl: env.ONYX_DATABASE_BASE_URL,
+      databaseId: env.ONYX_DATABASE_ID,
+      apiKey: env.ONYX_DATABASE_API_KEY,
+      apiSecret: env.ONYX_DATABASE_API_SECRET,
+    });
+
+    return Response.json({ ok: true });
+  },
+};
+```
+
 ### Connection handling
 
 Calling `onyx.init()` returns a lightweight client. Configuration is resolved once
