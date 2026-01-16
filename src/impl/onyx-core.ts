@@ -199,6 +199,9 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
         fetchImpl: this.resolved.fetch,
         requestLoggingEnabled: this.requestLoggingEnabled,
         responseLoggingEnabled: this.responseLoggingEnabled,
+        retryEnabled: this.resolved.retryEnabled,
+        maxRetries: this.resolved.maxRetries,
+        retryInitialDelayMs: this.resolved.retryInitialDelayMs,
       });
     }
     return {
@@ -520,7 +523,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     return http.request('PUT', path, serializeDates(update));
   }
 
-  async _deleteByQuery(table: string, select: SelectQuery, partition?: string): Promise<unknown> {
+  async _deleteByQuery(table: string, select: SelectQuery, partition?: string): Promise<number> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
     const p = partition ?? this.defaultPartition;
@@ -528,7 +531,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/query/delete/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request('PUT', path, serializeDates(select));
+    return http.request<number>('PUT', path, serializeDates(select));
   }
 
   async _stream<T>(
@@ -814,7 +817,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this.firstOrNull();
   }
 
-  async delete(): Promise<unknown> {
+  async delete(): Promise<number> {
     if (this.mode !== 'select') throw new Error('delete() is only applicable in select mode.');
     const table = this.ensureTable();
     return this.db._deleteByQuery(table, this.toSelectQuery(), this.partitionValue);

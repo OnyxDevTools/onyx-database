@@ -91,6 +91,10 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
       : async () => {
           throw new OnyxConfigError('No fetch available; provide OnyxConfig.fetch');
         });
+  const retryConfig = merged.retry ?? {};
+  const retryEnabled = retryConfig.enabled ?? true;
+  const maxRetries = retryConfig.maxRetries ?? 3;
+  const retryInitialDelayMs = retryConfig.initialDelayMs ?? 300;
 
   const missing: string[] = [];
   if (!databaseId) missing.push('databaseId');
@@ -104,7 +108,16 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
     );
   }
 
-  const resolved: ResolvedConfig = { baseUrl, databaseId, apiKey, apiSecret, fetch: fetchImpl };
+  const resolved: ResolvedConfig = {
+    baseUrl,
+    databaseId,
+    apiKey,
+    apiSecret,
+    fetch: fetchImpl,
+    retryEnabled,
+    maxRetries,
+    retryInitialDelayMs,
+  };
   dbg('resolved:', mask(resolved));
   return resolved;
 }

@@ -65,7 +65,7 @@ export interface QueryExecutor {
    * await exec.deleteByQuery('Users', selectQuery);
    * ```
    */
-  deleteByQuery(table: string, select: SelectQuery, partition?: string): Promise<unknown>;
+  deleteByQuery(table: string, select: SelectQuery, partition?: string): Promise<number>;
 
   /**
    * Start a streaming query.
@@ -555,13 +555,14 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
 
   /**
    * Delete records matching the current query.
+   * Returns the number of deleted records.
    *
    * @example
    * ```ts
    * await builder.delete();
    * ```
    */
-  async delete(): Promise<unknown> {
+  async delete(): Promise<number> {
     if (this.mode !== 'select') throw new Error('delete() is only applicable in select mode.');
     const table = this.ensureTable();
     return this.exec.deleteByQuery(table, this.toSelectQuery(), this.partitionValue);

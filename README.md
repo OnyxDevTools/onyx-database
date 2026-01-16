@@ -13,6 +13,25 @@ TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-
 
 ---
 
+## Table of contents
+
+- [Getting started](#getting-started-cloud--keys--connect)
+- [Install](#install)
+- [Initialize the client](#initialize-the-client)
+- [Generate schema types](#optional-generate-typescript-types-from-your-schema)
+- [Query helpers](#query-helpers-at-a-glance)
+- [Examples](#usage-examples-with-user-role-permission)
+- [Error handling](#error-handling)
+- [HTTP retries](#http-retries)
+- [Onyx CLI](#onyx-cli)
+- [Runtime & bundlers](#runtime--bundlers)
+- [Release workflow](#release-workflow)
+- [Related links](#related-links)
+- [Security](#security)
+- [License](#license)
+
+---
+
 ## Getting started (Cloud ➜ keys ➜ connect)
 
 1. **Sign up & create resources** at **<https://cloud.onyx.dev>**  
@@ -694,6 +713,21 @@ try {
   console.error('Onyx error:', err);
   // Handle configuration or HTTP errors here.
 }
+```
+
+## HTTP retries
+
+- GET requests retry automatically with Fibonacci backoff (300ms base) up to 3 times by default; mutations are never retried.
+- Disable or tune via `retry` on `onyx.init`:
+
+```ts
+const db = onyx.init({
+  retry: {
+    enabled: true,     // default
+    maxRetries: 2,     // default 3
+    initialDelayMs: 500, // default 300
+  },
+});
 ```
 
 ## Onyx CLI

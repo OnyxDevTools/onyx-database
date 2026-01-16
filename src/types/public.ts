@@ -11,6 +11,21 @@ import type {
 
 export type { QueryResults, QueryResultsPromise };
 
+export interface RetryOptions {
+  /**
+   * Enable or disable HTTP retries for idempotent GET requests. Defaults to `true`.
+   */
+  enabled?: boolean;
+  /**
+   * Maximum number of retry attempts after the initial GET request. Defaults to 3.
+   */
+  maxRetries?: number;
+  /**
+   * Initial backoff delay in milliseconds. Defaults to 300ms and grows with Fibonacci backoff.
+   */
+  initialDelayMs?: number;
+}
+
 export interface OnyxConfig {
   baseUrl?: string;
   databaseId?: string;
@@ -34,6 +49,10 @@ export interface OnyxConfig {
    * Milliseconds to cache resolved credentials; defaults to 5 minutes.
    */
   ttl?: number;
+  /**
+   * Retry configuration for idempotent GET requests.
+   */
+  retry?: RetryOptions;
 }
 
 export interface IOnyxDatabase<Schema = Record<string, unknown>> {

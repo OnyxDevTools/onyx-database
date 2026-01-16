@@ -208,12 +208,13 @@ export interface IQueryBuilder<T = unknown> {
   update(): Promise<unknown>;
   /**
    * Executes a delete operation.
+   * Returns the number of deleted records.
    * @example
    * ```ts
    * await db.from('User').where(eq('status', 'inactive')).delete();
    * ```
    */
-  delete(): Promise<unknown>;
+  delete(): Promise<number>;
 
   /**
    * Registers a listener for added items on a stream.

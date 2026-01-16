@@ -20,6 +20,9 @@ export interface HttpClientOptions {
   defaultHeaders?: Record<string, string>;
   requestLoggingEnabled?: boolean;
   responseLoggingEnabled?: boolean;
+  retryEnabled?: boolean;
+  maxRetries?: number;
+  retryInitialDelayMs?: number;
 }
 
 export class HttpClient {
@@ -30,6 +33,37 @@ export class HttpClient {
   private readonly defaults: Record<string, string>;
   private readonly requestLoggingEnabled: boolean;
   private readonly responseLoggingEnabled: boolean;
+  private readonly retryEnabled: boolean;
+  private readonly maxRetries: number;
+  private readonly retryInitialDelayMs: number;
+
+  private static fibonacci(n: number): number {
+    if (n <= 1) return 1;
+    let a = 1;
+    let b = 1;
+    for (let i = 2; i <= n; i++) {
+      const next = a + b;
+      a = b;
+      b = next;
+    }
+    return b;
+  }
+
+  private static parseRetryAfter(header: string | null): number | null {
+    if (!header) return null;
+    const trimmed = header.trim();
+    if (trimmed === '') return null;
+    const seconds = Number(trimmed);
+    if (Number.isFinite(seconds)) {
+      return Math.max(0, seconds * 1000);
+    }
+    const dateMs = Date.parse(trimmed);
+    if (!Number.isNaN(dateMs)) {
+      const now = Date.now();
+      return Math.max(0, dateMs - now);
+    }
+    return null;
+  }
 
   constructor(opts: HttpClientOptions) {
     if (!opts.baseUrl || opts.baseUrl.trim() === '') {
@@ -58,6 +92,9 @@ export class HttpClient {
         ?.env?.ONYX_DEBUG === 'true';
     this.requestLoggingEnabled = !!opts.requestLoggingEnabled || envDebug;
     this.responseLoggingEnabled = !!opts.responseLoggingEnabled || envDebug;
+    this.retryEnabled = opts.retryEnabled ?? true;
+    this.maxRetries = Math.max(0, opts.maxRetries ?? 3);
+    this.retryInitialDelayMs = Math.max(0, opts.retryInitialDelayMs ?? 300);
   }
 
   headers(extra?: Record<string, string>): Record<string, string> {
@@ -109,10 +146,9 @@ export class HttpClient {
       body: payload,
     };
 
-    const isQuery =
-      path.includes('/query/') && !/\/query\/(?:update|delete)\//.test(path);
-    const canRetry = method === 'GET' || isQuery;
-    const maxAttempts = canRetry ? 3 : 1;
+    // Retries are limited to GET requests to avoid replaying mutations.
+    const canRetry = this.retryEnabled && method === 'GET';
+    const maxAttempts = canRetry ? this.maxRetries + 1 : 1;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const res = await this.fetchImpl(url, init);
@@ -138,7 +174,10 @@ export class HttpClient {
               ? String((data as { error: { message: unknown } }).error.message)
               : `${res.status} ${res.statusText}`;
           if (canRetry && res.status >= 500 && attempt + 1 < maxAttempts) {
-            await new Promise((r) => setTimeout(r, 100 * 2 ** attempt));
+            const serverRetry = HttpClient.parseRetryAfter(res.headers.get('retry-after'));
+            const backoff = this.retryInitialDelayMs * HttpClient.fibonacci(attempt);
+            const delay = serverRetry ?? backoff;
+            await new Promise((r) => setTimeout(r, delay));
             continue;
           }
           throw new OnyxHttpError(msg, res.status, res.statusText, data, raw);
@@ -148,7 +187,8 @@ export class HttpClient {
         const retryable =
           canRetry && (!(err instanceof OnyxHttpError) || err.status >= 500);
         if (attempt + 1 < maxAttempts && retryable) {
-          await new Promise((r) => setTimeout(r, 100 * 2 ** attempt));
+          const delay = this.retryInitialDelayMs * HttpClient.fibonacci(attempt);
+          await new Promise((r) => setTimeout(r, delay));
           continue;
         }
         throw err;

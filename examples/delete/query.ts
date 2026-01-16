@@ -1,4 +1,4 @@
-// filename: examples/delete/basic.ts
+// filename: examples/delete/delete-all.ts
 import process from 'node:process';
 import { onyx, eq } from '@onyx.dev/onyx-database';
 import { tables, Schema } from 'onyx/types';
@@ -8,7 +8,7 @@ async function main(): Promise<void> {
   const db = onyx.init<Schema>();
 
   const user = await seed();
-  const markerUsername = `obsolete-${user.id.slice(0, 8)}`;
+  const markerUsername = `obsolete-${user.id!.slice(0, 8)}`;
   await db.save(tables.User, {
     id: `obsolete-${user.id}`,
     username: markerUsername,
@@ -18,10 +18,10 @@ async function main(): Promise<void> {
     deletedAt: null,
   });
 
-  const deleted = (await db
+  const deleted = await db
     .from(tables.User)
     .where(eq('username', markerUsername))
-    .delete()) as number;
+    .delete();
 
   console.log(`Deleted ${deleted} record(s).`);
   if (typeof deleted === 'number') {
@@ -29,7 +29,7 @@ async function main(): Promise<void> {
       throw new Error('Expected at least one user to be deleted');
     }
   } else if (Array.isArray(deleted)) {
-    if (!deleted.length) throw new Error('Expected at least one deleted user');
+    if (!deleted) throw new Error('Expected at least one deleted user');
   } else if (!deleted) {
     throw new Error('Delete returned no result');
   }

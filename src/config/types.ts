@@ -7,6 +7,9 @@ export interface ResolvedConfig {
   apiKey: string;
   apiSecret: string;
   fetch: FetchImpl;
+  retryEnabled: boolean;
+  maxRetries: number;
+  retryInitialDelayMs: number;
 }
 
 export interface ConfigSourceInfo {
