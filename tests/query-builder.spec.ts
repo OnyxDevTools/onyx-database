@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { QueryBuilder } from '../src/builders/query-builder';
 import { ConditionBuilderImpl } from '../src/builders/condition-builder';
-import { OnyxError } from '../src/errors/onyx-error';
 import { onyx } from '../src/impl/onyx';
 import { inOp } from '../src/helpers/conditions';
 
