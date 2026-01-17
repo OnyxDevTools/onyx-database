@@ -19,6 +19,7 @@ export default defineConfig({
       include: ['src/**'],
       exclude: [
         'src/config/chain.ts',
+        'src/config/chain-edge.ts',
         'src/config/types.ts',
         'src/core/stream.ts',
         'src/helpers/schema-diff.ts',

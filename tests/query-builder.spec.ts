@@ -202,10 +202,12 @@ describe('QueryBuilder', () => {
     expect(await qbAlias.one()).toEqual({ id: 2 });
   });
 
-  it('requires a where clause for firstOrNull', async () => {
+  it('returns first record without where when allowed', async () => {
     const exec = makeExec();
+    exec.queryPage.mockResolvedValueOnce({ records: [{ id: 1 }] });
     const qb = new QueryBuilder(exec as any, 'users');
-    await expect(qb.firstOrNull()).rejects.toBeInstanceOf(OnyxError);
+    expect(await qb.firstOrNull()).toEqual({ id: 1 });
+    expect(exec.queryPage).toHaveBeenCalledTimes(1);
   });
 
   it('disallows firstOrNull in update mode', async () => {
@@ -222,7 +224,10 @@ describe('QueryBuilder', () => {
     expect(res).toEqual({ id: 1 });
 
     const qb = db.from('User');
-    await expect(qb.firstOrNull()).rejects.toBeInstanceOf(OnyxError);
+    const qp = vi.fn().mockResolvedValueOnce({ records: [{ id: 3 }], nextPage: null });
+    (db as any)._queryPage = qp;
+    expect(await qb.firstOrNull()).toEqual({ id: 3 });
+    expect(qp).toHaveBeenCalledTimes(1);
 
     const qbUpd = db.from('User');
     qbUpd.setUpdates({});

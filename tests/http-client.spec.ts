@@ -379,6 +379,19 @@ describe('HttpClient', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('parses retry-after seconds and date headers', () => {
+    const parseRetryAfter = (HttpClient as any).parseRetryAfter as (h: string | null) => number | null;
+    expect(parseRetryAfter(null)).toBeNull();
+    expect(parseRetryAfter('')).toBeNull();
+    expect(parseRetryAfter('   ')).toBeNull();
+    expect(parseRetryAfter('3')).toBe(3000);
+    const now = Date.now();
+    const dateStr = new Date(now + 5000).toUTCString();
+    const parsed = parseRetryAfter(dateStr);
+    expect(parsed).toBeGreaterThanOrEqual(0);
+    expect(parseRetryAfter('not-a-date')).toBeNull();
+  });
+
   it('uses global fetch when none provided', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response('pong', {
@@ -485,4 +498,3 @@ describe('HttpClient', () => {
     expect(out).toContain('rawBody');
   });
 });
-

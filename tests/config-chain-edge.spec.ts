@@ -168,4 +168,46 @@ describe('edge config chain', () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  it('uses provided fetch implementation when supplied', async () => {
+    const globalFetch = globalThis.fetch;
+    const customFetch = vi.fn(async () => new Response('ok'));
+    try {
+      // ensure global fetch would not be used
+      // @ts-expect-error override for test
+      globalThis.fetch = undefined;
+      const cfg = await resolveConfig({
+        baseUrl: 'http://edge',
+        databaseId: 'edge-db',
+        apiKey: 'edge-key',
+        apiSecret: 'edge-secret',
+        fetch: customFetch,
+      });
+      await cfg.fetch('http://example.com');
+      expect(customFetch).toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = globalFetch;
+    }
+  });
+
+  it('ignores env vars when databaseId does not match target', async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchSpy = vi.fn(async () => new Response('ok'));
+    try {
+      globalThis.fetch = fetchSpy;
+      vi.stubEnv('ONYX_DATABASE_ID', 'env-db');
+      vi.stubEnv('ONYX_DATABASE_API_KEY', 'env-key');
+      vi.stubEnv('ONYX_DATABASE_API_SECRET', 'env-secret');
+      const cfg = await resolveConfig({
+        baseUrl: 'http://edge',
+        databaseId: 'explicit-db',
+        apiKey: 'edge-key',
+        apiSecret: 'edge-secret',
+      });
+      expect(cfg.databaseId).toBe('explicit-db');
+      expect(cfg.apiKey).toBe('edge-key');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });

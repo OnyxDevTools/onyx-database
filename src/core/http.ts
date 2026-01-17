@@ -36,18 +36,7 @@ export class HttpClient {
   private readonly retryEnabled: boolean;
   private readonly maxRetries: number;
   private readonly retryInitialDelayMs: number;
-
-  private static fibonacci(n: number): number {
-    if (n <= 1) return 1;
-    let a = 1;
-    let b = 1;
-    for (let i = 2; i <= n; i++) {
-      const next = a + b;
-      a = b;
-      b = next;
-    }
-    return b;
-  }
+  private readonly shouldRetry: (method: string, path: string) => boolean;
 
   private static parseRetryAfter(header: string | null): number | null {
     if (!header) return null;
@@ -93,8 +82,10 @@ export class HttpClient {
     this.requestLoggingEnabled = !!opts.requestLoggingEnabled || envDebug;
     this.responseLoggingEnabled = !!opts.responseLoggingEnabled || envDebug;
     this.retryEnabled = opts.retryEnabled ?? true;
-    this.maxRetries = Math.max(0, opts.maxRetries ?? 3);
-    this.retryInitialDelayMs = Math.max(0, opts.retryInitialDelayMs ?? 300);
+    this.maxRetries = Math.max(0, opts.maxRetries ?? 2);
+    this.retryInitialDelayMs = Math.max(0, opts.retryInitialDelayMs ?? 100);
+    this.shouldRetry = (method: string, path: string) =>
+      method === 'GET' || path.startsWith('/query/');
   }
 
   headers(extra?: Record<string, string>): Record<string, string> {
@@ -147,7 +138,7 @@ export class HttpClient {
     };
 
     // Retries are limited to GET requests to avoid replaying mutations.
-    const canRetry = this.retryEnabled && method === 'GET';
+    const canRetry = this.retryEnabled && this.shouldRetry(method, path);
     const maxAttempts = canRetry ? this.maxRetries + 1 : 1;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
@@ -175,7 +166,7 @@ export class HttpClient {
               : `${res.status} ${res.statusText}`;
           if (canRetry && res.status >= 500 && attempt + 1 < maxAttempts) {
             const serverRetry = HttpClient.parseRetryAfter(res.headers.get('retry-after'));
-            const backoff = this.retryInitialDelayMs * HttpClient.fibonacci(attempt);
+            const backoff = this.retryInitialDelayMs * 2 ** attempt;
             const delay = serverRetry ?? backoff;
             await new Promise((r) => setTimeout(r, delay));
             continue;
@@ -187,7 +178,7 @@ export class HttpClient {
         const retryable =
           canRetry && (!(err instanceof OnyxHttpError) || err.status >= 500);
         if (attempt + 1 < maxAttempts && retryable) {
-          const delay = this.retryInitialDelayMs * HttpClient.fibonacci(attempt);
+          const delay = this.retryInitialDelayMs * 2 ** attempt;
           await new Promise((r) => setTimeout(r, delay));
           continue;
         }
