@@ -3,7 +3,6 @@ import type { IQueryBuilder, IConditionBuilder } from '../types/builders';
 import { QueryResults, QueryResultsPromise } from './query-results';
 import type { QueryCondition, QueryCriteria, SelectQuery, UpdateQuery, QueryPage } from '../types/protocol';
 import type { Sort, StreamAction } from '../types/common';
-import { OnyxError } from '../errors/onyx-error';
 import { normalizeCondition } from '../helpers/condition-normalizer';
 
 /**
@@ -535,7 +534,6 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    */
   async firstOrNull(): Promise<T | null> {
     if (this.mode !== 'select') throw new Error('Cannot call firstOrNull() in update mode.');
-    if (!this.conditions) throw new OnyxError('firstOrNull() requires a where() clause.');
     this.limitValue = 1;
     const pg = await this.page();
     return Array.isArray(pg.records) && pg.records.length > 0 ? pg.records[0] : null;

@@ -30,8 +30,8 @@
     }
   },
   "bin": {
-    "onyx-gen": "./dist/gen/cli/generate.cjs",
-    "onyx-schema": "./dist/schema/cli/schema.cjs"
+    "onyx-gen": "dist/gen/cli/generate.cjs",
+    "onyx-schema": "dist/schema/cli/schema.cjs"
   },
   "files": [
     "dist",
@@ -54,7 +54,10 @@
     "release": "changeset publish",
     "size": "size-limit"
   },
-  "repository": "github:OnyxDevTools/onyx-database",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OnyxDevTools/onyx-database.git"
+  },
   "bugs": {
     "url": "https://github.com/OnyxDevTools/onyx-database/issues"
   },

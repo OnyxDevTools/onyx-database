@@ -34,7 +34,6 @@ import type {
   SecretSaveRequest,
 } from '../types/public';
 import { CascadeRelationshipBuilder } from '../builders/cascade-relationship-builder';
-import { OnyxError } from '../errors/onyx-error';
 import { OnyxHttpError } from '../errors/http-error';
 import { computeSchemaDiff } from '../helpers/schema-diff';
 
@@ -807,7 +806,6 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
 
   async firstOrNull(): Promise<T | null> {
     if (this.mode !== 'select') throw new Error('Cannot call firstOrNull() in update mode.');
-    if (!this.conditions) throw new OnyxError('firstOrNull() requires a where() clause.');
     this.limitValue = 1;
     const pg = await this.page();
     return Array.isArray(pg.records) && pg.records.length > 0 ? pg.records[0] : null;

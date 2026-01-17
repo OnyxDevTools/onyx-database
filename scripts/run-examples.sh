@@ -4,6 +4,9 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 examples_root="${repo_root}/examples"
 
+# Ensure repo is bootstrapped (deps, build, generated types).
+"${repo_root}/scripts/bootstrap.sh"
+
 export ONYX_CONFIG_PATH="${examples_root}/onyx-database.json"
 export ONYX_SCHEMA_PATH="${examples_root}/onyx.schema.json"
 
@@ -17,6 +20,7 @@ examples=(
   "query/compound:query/compound"
   "query/find-by-id:query/find-by-id"
   "query/first-or-null:query/first-or-null"
+  "query/first-or-null-all-data:query/first-or-null-all-data"
   "query/in-partition:query/in-partition"
   "query/inner-query:query/inner-query"
   "query/list:query/list"

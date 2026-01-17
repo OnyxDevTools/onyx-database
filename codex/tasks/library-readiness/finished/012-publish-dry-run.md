@@ -16,5 +16,10 @@ Validate publish contents and metadata.
 5. Repeat the dry-run commands until the output matches the intended publish contents.
 
 ## Acceptance Criteria
-- [ ] Dry-run shows correct files and entry points.
-- [ ] No missing `types` or mismatched exports.
+- [x] Dry-run shows correct files and entry points.
+- [x] No missing `types` or mismatched exports.
+
+## Notes
+- `npm pack --dry-run` and `npm publish --dry-run` include only dist builds, LICENSE, README, and package.json.
+- Normalized `bin` paths and repository object in `package.json` to avoid npm publish warnings.
+- Dry-run publish still errors on version `1.0.2` already existing, as expected.
