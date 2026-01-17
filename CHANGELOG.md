@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 1.0.3
+
+### Patch Changes
+
+- acae058: improved edge support, fixed firstOrNull with no where clause error, removed tgen timestamp
+
 ## 1.0.2
 
 ### Patch Changes
