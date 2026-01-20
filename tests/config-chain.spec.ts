@@ -187,10 +187,11 @@ secret"
     const spy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     await resolveConfig();
     const call = spy.mock.calls.find(([msg]) =>
-      msg.includes('credential source: {"databaseId":"env","apiKey":"env","apiSecret":"env"}'),
+      msg.includes(
+        'credential source: {"databaseId":"env","aiBaseUrl":"default","apiKey":"env","apiSecret":"env"}',
+      ),
     );
     expect(call).toBeTruthy();
     spy.mockRestore();
   });
 });
-
