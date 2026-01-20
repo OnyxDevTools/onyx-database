@@ -51,6 +51,7 @@ export type QueryCondition =
  */
 export interface SelectQuery {
   type: 'SelectQuery';
+  table?: string | null;
   fields?: string[] | null;
   conditions?: QueryCondition | null;
   sort?: Sort[] | null;

@@ -16,7 +16,8 @@ function toRequest(schema: SchemaRevision): SchemaUpsertRequest {
 }
 
 function hasTable(schema: SchemaRevision | SchemaUpsertRequest, name: string): boolean {
-  return (schema.entities ?? []).some((entity) => entity?.name === name);
+  const entities = Array.isArray(schema.entities) ? schema.entities : [];
+  return entities.some((entity) => entity?.name === name);
 }
 
 function addTable(schema: SchemaRevision, table: SchemaEntity): SchemaUpsertRequest {

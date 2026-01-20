@@ -240,6 +240,15 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     return qb;
   }
 
+  search(queryText: string, minScore?: number | null): IQueryBuilder<Record<string, unknown>> {
+    const qb = new QueryBuilderImpl<Record<string, unknown>, Schema>(
+      this,
+      'ALL',
+      this.defaultPartition,
+    );
+    return qb.search(queryText, minScore);
+  }
+
   cascade(...relationships: Array<string | string[]>): ICascadeBuilder<Schema> {
     const cb = new CascadeBuilderImpl<Schema>(this);
     return cb.cascade(...relationships);
@@ -631,6 +640,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   private toSelectQuery(): SelectQuery {
     return {
       type: 'SelectQuery',
+      table: this.table,
       fields: this.fields,
       conditions: this.serializableConditions(),
       sort: this.sort,
@@ -674,6 +684,14 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     const flat = flattenStrings(values);
     this.resolvers = flat.length > 0 ? flat : null;
     return this;
+  }
+
+  search(queryText: string, minScore?: number | null): IQueryBuilder<T> {
+    return this.and({
+      field: '__full_text__',
+      operator: 'MATCHES',
+      value: { queryText, minScore: minScore ?? null },
+    });
   }
 
   where(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {

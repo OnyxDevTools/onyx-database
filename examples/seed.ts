@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { onyx, type SchemaUpsertRequest } from '@onyx.dev/onyx-database';
+import { onyx, type IOnyxDatabase, type SchemaUpsertRequest } from '@onyx.dev/onyx-database';
 import { tables, Schema, Role, Permission, RolePermission, User, AuditLog } from './onyx/types';
 
 const thisDir = path.dirname(fileURLToPath(import.meta.url));
@@ -31,7 +31,7 @@ async function findSchemaPath(): Promise<string> {
   );
 }
 
-async function ensureSchema(db: ReturnType<typeof onyx.init>): Promise<void> {
+async function ensureSchema(db: IOnyxDatabase<Schema>): Promise<void> {
   const requiredTables = [
     tables.Role,
     tables.Permission,

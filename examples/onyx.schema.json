@@ -1,6 +1,6 @@
 {
   "databaseId": "bbabca0e-82ce-11f0-0000-a2ce78b61b6a",
-  "revisionDescription": "",
+  "revisionDescription": "enabled all tables full text searchable",
   "entities": [
     {
       "name": "AuditLog",
@@ -9,11 +9,13 @@
         "generator": "None",
         "type": "String"
       },
+      "partition": "",
+      "type": "SEARCHABLE",
       "attributes": [
         {
           "name": "action",
           "type": "String",
-          "isNullable": false
+          "isNullable": true
         },
         {
           "name": "actorId",
@@ -73,7 +75,10 @@
           "type": "String",
           "isNullable": true
         }
-      ]
+      ],
+      "resolvers": [],
+      "triggers": [],
+      "indexes": []
     },
     {
       "name": "Permission",
@@ -82,6 +87,8 @@
         "generator": "None",
         "type": "String"
       },
+      "partition": "",
+      "type": "SEARCHABLE",
       "attributes": [
         {
           "name": "createdAt",
@@ -109,7 +116,10 @@
           "name": "updatedAt",
           "type": "Timestamp"
         }
-      ]
+      ],
+      "resolvers": [],
+      "triggers": [],
+      "indexes": []
     },
     {
       "name": "Role",
@@ -118,6 +128,8 @@
         "generator": "None",
         "type": "String"
       },
+      "partition": "",
+      "type": "SEARCHABLE",
       "attributes": [
         {
           "name": "createdAt",
@@ -159,7 +171,9 @@
           "name": "rolePermissions",
           "resolver": "db.from(\"RolePermission\")\n .where(eq(\"roleId\", this.id))\n .list()"
         }
-      ]
+      ],
+      "triggers": [],
+      "indexes": []
     },
     {
       "name": "RolePermission",
@@ -168,6 +182,8 @@
         "generator": "None",
         "type": "String"
       },
+      "partition": "",
+      "type": "SEARCHABLE",
       "attributes": [
         {
           "name": "createdAt",
@@ -195,7 +211,9 @@
           "name": "role",
           "resolver": "db.from(\"Role\")\n .where(eq(\"id\", this.roleId))\n .firstOrNull()"
         }
-      ]
+      ],
+      "triggers": [],
+      "indexes": []
     },
     {
       "name": "User",
@@ -204,6 +222,8 @@
         "generator": "None",
         "type": "String"
       },
+      "partition": "",
+      "type": "SEARCHABLE",
       "attributes": [
         {
           "name": "createdAt",
@@ -253,7 +273,9 @@
           "name": "userRoles",
           "resolver": "db.from(\"UserRole\")\n  .where(eq(\"userId\", this.id))\n  .list()"
         }
-      ]
+      ],
+      "triggers": [],
+      "indexes": []
     },
     {
       "name": "UserProfile",
@@ -262,6 +284,8 @@
         "generator": "None",
         "type": "String"
       },
+      "partition": "",
+      "type": "SEARCHABLE",
       "attributes": [
         {
           "name": "address",
@@ -318,7 +342,10 @@
           "name": "userId",
           "type": "String"
         }
-      ]
+      ],
+      "resolvers": [],
+      "triggers": [],
+      "indexes": []
     },
     {
       "name": "UserRole",
@@ -327,6 +354,8 @@
         "generator": "None",
         "type": "String"
       },
+      "partition": "",
+      "type": "SEARCHABLE",
       "attributes": [
         {
           "name": "createdAt",
@@ -350,7 +379,9 @@
           "name": "role",
           "resolver": "db.from(\"Role\")\n .where(eq(\"id\", this.roleId))\n .list()"
         }
-      ]
+      ],
+      "triggers": [],
+      "indexes": []
     }
   ]
 }

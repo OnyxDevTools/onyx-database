@@ -214,6 +214,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
   private toSelectQuery(): SelectQuery {
     return {
       type: 'SelectQuery',
+      table: this.table,
       fields: this.fields,
       conditions: this.serializableConditions(),
       sort: this.sort,
@@ -289,6 +290,24 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
     const flat = flattenStrings(values);
     this.resolvers = flat.length > 0 ? flat : null;
     return this;
+  }
+
+  /**
+   * Add a Lucene full-text search predicate.
+   *
+   * @param queryText Search text to match.
+   * @param minScore Minimum score threshold; serialized as null when omitted.
+   * @example
+   * ```ts
+   * builder.search('hello world', 4.4);
+   * ```
+   */
+  search(queryText: string, minScore?: number | null): IQueryBuilder<T> {
+    return this.and({
+      field: '__full_text__',
+      operator: 'MATCHES',
+      value: { queryText, minScore: minScore ?? null },
+    });
   }
 
   /**

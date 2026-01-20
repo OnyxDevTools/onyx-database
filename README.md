@@ -20,6 +20,7 @@ TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-
 - [Initialize the client](#initialize-the-client)
 - [Generate schema types](#optional-generate-typescript-types-from-your-schema)
 - [Query helpers](#query-helpers-at-a-glance)
+- [Full-text search](#full-text-search-lucene)
 - [Examples](#usage-examples-with-user-role-permission)
 - [Error handling](#error-handling)
 - [HTTP retries](#http-retries)
@@ -410,7 +411,7 @@ import {
   between,
   gt, gte, lt, lte,
   like, notLike, contains, notContains,
-  startsWith, notStartsWith, matches, notMatches,
+  startsWith, notStartsWith, matches, notMatches, search,
   isNull, notNull,
   asc, desc
 } from '@onyx.dev/onyx-database';
@@ -418,6 +419,7 @@ import {
 
 - Prefer `within`/`notWithin` for inclusion checks (supports arrays, comma-separated strings, or inner queries).  
 - `inOp`/`notIn` remain available for backward compatibility and are exact aliases.
+- `search(text, minScore?)` builds a Lucene `MATCHES` predicate on `__full_text__` and always serializes `minScore` (null when omitted).
 
 ### Inner queries (IN/NOT IN with sub-selects)
 
@@ -449,6 +451,36 @@ const rolesMissingPermission = await db
     ),
   )
   .list();
+```
+
+---
+
+## Full-text search (Lucene)
+
+Use `.search(text, minScore?)` on a query builder for table-level full-text search, or call `db.search(...)` to target **all** tables (`table = "ALL"` in the request body). The search value always includes `minScore` and falls back to `null` when you omit it.
+
+```ts
+import { desc, eq, onyx, search, tables, type Schema } from '@onyx.dev/onyx-database';
+
+const db = onyx.init<Schema>();
+
+// Table-specific search with a minimum score
+const recentUsers = await db
+  .from(tables.User)
+  .search('user bio text', 4.4)
+  .orderBy(desc('createdAt'))
+  .limit(5)
+  .list();
+
+// Search across all tables (table: "ALL")
+const acrossTables = await db.search('user bio text').list({ pageSize: 5 });
+
+// Combine a search predicate with other filters
+const activeMatch = await db
+  .from(tables.User)
+  .where(search('user bio text'))
+  .and(eq('isActive', true))
+  .firstOrNull();
 ```
 
 ---

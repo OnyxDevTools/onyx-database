@@ -2,10 +2,15 @@
 import { ConditionBuilderImpl } from '../builders/condition-builder';
 import type { IQueryBuilder } from '../types/builders';
 import type { QueryCriteria } from '../types/protocol';
-import type { QueryCriteriaOperator } from '../types/common';
+import type { FullTextQuery, QueryCriteriaOperator } from '../types/common';
 
 const c = (field: string, operator: QueryCriteriaOperator, value?: unknown) =>
   new ConditionBuilderImpl({ field, operator, value } as QueryCriteria);
+
+const fullText = (queryText: string, minScore?: number | null): FullTextQuery => ({
+  queryText,
+  minScore: minScore ?? null,
+});
 
 export const eq = (field: string, value: unknown) => c(field, 'EQUAL', value);
 export const neq = (field: string, value: unknown) => c(field, 'NOT_EQUAL', value);
@@ -45,6 +50,8 @@ export const gte = (field: string, value: unknown) => c(field, 'GREATER_THAN_EQU
 export const lt = (field: string, value: unknown) => c(field, 'LESS_THAN', value);
 export const lte = (field: string, value: unknown) => c(field, 'LESS_THAN_EQUAL', value);
 export const matches = (field: string, regex: string) => c(field, 'MATCHES', regex);
+export const search = (queryText: string, minScore?: number | null) =>
+  c('__full_text__', 'MATCHES', fullText(queryText, minScore));
 export const notMatches = (field: string, regex: string) => c(field, 'NOT_MATCHES', regex);
 export const like = (field: string, pattern: string) => c(field, 'LIKE', pattern);
 export const notLike = (field: string, pattern: string) => c(field, 'NOT_LIKE', pattern);

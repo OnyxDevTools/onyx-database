@@ -25,8 +25,9 @@ async function main(): Promise<void> {
     .setUpdates({ isActive: false, updatedAt: new Date() })
     .update();
 
-  console.log(`Updated ${updatedCount} record(s).`);
-  if (updatedCount <= 0) {
+  const updatedTotal = Number(updatedCount);
+  console.log(`Updated ${updatedTotal} record(s).`);
+  if (!Number.isFinite(updatedTotal) || updatedTotal <= 0) {
     throw new Error('Expected at least one record to be updated');
   }
 

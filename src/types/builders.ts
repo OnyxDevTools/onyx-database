@@ -67,6 +67,16 @@ export interface IQueryBuilder<T = unknown> {
    */
   resolve(...values: Array<string | string[]>): IQueryBuilder<T>;
   /**
+   * Adds a Lucene full-text search predicate.
+   * @example
+   * ```ts
+   * const results = await db.from('User').search('hello world', 4.4).list();
+   * ```
+   * @param queryText - Text to match against `__full_text__`.
+   * @param minScore - Optional minimum score; serializes as `null` when omitted.
+   */
+  search(queryText: string, minScore?: number | null): IQueryBuilder<T>;
+  /**
    * Adds a filter condition.
    * @example
    * ```ts

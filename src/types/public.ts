@@ -1,5 +1,5 @@
 // filename: src/types/public.ts
-import type { OnyxDocument, FetchImpl } from './common';
+import type { OnyxDocument, FetchImpl, FullTextQuery } from './common';
 import type {
   IQueryBuilder,
   ICascadeBuilder,
@@ -9,7 +9,7 @@ import type {
   QueryResultsPromise,
 } from './builders';
 
-export type { QueryResults, QueryResultsPromise };
+export type { QueryResults, QueryResultsPromise, FullTextQuery };
 
 export interface RetryOptions {
   /**
@@ -93,6 +93,19 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
    * @param fields Field names to project; omit to select all.
    */
   select(...fields: string[]): IQueryBuilder<Record<string, unknown>>;
+
+  /**
+   * Run a Lucene full-text search across all tables.
+   *
+   * @example
+   * ```ts
+   * const results = await db.search('hello world', 4.4).list();
+   * ```
+   *
+   * @param queryText Text to match against `__full_text__`.
+   * @param minScore Optional minimum score; serialized as `null` when omitted.
+   */
+  search(queryText: string, minScore?: number | null): IQueryBuilder<Record<string, unknown>>;
 
   /**
    * Include related records in the next save or delete.

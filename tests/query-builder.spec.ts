@@ -144,6 +144,94 @@ describe('QueryBuilder', () => {
     );
   });
 
+  it('builds Lucene search payloads with optional minScore', async () => {
+    const exec = {
+      count: vi.fn(),
+      queryPage: vi.fn().mockResolvedValue({ records: [], nextPage: null }),
+      update: vi.fn(),
+      deleteByQuery: vi.fn(),
+      stream: vi.fn(),
+    };
+    const qb = new QueryBuilder(exec as any, 'Table');
+    await qb.search('Text').list();
+    expect(exec.queryPage).toHaveBeenNthCalledWith(
+      1,
+      'Table',
+      expect.objectContaining({
+        table: 'Table',
+        conditions: {
+          conditionType: 'SingleCondition',
+          criteria: {
+            field: '__full_text__',
+            operator: 'MATCHES',
+            value: { queryText: 'Text', minScore: null },
+          },
+        },
+      }),
+      { pageSize: undefined, nextPage: undefined, partition: undefined },
+    );
+
+    const qbWithFilter = new QueryBuilder(exec as any, 'Table');
+    await qbWithFilter
+      .search('text', 4.4)
+      .and({ field: 'attribute', operator: 'EQUAL', value: 'value' })
+      .list();
+    expect(exec.queryPage).toHaveBeenNthCalledWith(
+      2,
+      'Table',
+      expect.objectContaining({
+        table: 'Table',
+        conditions: {
+          conditionType: 'CompoundCondition',
+          operator: 'AND',
+          conditions: [
+            {
+              conditionType: 'SingleCondition',
+              criteria: {
+                field: '__full_text__',
+                operator: 'MATCHES',
+                value: { queryText: 'text', minScore: 4.4 },
+              },
+            },
+            {
+              conditionType: 'SingleCondition',
+              criteria: { field: 'attribute', operator: 'EQUAL', value: 'value' },
+            },
+          ],
+        },
+      }),
+      { pageSize: undefined, nextPage: undefined, partition: undefined },
+    );
+  });
+
+  it('defaults db.search() to table ALL with search criteria', async () => {
+    const db = onyx.init({
+      baseUrl: 'http://x',
+      databaseId: 'd',
+      apiKey: 'k',
+      apiSecret: 's',
+      fetch: vi.fn() as any,
+    });
+    const qp = vi.fn().mockResolvedValue({ records: [], nextPage: null });
+    (db as any)._queryPage = qp;
+    await db.search('needle').list();
+    expect(qp).toHaveBeenLastCalledWith(
+      'ALL',
+      expect.objectContaining({
+        table: 'ALL',
+        conditions: {
+          conditionType: 'SingleCondition',
+          criteria: {
+            field: '__full_text__',
+            operator: 'MATCHES',
+            value: { queryText: 'needle', minScore: null },
+          },
+        },
+      }),
+      { pageSize: undefined, nextPage: undefined, partition: undefined },
+    );
+  });
+
   it('serializes query builders nested in conditions', async () => {
     const exec = {
       count: vi.fn(),

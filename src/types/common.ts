@@ -14,10 +14,16 @@ export type QueryCriteriaOperator =
   | 'MATCHES' | 'NOT_MATCHES'
   | 'BETWEEN'
   | 'LIKE' | 'NOT_LIKE'
-  | 'CONTAINS' | 'CONTAINS_IGNORE_CASE'
+ | 'CONTAINS' | 'CONTAINS_IGNORE_CASE'
   | 'NOT_CONTAINS' | 'NOT_CONTAINS_IGNORE_CASE'
   | 'STARTS_WITH' | 'NOT_STARTS_WITH'
   | 'IS_NULL' | 'NOT_NULL';
+
+/** Value payload for full-text (Lucene) searches. */
+export interface FullTextQuery {
+  queryText: string;
+  minScore: number | null;
+}
 
 /** Logical operator used to join conditions in a query. */
 export type LogicalOperator = 'AND' | 'OR';

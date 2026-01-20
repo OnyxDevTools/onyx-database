@@ -43,6 +43,8 @@ describe('helper utilities', () => {
     cond.lt('a', 1);
     cond.lte('a', 1);
     cond.matches('a', 're');
+    expect(cond.search('query').toCondition().criteria.value).toEqual({ queryText: 'query', minScore: null });
+    expect(cond.search('query', 1.1).toCondition().criteria.value).toEqual({ queryText: 'query', minScore: 1.1 });
     cond.notMatches('a', 're');
     cond.like('a', '%x%');
     cond.notLike('a', '%x%');
