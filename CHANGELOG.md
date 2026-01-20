@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 1.2.0
+
+### Minor Changes
+
+- 9587a84: added ai chat to sdk"
+
 ## 1.1.0
 
 ### Minor Changes
