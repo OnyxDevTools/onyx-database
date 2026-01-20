@@ -483,6 +483,12 @@ const activeMatch = await db
   .firstOrNull();
 ```
 
+**Examples**
+- Table search (minScore null): `examples/query/lucine-table-search.ts`
+- Table search (minScore 4.4): `examples/query/lucine-table-search-min-score.ts`
+- ALL tables search (minScore null): `examples/query/lucine-search-all-tables.ts`
+- ALL tables search (minScore 4.4): `examples/query/lucine-search-all-tables-min-score.ts`
+
 ---
 
 ## Usage examples with `User`, `Role`, `Permission`
