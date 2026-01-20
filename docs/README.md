@@ -60,6 +60,8 @@ Set the following environment variables for your database:
 - `ONYX_DATABASE_BASE_URL`
 - `ONYX_DATABASE_API_KEY`
 - `ONYX_DATABASE_API_SECRET`
+- `ONYX_AI_BASE_URL` (optional; defaults to `https://ai.onyx.dev`)
+- `ONYX_DEFAULT_MODEL` (optional; used by `db.chat('...')`, defaults to `onyx`)
 
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
@@ -95,6 +97,8 @@ import { onyx } from '@onyx.dev/onyx-database';
 
 const db = onyx.init({
   baseUrl: 'https://api.onyx.dev',
+  aiBaseUrl: 'https://ai.onyx.dev', // optional: override AI base path
+  defaultModel: 'onyx', // optional: shorthand `db.chat()` model
   databaseId: 'YOUR_DATABASE_ID',
   apiKey: 'YOUR_KEY',
   apiSecret: 'YOUR_SECRET',
@@ -140,6 +144,35 @@ through Node's built‑in `fetch`, which already reuses connections and pools th
 for keep‑alive. Reuse the returned `db` for multiple operations; extra SDK‑level
 connection pooling generally isn't necessary unless you create many short‑lived
 clients.
+
+---
+
+## Onyx AI (chat, models, approvals)
+
+AI endpoints are OpenAI-compatible and share the same credentials as database calls. Use `db.ai` for chat, models, and script approvals; `db.chat()`/`db.chat('...')` are equivalent entrypoints. The shorthand `db.chat('content')` uses `defaultModel` (defaults to `onyx`; override via config or `ONYX_DEFAULT_MODEL`).
+
+```ts
+const db = onyx.init();
+
+const quick = await db.chat('Reply with exactly one short greeting sentence.'); // returns first message content
+
+const completion = await db.ai.chat({
+  model: 'onyx-chat',
+  messages: [{ role: 'user', content: 'Summarize last week.' }],
+});
+
+const custom = await db.chat('List three colors.', {
+  model: 'onyx-chat',
+  role: 'user',
+  temperature: 0.2,
+  stream: false, // set raw: true to receive full completion response instead of the first message content
+});
+
+const models = await db.ai.getModels();
+const approval = await db.ai.requestScriptApproval({
+  script: "db.save({ id: 'u1', email: 'a@b.com' })",
+});
+```
 
 ---
 

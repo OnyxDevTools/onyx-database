@@ -5,7 +5,7 @@ async function main(): Promise<void> {
 
   const script = "db.save({ id: 'u-ai-example', email: 'ai@example.com' })";
 
-  const result = await db.requestScriptApproval({ script });
+  const result = await db.ai.requestScriptApproval({ script });
 
   if (!result.normalizedScript || !result.normalizedScript.includes('db.save')) {
     throw new Error('Normalized script is missing expected content');

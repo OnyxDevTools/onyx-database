@@ -94,6 +94,7 @@ Set the following environment variables for your database:
 - `ONYX_DATABASE_API_KEY`
 - `ONYX_DATABASE_API_SECRET`
 - `ONYX_AI_BASE_URL` (optional; defaults to `https://ai.onyx.dev`)
+- `ONYX_DEFAULT_MODEL` (optional; used by `db.chat('...')`, defaults to `onyx`)
 
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
@@ -110,6 +111,7 @@ import { onyx } from '@onyx.dev/onyx-database';
 const db = onyx.init({
   baseUrl: 'https://api.onyx.dev',
   aiBaseUrl: 'https://ai.onyx.dev', // optional: override AI base path
+  defaultModel: 'onyx', // optional: shorthand `db.chat()` model
   databaseId: 'YOUR_DATABASE_ID',
   apiKey: 'YOUR_KEY',
   apiSecret: 'YOUR_SECRET',
@@ -184,7 +186,7 @@ necessary unless you create many short‑lived clients.
 
 ## Onyx AI (chat & models)
 
-AI endpoints are OpenAI-compatible and use the same credentials as database calls. The AI base URL defaults to `https://ai.onyx.dev` and can be overridden with `aiBaseUrl` (or `ONYX_AI_BASE_URL`). The `databaseId` query param is optional; when omitted, the configured databaseId is used for grounding and billing.
+AI endpoints are OpenAI-compatible and use the same credentials as database calls. Use `db.ai` for chat, models, and script approvals; `db.chat()`/`db.chat('...')` remain supported as equivalent entrypoints. A shorthand `db.chat('content')` call is available and uses `config.defaultModel` (defaults to `onyx`). The AI base URL defaults to `https://ai.onyx.dev` and can be overridden with `aiBaseUrl` (or `ONYX_AI_BASE_URL`). The `databaseId` query param is optional; when omitted, the configured databaseId is used for grounding and billing.
 
 ### Chat completions
 
@@ -195,17 +197,27 @@ import { onyx } from '@onyx.dev/onyx-database';
 
 const db = onyx.init();
 
-const completion = await db.chat().create({
+const quick = await db.chat('Reply with exactly one short greeting sentence.'); // returns first message content
+
+const completion = await db.ai.chat({
   model: 'onyx-chat',
   messages: [{ role: 'user', content: 'Summarize last week’s traffic.' }],
 });
 console.log(completion.choices[0]?.message?.content);
+
+// Override defaults (model/role/temperature/stream) in shorthand form
+const custom = await db.chat('List three colors.', {
+  model: 'onyx-chat',
+  role: 'user',
+  temperature: 0.2,
+  stream: false, // set raw: true to receive full completion response instead of the first message content
+});
 ```
 
 Streaming works as an async iterable:
 
 ```ts
-const stream = await db.chat().create({
+const stream = await db.ai.chat({
   model: 'onyx-chat',
   stream: true,
   messages: [{ role: 'user', content: 'Write a short onboarding checklist.' }],
@@ -242,12 +254,12 @@ const prompt = {
   ],
 };
 
-const first = await db.chat().create(prompt);
+const first = await db.ai.chat(prompt);
 const toolCall = first.choices[0]?.message?.tool_calls?.[0];
 
 if (toolCall) {
   const toolResult = await getRevenue(JSON.parse(toolCall.function.arguments)); // your impl
-  const followup = await db.chat().create({
+  const followup = await db.ai.chat({
     model: prompt.model,
     messages: [
       ...prompt.messages,
@@ -264,14 +276,14 @@ if (toolCall) {
 Example: `examples/ai/models.ts`.
 
 ```ts
-const models = await db.getModels();
-const chatModel = await db.getModel('onyx-chat');
+const models = await db.ai.getModels();
+const chatModel = await db.ai.getModel('onyx-chat');
 ```
 
 ### Script mutation approvals
 
 ```ts
-const approval = await db.requestScriptApproval({
+const approval = await db.ai.requestScriptApproval({
   script: "db.save({ id: 'u1', email: 'a@b.com' })",
 });
 if (approval.requiresApproval) {

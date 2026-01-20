@@ -37,6 +37,10 @@ export interface OnyxConfig {
   apiSecret?: string;
   fetch?: FetchImpl;
   /**
+   * Default AI model when using shorthand chat calls (`db.chat('...')`). Defaults to `onyx`.
+   */
+  defaultModel?: string;
+  /**
    * Default partition for queries, `findById`, and deletes when removing by
    * primary key. Saves rely on the entity's partition field instead.
    */
@@ -164,6 +168,29 @@ export interface AiChatCompletionStream extends AsyncIterable<AiChatCompletionCh
   cancel(): void;
 }
 
+export interface AiChatOptions extends AiRequestOptions {
+  /**
+   * Model to use for the shorthand `db.chat()` call. Defaults to config.defaultModel or `onyx`.
+   */
+  model?: string;
+  /**
+   * Role for the constructed message. Defaults to `user`.
+   */
+  role?: AiChatRole;
+  /**
+   * Temperature for the completion. Omit to use the service default.
+   */
+  temperature?: number | null;
+  /**
+   * Enable SSE streaming. Defaults to `false`.
+   */
+  stream?: boolean;
+  /**
+   * When true, return the raw completion response instead of the first message content.
+   */
+  raw?: boolean;
+}
+
 export interface AiChatClient {
   create(
     request: AiChatCompletionRequest & { stream?: false },
@@ -206,9 +233,103 @@ export interface AiErrorResponse {
   error?: string | { message?: string; [key: string]: unknown } | null;
 }
 
+export interface AiClient {
+  /**
+   * Run a chat completion. Accepts shorthand strings or full requests.
+   *
+   * @example
+   * ```ts
+   * const quick = await db.ai.chat('Summarize last week.'); // returns first message content
+   * const completion = await db.ai.chat(
+   *   { model: 'onyx-chat', messages: [{ role: 'user', content: 'Summarize last week.' }] },
+   *   { databaseId: 'db1', raw: true }, // returns full response
+   * );
+   * ```
+   */
+  chat(
+    content: string,
+    options?: AiChatOptions & { stream?: false; raw?: false | undefined },
+  ): Promise<string>;
+  chat(
+    content: string,
+    options: AiChatOptions & { stream: true },
+  ): Promise<AiChatCompletionStream>;
+  chat(
+    content: string,
+    options: AiChatOptions & { raw: true },
+  ): Promise<AiChatCompletionResponse | AiChatCompletionStream>;
+  chat(
+    request: AiChatCompletionRequest & { stream?: false },
+    options?: AiRequestOptions,
+  ): Promise<AiChatCompletionResponse>;
+  chat(
+    request: AiChatCompletionRequest & { stream: true },
+    options?: AiRequestOptions,
+  ): Promise<AiChatCompletionStream>;
+  chat(
+    request: AiChatCompletionRequest,
+    options?: AiRequestOptions,
+  ): Promise<AiChatCompletionResponse | AiChatCompletionStream>;
+
+  /**
+   * Access the chat client for more control over streaming and cancellation.
+   */
+  chatClient(): AiChatClient;
+
+  /**
+   * List available AI models.
+   *
+   * @example
+   * ```ts
+   * const models = await db.ai.getModels();
+   * ```
+   */
+  getModels(): Promise<AiModelsResponse>;
+
+  /**
+   * Retrieve a single AI model by ID.
+   *
+   * @example
+   * ```ts
+   * const model = await db.ai.getModel('onyx-chat');
+   * ```
+   */
+  getModel(modelId: string): Promise<AiModel>;
+
+  /**
+   * Request mutation approval for a script.
+   *
+   * @example
+   * ```ts
+   * const approval = await db.ai.requestScriptApproval({
+   *   script: "db.save({ id: 'u1', email: 'a@b.com' })"
+   * });
+   * ```
+   */
+  requestScriptApproval(input: AiScriptApprovalRequest): Promise<AiScriptApprovalResponse>;
+}
+
 export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   /**
-   * Access OpenAI-compatible chat completions.
+   * AI helpers (chat, models, script approvals) grouped under `db.ai`.
+   *
+   * @example
+   * ```ts
+   * const completion = await db.ai.chat({
+   *   model: 'onyx-chat',
+   *   messages: [{ role: 'user', content: 'Summarize last week.' }],
+   * });
+   * ```
+   */
+  ai: AiClient;
+
+  /**
+   * Access OpenAI-compatible chat completions via `db.chat('...')` or `db.chat().create(...)`.
+   *
+   * @example
+   * ```ts
+   * const completion = await db.chat('Summarize last week.'); // returns first message content
+   * ```
    *
    * @example
    * ```ts
@@ -233,10 +354,24 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
    * }
    * ```
    */
+  chat(
+    content: string,
+    options?: AiChatOptions & { stream?: false; raw?: false | undefined },
+  ): Promise<string>;
+  chat(
+    content: string,
+    options: AiChatOptions & { stream: true },
+  ): Promise<AiChatCompletionStream>;
+  chat(
+    content: string,
+    options: AiChatOptions & { raw: true },
+  ): Promise<AiChatCompletionResponse | AiChatCompletionStream>;
   chat(): AiChatClient;
 
   /**
    * List available AI models.
+   *
+   * @deprecated Prefer `db.ai.getModels()`.
    *
    * @example
    * ```ts
@@ -248,6 +383,8 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   /**
    * Retrieve a single AI model by ID.
    *
+   * @deprecated Prefer `db.ai.getModel(...)`.
+   *
    * @example
    * ```ts
    * const model = await db.getModel('onyx-chat');
@@ -257,6 +394,8 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
 
   /**
    * Request mutation approval for a script.
+   *
+   * @deprecated Prefer `db.ai.requestScriptApproval(...)`.
    *
    * @example
    * ```ts

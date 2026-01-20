@@ -1,5 +1,6 @@
 // filename: src/impl/onyx-core.ts
 import type { ResolvedConfig } from '../config/types';
+import { DEFAULT_AI_MODEL } from '../config/defaults';
 import { HttpClient, parseJsonAllowNaN } from '../core/http';
 import { openJsonLinesStream } from '../core/stream';
 
@@ -7,6 +8,8 @@ import type {
   OnyxFacade,
   IOnyxDatabase,
   OnyxConfig,
+  AiChatOptions,
+  AiClient,
   AiChatClient,
   AiChatCompletionRequest,
   AiChatCompletionResponse,
@@ -184,6 +187,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   private readonly requestLoggingEnabled: boolean;
   private readonly responseLoggingEnabled: boolean;
   private readonly defaultPartition: string | undefined;
+  readonly ai: AiClient;
 
   constructor(
     config: OnyxConfig | undefined,
@@ -194,6 +198,14 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     this.responseLoggingEnabled = !!config?.responseLoggingEnabled;
     this.defaultPartition = config?.partition;
     this.cfgPromise = resolveConfigWithCache(config);
+    this.ai = this.createAiFacade();
+  }
+
+  private async resolveConfig(): Promise<ResolvedConfig> {
+    if (!this.resolved) {
+      this.resolved = await this.cfgPromise;
+    }
+    return this.resolved;
   }
 
   private async ensureClient(): Promise<{
@@ -201,28 +213,28 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     fetchImpl: FetchImpl;
     baseUrl: string;
     databaseId: string;
+    defaultModel: string;
   }> {
-    if (!this.resolved) {
-      this.resolved = await this.cfgPromise;
-    }
+    const cfg = await this.resolveConfig();
     if (!this.http) {
       this.http = new HttpClient({
-        baseUrl: this.resolved.baseUrl,
-        apiKey: this.resolved.apiKey,
-        apiSecret: this.resolved.apiSecret,
-        fetchImpl: this.resolved.fetch,
+        baseUrl: cfg.baseUrl,
+        apiKey: cfg.apiKey,
+        apiSecret: cfg.apiSecret,
+        fetchImpl: cfg.fetch,
         requestLoggingEnabled: this.requestLoggingEnabled,
         responseLoggingEnabled: this.responseLoggingEnabled,
-        retryEnabled: this.resolved.retryEnabled,
-        maxRetries: this.resolved.maxRetries,
-        retryInitialDelayMs: this.resolved.retryInitialDelayMs,
+        retryEnabled: cfg.retryEnabled,
+        maxRetries: cfg.maxRetries,
+        retryInitialDelayMs: cfg.retryInitialDelayMs,
       });
     }
     return {
       http: this.http,
-      fetchImpl: this.resolved.fetch,
-      baseUrl: this.resolved.baseUrl,
-      databaseId: this.resolved.databaseId,
+      fetchImpl: cfg.fetch,
+      baseUrl: cfg.baseUrl,
+      databaseId: cfg.databaseId,
+      defaultModel: cfg.defaultModel ?? DEFAULT_AI_MODEL,
     };
   }
 
@@ -231,28 +243,28 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     fetchImpl: FetchImpl;
     aiBaseUrl: string;
     databaseId: string;
+    defaultModel: string;
   }> {
-    if (!this.resolved) {
-      this.resolved = await this.cfgPromise;
-    }
+    const cfg = await this.resolveConfig();
     if (!this.aiHttp) {
       this.aiHttp = new HttpClient({
-        baseUrl: this.resolved.aiBaseUrl,
-        apiKey: this.resolved.apiKey,
-        apiSecret: this.resolved.apiSecret,
-        fetchImpl: this.resolved.fetch,
+        baseUrl: cfg.aiBaseUrl,
+        apiKey: cfg.apiKey,
+        apiSecret: cfg.apiSecret,
+        fetchImpl: cfg.fetch,
         requestLoggingEnabled: this.requestLoggingEnabled,
         responseLoggingEnabled: this.responseLoggingEnabled,
-        retryEnabled: this.resolved.retryEnabled,
-        maxRetries: this.resolved.maxRetries,
-        retryInitialDelayMs: this.resolved.retryInitialDelayMs,
+        retryEnabled: cfg.retryEnabled,
+        maxRetries: cfg.maxRetries,
+        retryInitialDelayMs: cfg.retryInitialDelayMs,
       });
     }
     return {
       http: this.aiHttp,
-      fetchImpl: this.resolved.fetch,
-      aiBaseUrl: this.resolved.aiBaseUrl,
-      databaseId: this.resolved.databaseId,
+      fetchImpl: cfg.fetch,
+      aiBaseUrl: cfg.aiBaseUrl,
+      databaseId: cfg.databaseId,
+      defaultModel: cfg.defaultModel ?? DEFAULT_AI_MODEL,
     };
   }
 
@@ -269,6 +281,22 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     };
   }
 
+  private createAiFacade(): AiClient {
+    const chat = ((contentOrRequest: string | AiChatCompletionRequest, options?: AiChatOptions) => {
+      if (typeof contentOrRequest === 'string') {
+        return this.chatWithContent(contentOrRequest, options);
+      }
+      return this.getAiChatClient().create(contentOrRequest, options);
+    }) as AiClient['chat'];
+    return {
+      chat,
+      chatClient: () => this.getAiChatClient(),
+      getModels: () => this.getModels(),
+      getModel: (modelId) => this.getModel(modelId),
+      requestScriptApproval: (input) => this.requestScriptApproval(input),
+    };
+  }
+
   getRequestLoggingEnabled(): boolean {
     return this.requestLoggingEnabled;
   }
@@ -279,13 +307,60 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
 
   /** -------- IOnyxDatabase -------- */
 
-  chat(): AiChatClient {
+  private getAiChatClient(): AiChatClient {
     return new AiChatClientImpl(
       () => this.ensureAiClient(),
       (handle) => this.registerStream(handle),
       () => this.requestLoggingEnabled,
       () => this.responseLoggingEnabled,
     );
+  }
+
+  private async chatWithContent(
+    content: string,
+    options?: AiChatOptions,
+  ): Promise<string | AiChatCompletionResponse | AiChatCompletionStream> {
+    const { defaultModel } = await this.ensureAiClient();
+    const stream = options?.stream ?? false;
+    const request: AiChatCompletionRequest = {
+      model: options?.model ?? defaultModel,
+      messages: [{ role: options?.role ?? 'user', content }],
+      stream,
+    };
+    if (options && 'temperature' in options) {
+      request.temperature = options.temperature ?? null;
+    }
+    const result = await this.getAiChatClient().create(request, options);
+    if (stream) return result;
+    if (options?.raw) return result;
+    const first = (result as AiChatCompletionResponse).choices?.[0]?.message?.content;
+    if (typeof first === 'string' && first.trim().length > 0) {
+      return first;
+    }
+    throw new Error('Chat completion response is missing message content');
+  }
+
+  chat(
+    content: string,
+    options?: AiChatOptions & { stream?: false; raw?: false | undefined },
+  ): Promise<string>;
+  chat(
+    content: string,
+    options: AiChatOptions & { stream: true },
+  ): Promise<AiChatCompletionStream>;
+  chat(
+    content: string,
+    options: AiChatOptions & { raw: true },
+  ): Promise<AiChatCompletionResponse | AiChatCompletionStream>;
+  chat(): AiChatClient;
+  chat(
+    content?: string,
+    options?: AiChatOptions,
+  ): AiChatClient | Promise<string | AiChatCompletionResponse | AiChatCompletionStream> {
+    if (typeof content === 'string') {
+      return this.chatWithContent(content, options);
+    }
+    return this.getAiChatClient();
   }
 
   async getModels(): Promise<AiModelsResponse> {
@@ -1044,6 +1119,7 @@ class AiChatClientImpl implements AiChatClient {
       fetchImpl: FetchImpl;
       aiBaseUrl: string;
       databaseId: string;
+      defaultModel: string;
     }>,
     private readonly registerStream: (handle: { cancel: () => void }) => { cancel: () => void },
     private readonly requestLoggingEnabled: () => boolean,

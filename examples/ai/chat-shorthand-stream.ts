@@ -3,15 +3,8 @@ import { onyx } from '@onyx.dev/onyx-database';
 async function main(): Promise<void> {
   const db = onyx.init();
 
-  const stream = await db.ai.chat({
-    model: 'onyx',
+  const stream = await db.chat('Stream a comma-separated list of three colors.', {
     stream: true,
-    messages: [
-      {
-        role: 'user',
-        content: 'Respond with a very short comma-separated list of colors',
-      },
-    ],
     temperature: 0,
   });
 
@@ -20,11 +13,8 @@ async function main(): Promise<void> {
 
   for await (const chunk of stream) {
     chunkCount += 1;
-    if (!Array.isArray(chunk.choices) || chunk.choices.length === 0) {
-      throw new Error('Streaming chunk is missing choices');
-    }
-    const first = chunk.choices[0];
-    if (!first.delta) {
+    const first = chunk.choices?.[0];
+    if (!first?.delta) {
       throw new Error('Streaming chunk delta is missing');
     }
     if (typeof first.delta.content === 'string') {
@@ -36,7 +26,7 @@ async function main(): Promise<void> {
     throw new Error('No streaming chunks received');
   }
   const trimmed = content.trim();
-  if (trimmed.length === 0) {
+  if (!trimmed) {
     throw new Error('No streamed content assembled');
   }
 

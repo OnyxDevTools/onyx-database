@@ -3,7 +3,7 @@ import { onyx } from '@onyx.dev/onyx-database';
 async function main(): Promise<void> {
   const db = onyx.init();
 
-  const completion = await db.chat().create({
+  const completion = await db.ai.chat({
     model: 'onyx-chat',
     messages: [{ role: 'user', content: 'Reply with exactly one short greeting sentence.' }],
     temperature: 0,

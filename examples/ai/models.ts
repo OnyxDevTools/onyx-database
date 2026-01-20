@@ -3,7 +3,7 @@ import { onyx } from '@onyx.dev/onyx-database';
 async function main(): Promise<void> {
   const db = onyx.init();
 
-  const list = await db.getModels();
+  const list = await db.ai.getModels();
   if (!list.data || !Array.isArray(list.data) || list.data.length === 0) {
     throw new Error('Model list is empty');
   }
@@ -13,7 +13,7 @@ async function main(): Promise<void> {
     throw new Error('First model is missing id or object');
   }
 
-  const model = await db.getModel(first.id);
+  const model = await db.ai.getModel(first.id);
   if (model.id !== first.id) {
     throw new Error('Retrieved model id does not match requested id');
   }

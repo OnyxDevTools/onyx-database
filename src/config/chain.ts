@@ -1,5 +1,10 @@
 // filename: src/config/chain.ts
-import { DEFAULT_BASE_URL, DEFAULT_AI_BASE_URL, sanitizeBaseUrl } from './defaults';
+import {
+  DEFAULT_BASE_URL,
+  DEFAULT_AI_BASE_URL,
+  DEFAULT_AI_MODEL,
+  sanitizeBaseUrl,
+} from './defaults';
 import { OnyxConfigError } from '../errors/config-error';
 import type { OnyxConfig } from '../types/public';
 import type { FetchImpl } from '../types/common';
@@ -63,6 +68,7 @@ function readEnv(targetId?: string): Partial<OnyxConfig> {
   const res = dropUndefined<OnyxConfig>({
     baseUrl: pick('ONYX_DATABASE_BASE_URL'),
     aiBaseUrl: pick('ONYX_AI_BASE_URL'),
+    defaultModel: pick('ONYX_DEFAULT_MODEL'),
     databaseId: envId,
     apiKey: pick('ONYX_DATABASE_API_KEY'),
     apiSecret: pick('ONYX_DATABASE_API_SECRET'),
@@ -228,6 +234,7 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   const merged: Partial<OnyxConfig> = {
     baseUrl: DEFAULT_BASE_URL,
     aiBaseUrl: DEFAULT_AI_BASE_URL,
+    defaultModel: DEFAULT_AI_MODEL,
     ...dropUndefined<OnyxConfig>(home),
     ...dropUndefined<OnyxConfig>(project),
     ...dropUndefined<OnyxConfig>(cfgPath),
@@ -239,6 +246,10 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
 
   const baseUrl = sanitizeBaseUrl(merged.baseUrl ?? DEFAULT_BASE_URL);
   const aiBaseUrl = sanitizeBaseUrl(merged.aiBaseUrl ?? DEFAULT_AI_BASE_URL);
+  const defaultModel =
+    typeof merged.defaultModel === 'string' && merged.defaultModel.trim()
+      ? merged.defaultModel.trim()
+      : DEFAULT_AI_MODEL;
   const databaseId = merged.databaseId ?? '';
   const apiKey = merged.apiKey ?? '';
   const apiSecret = merged.apiSecret ?? '';
@@ -290,6 +301,7 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   const resolved: ResolvedConfig = {
     baseUrl,
     aiBaseUrl,
+    defaultModel,
     databaseId,
     apiKey,
     apiSecret,
@@ -319,6 +331,17 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
       : project.aiBaseUrl
       ? 'project file'
       : home.aiBaseUrl
+      ? 'home profile'
+      : 'default',
+    defaultModel: input?.defaultModel
+      ? 'explicit config'
+      : env.defaultModel
+      ? 'env'
+      : cfgPath.defaultModel
+      ? 'env ONYX_CONFIG_PATH'
+      : project.defaultModel
+      ? 'project file'
+      : home.defaultModel
       ? 'home profile'
       : 'default',
     apiKey: input?.apiKey
@@ -383,6 +406,17 @@ export async function resolveConfigWithSource(
       : project.aiBaseUrl
       ? 'project file'
       : home.aiBaseUrl
+      ? 'home profile'
+      : 'default',
+    defaultModel: input?.defaultModel
+      ? 'explicit config'
+      : env.defaultModel
+      ? 'env'
+      : cfgPath.defaultModel
+      ? 'env ONYX_CONFIG_PATH'
+      : project.defaultModel
+      ? 'project file'
+      : home.defaultModel
       ? 'home profile'
       : 'default',
     databaseId: input?.databaseId
