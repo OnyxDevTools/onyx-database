@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 1.1.0
+
+### Minor Changes
+
+- c912ac4: added support for lucine search
+
 ## 1.0.3
 
 ### Patch Changes
