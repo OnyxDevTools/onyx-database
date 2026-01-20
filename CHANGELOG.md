@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.0.0
+
+### Major Changes
+
+- 3213dfc: Added shorthand AI chat to sdk
+
 ## 1.2.0
 
 ### Minor Changes
