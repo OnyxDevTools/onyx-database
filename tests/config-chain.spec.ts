@@ -188,7 +188,7 @@ secret"
     await resolveConfig();
     const call = spy.mock.calls.find(([msg]) =>
       msg.includes(
-        'credential source: {"databaseId":"env","aiBaseUrl":"default","apiKey":"env","apiSecret":"env"}',
+        'credential source: {"databaseId":"env","aiBaseUrl":"default","defaultModel":"default","apiKey":"env","apiSecret":"env"}',
       ),
     );
     expect(call).toBeTruthy();
