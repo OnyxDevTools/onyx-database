@@ -1,5 +1,5 @@
 // filename: src/config/chain-edge.ts
-import { DEFAULT_BASE_URL, sanitizeBaseUrl } from './defaults';
+import { DEFAULT_BASE_URL, DEFAULT_AI_BASE_URL, sanitizeBaseUrl } from './defaults';
 import { OnyxConfigError } from '../errors/config-error';
 import type { OnyxConfig } from '../types/public';
 import type { FetchImpl } from '../types/common';
@@ -53,6 +53,7 @@ function readEnv(targetId?: string): Partial<OnyxConfig> {
   if (targetId && envId !== targetId) return {};
   const res = dropUndefined<OnyxConfig>({
     baseUrl: pick('ONYX_DATABASE_BASE_URL'),
+    aiBaseUrl: pick('ONYX_AI_BASE_URL'),
     databaseId: envId,
     apiKey: pick('ONYX_DATABASE_API_KEY'),
     apiSecret: pick('ONYX_DATABASE_API_SECRET'),
@@ -73,6 +74,7 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   const env = readEnv(input?.databaseId);
   const merged: Partial<OnyxConfig> = {
     baseUrl: DEFAULT_BASE_URL,
+    aiBaseUrl: DEFAULT_AI_BASE_URL,
     ...dropUndefined<OnyxConfig>(env),
     ...dropUndefined<OnyxConfig>(input),
   };
@@ -80,6 +82,7 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   dbg('merged (pre-validate):', mask(merged));
 
   const baseUrl = sanitizeBaseUrl(merged.baseUrl ?? DEFAULT_BASE_URL);
+  const aiBaseUrl = sanitizeBaseUrl(merged.aiBaseUrl ?? DEFAULT_AI_BASE_URL);
   const databaseId = merged.databaseId ?? '';
   const apiKey = merged.apiKey ?? '';
   const apiSecret = merged.apiSecret ?? '';
@@ -110,6 +113,7 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
 
   const resolved: ResolvedConfig = {
     baseUrl,
+    aiBaseUrl,
     databaseId,
     apiKey,
     apiSecret,

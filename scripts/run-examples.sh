@@ -42,6 +42,10 @@ examples=(
   "stream/delete-events:stream/delete-events"
   "stream/query-stream:stream/query-stream"
   "stream/update-events:stream/update-events"
+  "ai/chat:ai/chat"
+  "ai/chat-stream:ai/chat-stream"
+  "ai/models:ai/models"
+  "ai/script-approval:ai/script-approval"
 )
 
 marker="example: completed"

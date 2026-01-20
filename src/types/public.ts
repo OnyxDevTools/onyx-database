@@ -28,6 +28,10 @@ export interface RetryOptions {
 
 export interface OnyxConfig {
   baseUrl?: string;
+  /**
+   * Base URL for AI endpoints. Defaults to https://ai.onyx.dev.
+   */
+  aiBaseUrl?: string;
   databaseId?: string;
   apiKey?: string;
   apiSecret?: string;
@@ -55,7 +59,214 @@ export interface OnyxConfig {
   retry?: RetryOptions;
 }
 
+export interface AiRequestOptions {
+  /**
+   * Optional database scope for AI calls. Defaults to the configured databaseId.
+   */
+  databaseId?: string;
+}
+
+export type AiChatRole = 'system' | 'user' | 'assistant' | 'tool';
+
+export interface AiToolCallFunction {
+  name: string;
+  arguments: string;
+}
+
+export interface AiToolCall {
+  id?: string | null;
+  type?: string | null;
+  function: AiToolCallFunction;
+}
+
+export interface AiChatMessage {
+  role: AiChatRole;
+  content?: string | null;
+  tool_calls?: AiToolCall[] | null;
+  tool_call_id?: string | null;
+  name?: string | null;
+}
+
+export interface AiToolFunction {
+  name: string;
+  description?: string | null;
+  parameters?: Record<string, unknown> | null;
+}
+
+export interface AiTool {
+  type: string;
+  function: AiToolFunction;
+}
+
+export type AiToolChoice =
+  | 'none'
+  | 'auto'
+  | { type: 'function'; function: { name: string } }
+  | null;
+
+export interface AiChatCompletionRequest {
+  model: string;
+  messages: AiChatMessage[];
+  stream?: boolean;
+  temperature?: number | null;
+  top_p?: number | null;
+  max_tokens?: number | null;
+  metadata?: Record<string, unknown>;
+  tools?: AiTool[];
+  tool_choice?: AiToolChoice;
+  user?: string | null;
+}
+
+export interface AiChatCompletionUsage {
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+  total_tokens?: number | null;
+}
+
+export interface AiChatCompletionChoice {
+  index: number;
+  message: AiChatMessage;
+  finish_reason?: string | null;
+}
+
+export interface AiChatCompletionResponse {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  choices: AiChatCompletionChoice[];
+  usage?: AiChatCompletionUsage;
+}
+
+export interface AiChatCompletionChunkDelta {
+  role?: AiChatRole | null;
+  content?: string | null;
+  tool_calls?: AiToolCall[] | null;
+  tool_call_id?: string | null;
+  name?: string | null;
+}
+
+export interface AiChatCompletionChunkChoice {
+  index: number;
+  delta: AiChatCompletionChunkDelta;
+  finish_reason?: string | null;
+}
+
+export interface AiChatCompletionChunk {
+  id: string;
+  object: string;
+  created: number;
+  model?: string | null;
+  choices: AiChatCompletionChunkChoice[];
+}
+
+export interface AiChatCompletionStream extends AsyncIterable<AiChatCompletionChunk> {
+  cancel(): void;
+}
+
+export interface AiChatClient {
+  create(
+    request: AiChatCompletionRequest & { stream?: false },
+    options?: AiRequestOptions,
+  ): Promise<AiChatCompletionResponse>;
+  create(
+    request: AiChatCompletionRequest & { stream: true },
+    options?: AiRequestOptions,
+  ): Promise<AiChatCompletionStream>;
+  create(
+    request: AiChatCompletionRequest,
+    options?: AiRequestOptions,
+  ): Promise<AiChatCompletionResponse | AiChatCompletionStream>;
+}
+
+export interface AiScriptApprovalRequest {
+  script: string;
+}
+
+export interface AiScriptApprovalResponse {
+  normalizedScript: string;
+  expiresAtIso: string;
+  requiresApproval: boolean;
+  findings?: string;
+}
+
+export interface AiModelsResponse {
+  object: string;
+  data: AiModel[];
+}
+
+export interface AiModel {
+  id: string;
+  object: string;
+  created: number;
+  owned_by: string;
+}
+
+export interface AiErrorResponse {
+  error?: string | { message?: string; [key: string]: unknown } | null;
+}
+
 export interface IOnyxDatabase<Schema = Record<string, unknown>> {
+  /**
+   * Access OpenAI-compatible chat completions.
+   *
+   * @example
+   * ```ts
+   * const chat = db.chat();
+   * const completion = await chat.create({
+   *   model: 'onyx-chat',
+   *   messages: [{ role: 'user', content: 'Summarize last week.' }],
+   * });
+   * ```
+   *
+   * @example
+   * ```ts
+   * const stream = await db
+   *   .chat()
+   *   .create({
+   *     model: 'onyx-chat',
+   *     stream: true,
+   *     messages: [{ role: 'user', content: 'Draft an onboarding checklist.' }],
+   *   });
+   * for await (const chunk of stream) {
+   *   process.stdout.write(chunk.choices[0]?.delta?.content ?? '');
+   * }
+   * ```
+   */
+  chat(): AiChatClient;
+
+  /**
+   * List available AI models.
+   *
+   * @example
+   * ```ts
+   * const models = await db.getModels();
+   * ```
+   */
+  getModels(): Promise<AiModelsResponse>;
+
+  /**
+   * Retrieve a single AI model by ID.
+   *
+   * @example
+   * ```ts
+   * const model = await db.getModel('onyx-chat');
+   * ```
+   */
+  getModel(modelId: string): Promise<AiModel>;
+
+  /**
+   * Request mutation approval for a script.
+   *
+   * @example
+   * ```ts
+   * const approval = await db.requestScriptApproval({
+   *   script: "db.save({ id: 'u1', email: 'a@b.com' })"
+   * });
+   * ```
+   */
+  requestScriptApproval(input: AiScriptApprovalRequest): Promise<AiScriptApprovalResponse>;
+
   /**
    * Begin a query against a table.
    *

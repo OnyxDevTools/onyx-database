@@ -18,6 +18,7 @@ TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-
 - [Getting started](#getting-started-cloud--keys--connect)
 - [Install](#install)
 - [Initialize the client](#initialize-the-client)
+- [Onyx AI (chat & models)](#onyx-ai-chat--models)
 - [Generate schema types](#optional-generate-typescript-types-from-your-schema)
 - [Query helpers](#query-helpers-at-a-glance)
 - [Full-text search](#full-text-search-lucene)
@@ -92,6 +93,7 @@ Set the following environment variables for your database:
 - `ONYX_DATABASE_BASE_URL`
 - `ONYX_DATABASE_API_KEY`
 - `ONYX_DATABASE_API_SECRET`
+- `ONYX_AI_BASE_URL` (optional; defaults to `https://ai.onyx.dev`)
 
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
@@ -107,6 +109,7 @@ import { onyx } from '@onyx.dev/onyx-database';
 
 const db = onyx.init({
   baseUrl: 'https://api.onyx.dev',
+  aiBaseUrl: 'https://ai.onyx.dev', // optional: override AI base path
   databaseId: 'YOUR_DATABASE_ID',
   apiKey: 'YOUR_KEY',
   apiSecret: 'YOUR_SECRET',
@@ -176,6 +179,105 @@ single internal `HttpClient`. Requests use the runtime's global `fetch`, which
 already reuses connections and pools them for keep‑alive. Reuse the returned
 `db` for multiple operations; extra SDK‑level connection pooling generally isn't
 necessary unless you create many short‑lived clients.
+
+---
+
+## Onyx AI (chat & models)
+
+AI endpoints are OpenAI-compatible and use the same credentials as database calls. The AI base URL defaults to `https://ai.onyx.dev` and can be overridden with `aiBaseUrl` (or `ONYX_AI_BASE_URL`). The `databaseId` query param is optional; when omitted, the configured databaseId is used for grounding and billing.
+
+### Chat completions
+
+Examples: `examples/ai/chat.ts`, `examples/ai/chat-stream.ts`.
+
+```ts
+import { onyx } from '@onyx.dev/onyx-database';
+
+const db = onyx.init();
+
+const completion = await db.chat().create({
+  model: 'onyx-chat',
+  messages: [{ role: 'user', content: 'Summarize last week’s traffic.' }],
+});
+console.log(completion.choices[0]?.message?.content);
+```
+
+Streaming works as an async iterable:
+
+```ts
+const stream = await db.chat().create({
+  model: 'onyx-chat',
+  stream: true,
+  messages: [{ role: 'user', content: 'Write a short onboarding checklist.' }],
+});
+
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices[0]?.delta?.content ?? '');
+}
+// stream.cancel() is available if you need to stop early
+```
+
+Tool calls mirror the ChatGPT TypeScript client:
+
+```ts
+const prompt = {
+  model: 'onyx-chat',
+  messages: [{ role: 'user', content: 'Find revenue for ACME in 2023.' }],
+  tools: [
+    {
+      type: 'function',
+      function: {
+        name: 'get_revenue',
+        description: 'Fetch revenue for a company and year',
+        parameters: {
+          type: 'object',
+          properties: {
+            company: { type: 'string' },
+            year: { type: 'number' },
+          },
+          required: ['company', 'year'],
+        },
+      },
+    },
+  ],
+};
+
+const first = await db.chat().create(prompt);
+const toolCall = first.choices[0]?.message?.tool_calls?.[0];
+
+if (toolCall) {
+  const toolResult = await getRevenue(JSON.parse(toolCall.function.arguments)); // your impl
+  const followup = await db.chat().create({
+    model: prompt.model,
+    messages: [
+      ...prompt.messages,
+      first.choices[0].message,
+      { role: 'tool', tool_call_id: toolCall.id ?? '', content: JSON.stringify(toolResult) },
+    ],
+  });
+  console.log(followup.choices[0]?.message?.content);
+}
+```
+
+### Model metadata
+
+Example: `examples/ai/models.ts`.
+
+```ts
+const models = await db.getModels();
+const chatModel = await db.getModel('onyx-chat');
+```
+
+### Script mutation approvals
+
+```ts
+const approval = await db.requestScriptApproval({
+  script: "db.save({ id: 'u1', email: 'a@b.com' })",
+});
+if (approval.requiresApproval) {
+  console.log(`Requires approval until ${approval.expiresAtIso}`);
+}
+```
 
 ---
 

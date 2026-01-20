@@ -1,9 +1,23 @@
 // filename: src/impl/onyx-core.ts
 import type { ResolvedConfig } from '../config/types';
-import { HttpClient } from '../core/http';
+import { HttpClient, parseJsonAllowNaN } from '../core/http';
 import { openJsonLinesStream } from '../core/stream';
 
-import type { OnyxFacade, IOnyxDatabase, OnyxConfig } from '../types/public';
+import type {
+  OnyxFacade,
+  IOnyxDatabase,
+  OnyxConfig,
+  AiChatClient,
+  AiChatCompletionRequest,
+  AiChatCompletionResponse,
+  AiChatCompletionChunk,
+  AiChatCompletionStream,
+  AiModelsResponse,
+  AiModel,
+  AiScriptApprovalRequest,
+  AiScriptApprovalResponse,
+  AiRequestOptions,
+} from '../types/public';
 import type {
   IQueryBuilder,
   ISaveBuilder,
@@ -165,6 +179,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   private readonly cfgPromise: Promise<ResolvedConfig>;
   private resolved: ResolvedConfig | null = null;
   private http: HttpClient | null = null;
+  private aiHttp: HttpClient | null = null;
   private readonly streams = new Set<{ cancel: () => void }>();
   private readonly requestLoggingEnabled: boolean;
   private readonly responseLoggingEnabled: boolean;
@@ -211,6 +226,36 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     };
   }
 
+  private async ensureAiClient(): Promise<{
+    http: HttpClient;
+    fetchImpl: FetchImpl;
+    aiBaseUrl: string;
+    databaseId: string;
+  }> {
+    if (!this.resolved) {
+      this.resolved = await this.cfgPromise;
+    }
+    if (!this.aiHttp) {
+      this.aiHttp = new HttpClient({
+        baseUrl: this.resolved.aiBaseUrl,
+        apiKey: this.resolved.apiKey,
+        apiSecret: this.resolved.apiSecret,
+        fetchImpl: this.resolved.fetch,
+        requestLoggingEnabled: this.requestLoggingEnabled,
+        responseLoggingEnabled: this.responseLoggingEnabled,
+        retryEnabled: this.resolved.retryEnabled,
+        maxRetries: this.resolved.maxRetries,
+        retryInitialDelayMs: this.resolved.retryInitialDelayMs,
+      });
+    }
+    return {
+      http: this.aiHttp,
+      fetchImpl: this.resolved.fetch,
+      aiBaseUrl: this.resolved.aiBaseUrl,
+      databaseId: this.resolved.databaseId,
+    };
+  }
+
   private registerStream(handle: { cancel: () => void }): { cancel: () => void } {
     this.streams.add(handle);
     return {
@@ -224,7 +269,40 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     };
   }
 
+  getRequestLoggingEnabled(): boolean {
+    return this.requestLoggingEnabled;
+  }
+
+  getResponseLoggingEnabled(): boolean {
+    return this.responseLoggingEnabled;
+  }
+
   /** -------- IOnyxDatabase -------- */
+
+  chat(): AiChatClient {
+    return new AiChatClientImpl(
+      () => this.ensureAiClient(),
+      (handle) => this.registerStream(handle),
+      () => this.requestLoggingEnabled,
+      () => this.responseLoggingEnabled,
+    );
+  }
+
+  async getModels(): Promise<AiModelsResponse> {
+    const { http } = await this.ensureAiClient();
+    return http.request<AiModelsResponse>('GET', '/v1/models');
+  }
+
+  async getModel(modelId: string): Promise<AiModel> {
+    const { http } = await this.ensureAiClient();
+    const path = `/v1/models/${encodeURIComponent(modelId)}`;
+    return http.request<AiModel>('GET', path);
+  }
+
+  async requestScriptApproval(input: AiScriptApprovalRequest): Promise<AiScriptApprovalResponse> {
+    const { http } = await this.ensureAiClient();
+    return http.request<AiScriptApprovalResponse>('POST', '/api/script-approvals', input);
+  }
 
   from<Table extends keyof Schema & string>(table: Table): IQueryBuilder<Schema[Table]> {
     return new QueryBuilderImpl<Schema[Table], Schema>(this, String(table), this.defaultPartition);
@@ -947,6 +1025,209 @@ class CascadeBuilderImpl<Schema = Record<string, unknown>>
   ): Promise<boolean> {
     const opts = this.rels ? { relationships: this.rels } : undefined;
     return this.db.delete(table, primaryKey, opts);
+  }
+}
+
+type ReadableStreamReader = {
+  read(): Promise<{ done: boolean; value?: Uint8Array }>;
+  cancel?: (reason?: unknown) => void;
+};
+
+type ReadableStreamLike = {
+  getReader(): ReadableStreamReader;
+};
+
+class AiChatClientImpl implements AiChatClient {
+  constructor(
+    private readonly resolveAiClient: () => Promise<{
+      http: HttpClient;
+      fetchImpl: FetchImpl;
+      aiBaseUrl: string;
+      databaseId: string;
+    }>,
+    private readonly registerStream: (handle: { cancel: () => void }) => { cancel: () => void },
+    private readonly requestLoggingEnabled: () => boolean,
+    private readonly responseLoggingEnabled: () => boolean,
+  ) {}
+
+  private normalizeEventData(rawEvent: string): string | null {
+    const lines = rawEvent.split('\n');
+    const dataLines: string[] = [];
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith(':')) continue;
+      if (trimmed.startsWith('data:')) {
+        dataLines.push(trimmed.slice(5).trim());
+      } else {
+        dataLines.push(trimmed);
+      }
+    }
+    if (!dataLines.length) return null;
+    const joined = dataLines.join('\n').trim();
+    return joined.length > 0 ? joined : null;
+  }
+
+  private logRequest(url: string, body: unknown, headers: Record<string, string>): void {
+    if (!this.requestLoggingEnabled()) return;
+    console.log(`POST ${url}`);
+    if (body != null) {
+      const serialized = typeof body === 'string' ? body : JSON.stringify(body);
+      console.log(serialized);
+    }
+    const headerLog = { ...headers };
+    if (headerLog['x-onyx-secret']) headerLog['x-onyx-secret'] = '[REDACTED]';
+    console.log('Headers:', headerLog);
+  }
+
+  private logResponse(status: number, statusText: string, raw?: string): void {
+    if (!this.responseLoggingEnabled()) return;
+    const statusLine = `${status} ${statusText}`.trim();
+    console.log(statusLine);
+    if (raw && raw.trim().length > 0) {
+      console.log(raw);
+    }
+  }
+
+  private toOnyxError(
+    status: number,
+    statusText: string,
+    raw: string,
+  ): OnyxHttpError {
+    let parsed: unknown = raw;
+    try {
+      parsed = parseJsonAllowNaN(raw);
+    } catch {
+      /* ignore */
+    }
+    const message =
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'error' in parsed &&
+      typeof (parsed as { error?: { message?: unknown } }).error === 'object' &&
+      typeof (parsed as { error?: { message?: unknown } }).error?.message === 'string'
+        ? String((parsed as { error: { message: unknown } }).error.message)
+        : `${status} ${statusText}`;
+    return new OnyxHttpError(message, status, statusText, parsed, raw);
+  }
+
+  create(
+    request: AiChatCompletionRequest & { stream?: false },
+    options?: AiRequestOptions,
+  ): Promise<AiChatCompletionResponse>;
+  create(
+    request: AiChatCompletionRequest & { stream: true },
+    options?: AiRequestOptions,
+  ): Promise<AiChatCompletionStream>;
+  async create(
+    request: AiChatCompletionRequest,
+    options?: AiRequestOptions,
+  ): Promise<AiChatCompletionResponse | AiChatCompletionStream> {
+    const body = { ...request, stream: !!request.stream };
+    const { http, fetchImpl, aiBaseUrl, databaseId } = await this.resolveAiClient();
+    const params = new URLSearchParams();
+    const scopedDb = options?.databaseId ?? databaseId;
+    if (scopedDb) params.append('databaseId', scopedDb);
+    const path = `/v1/chat/completions${params.size ? `?${params.toString()}` : ''}`;
+
+    if (!body.stream) {
+      return http.request<AiChatCompletionResponse>('POST', path, body);
+    }
+
+    const url = `${aiBaseUrl}${path}`;
+    const headers = http.headers({ Accept: 'text/event-stream' });
+    this.logRequest(url, body, headers);
+    const res = await fetchImpl(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const raw = await res.text();
+      this.logResponse(res.status, res.statusText, raw);
+      throw this.toOnyxError(res.status, res.statusText, raw);
+    }
+    this.logResponse(res.status, res.statusText);
+
+    const bodyStream = (res as { body?: unknown }).body;
+    const reader =
+      bodyStream && typeof (bodyStream as { getReader?: unknown }).getReader === 'function'
+        ? (bodyStream as ReadableStreamLike).getReader()
+        : null;
+    if (!reader) {
+      throw new OnyxHttpError(
+        'Streaming response body is not readable',
+        res.status,
+        res.statusText,
+        null,
+        '',
+      );
+    }
+
+    let canceled = false;
+    const handle = {
+      cancel: () => {
+        if (canceled) return;
+        canceled = true;
+        try {
+          reader.cancel?.();
+        } catch {
+          /* ignore */
+        }
+      },
+    };
+    const registered = this.registerStream(handle);
+    const normalizeEvent = (rawEvent: string): string | null => this.normalizeEventData(rawEvent);
+
+    const stream: AiChatCompletionStream = {
+      async *[Symbol.asyncIterator](): AsyncIterator<AiChatCompletionChunk> {
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        try {
+          while (!canceled) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              buffer += decoder.decode(value, { stream: true });
+            }
+            let splitIndex = buffer.indexOf('\n\n');
+            while (splitIndex !== -1) {
+              const rawEvent = buffer.slice(0, splitIndex);
+              buffer = buffer.slice(splitIndex + 2);
+              const data = normalizeEvent(rawEvent);
+              if (data === '[DONE]') return;
+              if (data) {
+                try {
+                  yield parseJsonAllowNaN(data) as AiChatCompletionChunk;
+                } catch {
+                  /* ignore parse errors */
+                }
+              }
+              splitIndex = buffer.indexOf('\n\n');
+            }
+          }
+          buffer += decoder.decode();
+          const remaining = buffer.trim();
+          if (remaining && remaining !== '[DONE]') {
+            const data = normalizeEvent(remaining);
+            if (data && data !== '[DONE]') {
+              try {
+                yield parseJsonAllowNaN(data) as AiChatCompletionChunk;
+              } catch {
+                /* ignore */
+              }
+            }
+          }
+        } finally {
+          registered.cancel();
+        }
+      },
+      cancel() {
+        registered.cancel();
+      },
+    };
+
+    return stream;
   }
 }
 

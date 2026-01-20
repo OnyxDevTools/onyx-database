@@ -18,6 +18,7 @@
     "save/**/*.ts",
     "delete/**/*.ts",
     "document/**/*.ts",
+    "ai/**/*.ts",
     "onyx/**/*.ts",
     "stream/**/*.ts",
     "secrets/**/*.ts",
