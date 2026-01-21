@@ -47,6 +47,7 @@
 - [count](functions/count.md)
 - [desc](functions/desc.md)
 - [eq](functions/eq.md)
+- [format](functions/format.md)
 - [gt](functions/gt.md)
 - [gte](functions/gte.md)
 - [inOp](functions/inOp.md)

@@ -21,6 +21,10 @@ describe('helper utilities', () => {
     agg.lower('a');
     expect(agg.substring('name', 1, 2)).toBe('substring(name,1,2)');
     expect(agg.replace('col', "o'o", "r'r")).toBe("replace(col, 'o\\'o', 'r\\'r')");
+    expect(agg.format('age', '000')).toBe("format(age, '000')");
+    expect(agg.format('createdAt', "yyyy-MM-dd 'at' HH:mm")).toBe(
+      "format(createdAt, 'yyyy-MM-dd \\'at\\' HH:mm')",
+    );
     agg.percentile('a', 0.5);
   });
 

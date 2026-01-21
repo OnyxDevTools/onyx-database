@@ -176,6 +176,22 @@ const approval = await db.ai.requestScriptApproval({
 
 ---
 
+## Aggregate helpers
+
+```ts
+import { format } from '@onyx.dev/onyx-database';
+
+const rows = await db
+  .select(format('createdAt', 'yyyy-MM-dd'))
+  .from('User')
+  .list();
+```
+
+- `format(field, formatter)` uses Java-style format strings for dates and numbers.
+- Example: `examples/query/format.ts`
+
+---
+
 ## Optional: generate TypeScript types from your schema
 
 The package ships a small codegen CLI that emits per-table interfaces, a `tables` enum, and a `Schema` mapping for compile-time safety and IntelliSense. Each generated interface also includes an index signature so extra properties (for graph attachments in cascade saves) don't trigger type errors.

@@ -13,4 +13,6 @@ export const substring = (attribute: string, from: number, length: number): stri
   `substring(${attribute},${from},${length})`;
 export const replace = (attribute: string, pattern: string, repl: string): string =>
   `replace(${attribute}, '${pattern.replace(/'/g, "\\'")}', '${repl.replace(/'/g, "\\'")}')`;
+export const format = (attribute: string, formatter: string): string =>
+  `format(${attribute}, '${formatter.replace(/'/g, "\\'")}')`;
 export const percentile = (attribute: string, p: number): string => `percentile(${attribute}, ${p})`;

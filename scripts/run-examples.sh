@@ -15,6 +15,7 @@ examples=(
   "delete/query:delete/query"
   "document/save-get-delete:document/save-get-delete-document"
   "query/aggregate-avg:query/aggregate-avg"
+  "query/format:query/format"
   "query/aggregates-with-grouping:query/aggregates-with-grouping"
   "query/basic:query/basic"
   "query/compound:query/compound"
@@ -44,6 +45,8 @@ examples=(
   "stream/update-events:stream/update-events"
   "ai/chat:ai/chat"
   "ai/chat-stream:ai/chat-stream"
+  "ai/chat-shorthand:ai/chat-shorthand"
+  "ai/chat-shorthand-stream:ai/chat-shorthand-stream"
   "ai/models:ai/models"
   "ai/script-approval:ai/script-approval"
 )

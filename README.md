@@ -535,6 +535,26 @@ import {
 - `inOp`/`notIn` remain available for backward compatibility and are exact aliases.
 - `search(text, minScore?)` builds a Lucene `MATCHES` predicate on `__full_text__` and always serializes `minScore` (null when omitted).
 
+### Aggregate helpers
+
+```ts
+import {
+  avg, sum, count, min, max,
+  std, variance, median,
+  upper, lower,
+  substring, replace, percentile,
+  format
+} from '@onyx.dev/onyx-database';
+
+const rows = await db
+  .select(format('createdAt', 'yyyy-MM-dd'))
+  .from('User')
+  .list();
+```
+
+- `format(field, formatter)` uses Java-style format strings for dates and numbers.
+- Example: `examples/query/format.ts`
+
 ### Inner queries (IN/NOT IN with sub-selects)
 
 You can pass another query builder to `within` or `notWithin` to create nested filters. The SDK serializes the inner query (including its table) before sending the request.
