@@ -31,6 +31,9 @@ if [[ "${CURRENT_BRANCH}" != "${MAIN_BRANCH}" ]]; then
   cmd git checkout "${MAIN_BRANCH}"
 fi
 
+# Refresh branch name in case we switched.
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
 info "Ensuring ${MAIN_BRANCH} is up to date with origin..."
 cmd git fetch origin --tags
 cmd git pull --ff-only origin "${MAIN_BRANCH}"
@@ -64,7 +67,18 @@ fi
 
 # --- Ensure clean working tree before creating changeset/version bump ---
 if ! git diff --quiet || ! git diff --cached --quiet; then
-  abort "Working tree not clean. Commit or stash changes first."
+  info "Working tree not clean."
+  if [[ "${CURRENT_BRANCH}" != "${MAIN_BRANCH}" ]]; then
+    abort "Not on ${MAIN_BRANCH}; cannot auto-commit changes."
+  fi
+  read -rp "Enter commit message for existing changes: " AUTO_COMMIT_MSG
+  if [[ -z "${AUTO_COMMIT_MSG}" ]]; then
+    AUTO_COMMIT_MSG="chore: prepare release"
+  fi
+  info "Committing pending changes with message: ${AUTO_COMMIT_MSG}"
+  cmd git add -A
+  cmd git commit -m "${AUTO_COMMIT_MSG}"
+  cmd git push origin "${MAIN_BRANCH}"
 fi
 
 # --- Prompt for bump type ---
@@ -75,7 +89,9 @@ done
 
 # --- Prompt for message ---
 read -rp "Enter a changeset message (short description of the change): " MESSAGE
-MESSAGE="${MESSAGE:-"${BUMP_TYPE} release"}"
+if [[ -z "${MESSAGE}" ]]; then
+  MESSAGE="${BUMP_TYPE} release"
+fi
 
 # --- Create changeset file ---
 mkdir -p .changeset

@@ -10,6 +10,8 @@
   - Make bump-version script pull the latest main before tagging to avoid publishing stale builds.
   - Skip example gating when the local Onyx config file is absent, preventing false failures in environments without secrets.
   - Fix example runner to keep iterating and report results under `set -e`.
+  - Auto-commit/push dirty working trees (with user-provided message) before continuing the bump flow when on main.
+  - Simplify prompt defaults to avoid shell parsing issues during the bump script.
 
 - Impact:
   - sdkVersion now tracks package version at build time; release tags pick up current main before publish.
