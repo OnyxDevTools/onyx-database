@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
+import pkg from '../package.json';
 import { onyx, sdkName, sdkVersion } from '../src/edge';
 
 const cfg = {
@@ -15,8 +16,8 @@ afterEach(() => {
 
 describe('edge entry', () => {
   it('exports sdk metadata and initializes', () => {
-    expect(sdkName).toBe('@onyx.dev/onyx-database');
-    expect(sdkVersion).toBe('0.1.0');
+    expect(sdkName).toBe(pkg.name);
+    expect(sdkVersion).toBe(pkg.version);
     const db = onyx.init(cfg);
     expect(db).toBeTruthy();
   });

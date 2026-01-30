@@ -31,6 +31,10 @@ if [[ "${CURRENT_BRANCH}" != "${MAIN_BRANCH}" ]]; then
   cmd git checkout "${MAIN_BRANCH}"
 fi
 
+info "Ensuring ${MAIN_BRANCH} is up to date with origin..."
+cmd git fetch origin --tags
+cmd git pull --ff-only origin "${MAIN_BRANCH}"
+
 # --- Install & test before committing ---
 info "Installing deps..."
 cmd npm install

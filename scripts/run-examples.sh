@@ -10,6 +10,12 @@ examples_root="${repo_root}/examples"
 export ONYX_CONFIG_PATH="${examples_root}/onyx-database.json"
 export ONYX_SCHEMA_PATH="${examples_root}/onyx.schema.json"
 
+# If the config file is absent (common in local/CI without secrets), skip examples gracefully.
+if [[ ! -f "${ONYX_CONFIG_PATH}" ]]; then
+  echo "examples config not found at ${ONYX_CONFIG_PATH}; skipping examples."
+  exit 0
+fi
+
 examples=(
   "delete/by-id:delete/by-id"
   "delete/query:delete/query"
@@ -86,19 +92,17 @@ for entry in "${examples[@]}"; do
   status="FAIL"
   output=""
 
-  if output=$(cd "${examples_root}" && npm exec -- tsx "${path}.ts" 2>&1); then
-    if [[ "$output" == *"$marker"* ]]; then
-      status="PASS"
-      ((passed++))
-    else
-      status="FAIL"
-      ((failed++))
-      failed_names+=("$name")
-      failed_logs+=("$output")
-    fi
+  set +e
+  output=$(cd "${examples_root}" && npm exec -- tsx "${path}.ts" 2>&1)
+  cmd_status=$?
+  set -e
+
+  if [[ $cmd_status -eq 0 && "$output" == *"$marker"* ]]; then
+    status="PASS"
+    passed=$((passed + 1))
   else
     status="FAIL"
-    ((failed++))
+    failed=$((failed + 1))
     failed_names+=("$name")
     failed_logs+=("$output")
   fi

@@ -1,6 +1,5 @@
 // filename: src/index.ts
-export const sdkName = '@onyx.dev/onyx-database';
-export const sdkVersion = '0.1.0';
+export { sdkName, sdkVersion } from './version';
 
 // Public types & contracts
 export * from './types/public';
