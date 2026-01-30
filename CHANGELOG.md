@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.0.1
+
+### Patch Changes
+
+- 92bad0f: fixing issue where version bump wasnt getting published
+
 ## 2.0.0
 
 ### Major Changes
