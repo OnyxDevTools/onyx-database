@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.1.0
+
+### Minor Changes
+
+- 552b621: enhanced client connection caching to support switching databases with a single client
+
 ## 2.0.1
 
 ### Patch Changes
