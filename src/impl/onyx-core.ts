@@ -1311,25 +1311,48 @@ class AiChatClientImpl implements AiChatClient {
  * Facade export
  * --------------------------*/
 export function createOnyxFacade(resolveConfig: ResolveConfig): OnyxFacade {
-  let cachedCfg: { promise: Promise<ResolvedConfig>; expires: number } | null = null;
+  const cachedCfgs = new Map<string, { promise: Promise<ResolvedConfig>; expires: number }>();
+
+  const cacheKey = (databaseId?: string, apiKey?: string): string | null => {
+    const id = typeof databaseId === 'string' && databaseId.trim() !== '' ? databaseId.trim() : null;
+    const key = typeof apiKey === 'string' && apiKey.trim() !== '' ? apiKey.trim() : null;
+    return id && key ? `${id}-${key}` : null;
+  };
 
   function resolveConfigWithCache(config?: OnyxConfig): Promise<ResolvedConfig> {
     const ttl = config?.ttl ?? DEFAULT_CACHE_TTL;
     const now = Date.now();
-    if (cachedCfg && cachedCfg.expires > now) {
-      return cachedCfg.promise;
+    const hintKey = cacheKey(config?.databaseId, config?.apiKey) ?? '__default__';
+
+    const existing = cachedCfgs.get(hintKey);
+    if (existing && existing.expires > now) {
+      return existing.promise;
     }
+    if (existing) cachedCfgs.delete(hintKey);
+
     const { ttl: _ttl, requestLoggingEnabled: _reqLog, responseLoggingEnabled: _resLog, ...rest } = config ?? {};
     void _ttl;
     void _reqLog;
     void _resLog;
-    const promise = resolveConfig(rest);
-    cachedCfg = { promise, expires: now + ttl };
+    const expires = now + ttl;
+
+    const promise = resolveConfig(rest).then((resolved) => {
+      const resolvedKey = cacheKey(resolved.databaseId, resolved.apiKey) ?? hintKey;
+      const nextExpires = Date.now() + ttl;
+      cachedCfgs.set(resolvedKey, { promise, expires: nextExpires });
+      if (resolvedKey !== hintKey) {
+        const stale = cachedCfgs.get(hintKey);
+        if (stale && stale.promise === promise) cachedCfgs.delete(hintKey);
+      }
+      return resolved;
+    });
+
+    cachedCfgs.set(hintKey, { promise, expires });
     return promise;
   }
 
   function clearCacheConfig(): void {
-    cachedCfg = null;
+    cachedCfgs.clear();
   }
 
   return {

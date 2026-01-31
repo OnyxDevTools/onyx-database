@@ -81,16 +81,25 @@ brew install onyx-cli
 
 This SDK resolves credentials automatically using the chain **explicit config ➜ environment variables ➜ `ONYX_CONFIG_PATH` file ➜ project config file ➜ home profile** _(Node.js only for file-based sources)_. Call `onyx.init({ databaseId: 'database-id' })` to target a specific database, or omit the `databaseId` to use the default. You can also pass credentials directly via config.
 
+**Reliability defaults (read this):**
+- **Retries:** GET/query calls auto-retry up to 3 times with Fibonacci backoff starting at 300ms (honors `Retry-After`); writes never retry.
+- **Config cache:** Resolved config is cached per `${databaseId}-${apiKey}` for 5 minutes; tune with `ttl`, clear via `onyx.clearCacheConfig()`.
+
 ### Option A) Environment variables (recommended for production)
 
-Set the following environment variables for your database:
+Set these environment variables for your database:
 
-- `ONYX_DATABASE_ID`
-- `ONYX_DATABASE_BASE_URL`
-- `ONYX_DATABASE_API_KEY`
-- `ONYX_DATABASE_API_SECRET`
-- `ONYX_AI_BASE_URL` (optional; defaults to `https://ai.onyx.dev`)
-- `ONYX_DEFAULT_MODEL` (optional; used by `db.chat('...')`, defaults to `onyx`)
+| Variable | Purpose | Default when unset |
+| --- | --- | --- |
+| `ONYX_DATABASE_ID` | Target database ID | required |
+| `ONYX_DATABASE_BASE_URL` | Base URL for DB API | `https://api.onyx.dev` |
+| `ONYX_DATABASE_API_KEY` | API key | required |
+| `ONYX_DATABASE_API_SECRET` | API secret | required |
+| `ONYX_AI_BASE_URL` | Base URL for AI endpoints | `https://ai.onyx.dev` |
+| `ONYX_DEFAULT_MODEL` | Model used by `db.chat()` shorthand | `onyx` |
+| `ONYX_CONFIG_PATH` | Path to JSON credentials file (Node only; ignored on edge) | unset (falls back to env ➜ project file ➜ home profile) |
+| `ONYX_DEBUG` | Enable HTTP + config debug logging | off |
+| `ONYX_STREAM_DEBUG` | Enable streaming debug logs | off |
 
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
@@ -168,15 +177,34 @@ export default {
 };
 ```
 
-### Connection handling
+### Connection & config caching
 
 Calling `onyx.init()` returns a lightweight client. Configuration is resolved once
-and cached for 5 minutes to avoid repeated credential lookups (override with
-`ttl` or reset via `onyx.clearCacheConfig()`). Each database instance keeps a
-single internal `HttpClient`. Requests use the runtime's global `fetch`, which
-already reuses connections and pools them for keep‑alive. Reuse the returned
-`db` for multiple operations; extra SDK‑level connection pooling generally isn't
-necessary unless you create many short‑lived clients.
+and cached **per `${databaseId}-${apiKey}` pair** for 5 minutes to avoid repeated
+env/file lookups (override with `ttl` or reset via `onyx.clearCacheConfig()`).
+Each database instance keeps a single internal `HttpClient`. Requests use the
+runtime's global `fetch`, which already reuses connections and pools them for
+keep‑alive. Reuse the returned `db` for multiple operations; extra SDK‑level
+connection pooling generally isn't necessary unless you create many short‑lived
+clients.
+
+### Typed vs untyped init
+
+`onyx.init()` is generic. Omit the type for quick scripts; add your generated schema type for full safety.
+
+```ts
+// Untyped: flexible, no compile-time field checks
+const db = onyx.init();
+const user = await db.from('User').findById('abc'); // inferred as any/unknown
+```
+
+```ts
+// Typed: import generated schema to get autocomplete and validation
+import type { OnyxSchema as Schema } from './onyx/types';
+const db = onyx.init<Schema>();
+const user = await db.from('User').findById('abc'); // inferred as Schema['User']
+// user.emali -> TypeScript error
+```
 
 ---
 
