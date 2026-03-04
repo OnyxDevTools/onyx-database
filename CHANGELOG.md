@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.1.1
+
+### Patch Changes
+
+- 7b2dd00: removed databaseId required constraint
+
 ## 2.1.0
 
 ### Minor Changes
