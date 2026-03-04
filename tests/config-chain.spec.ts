@@ -179,6 +179,21 @@ secret"
     await expect(resolveConfig()).rejects.toBeInstanceOf(OnyxConfigError);
   });
 
+  it('allows missing databaseId when api credentials are present', async () => {
+    const proj = await mkdtemp(path.join(tmpdir(), 'proj-'));
+    process.chdir(proj);
+    const home = await mkdtemp(path.join(tmpdir(), 'home-'));
+    vi.stubEnv('HOME', home);
+    vi.doMock('node:os', () => ({ homedir: () => home }));
+    vi.stubEnv('ONYX_DATABASE_ID', '');
+    vi.stubEnv('ONYX_DATABASE_API_KEY', 'ek');
+    vi.stubEnv('ONYX_DATABASE_API_SECRET', 'es');
+    const cfg = await resolveConfig();
+    expect(cfg.databaseId).toBe('');
+    expect(cfg.apiKey).toBe('ek');
+    expect(cfg.apiSecret).toBe('es');
+  });
+
   it('logs credential source when ONYX_DEBUG=true', async () => {
     vi.stubEnv('ONYX_DEBUG', 'true');
     vi.stubEnv('ONYX_DATABASE_ID', 'envdb');

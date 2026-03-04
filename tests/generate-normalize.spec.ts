@@ -94,4 +94,71 @@ describe('generateTypes schema normalization', () => {
       await fs.rm(tmpBase, { recursive: true, force: true });
     }
   });
+
+  it('fetches schema via API source without databaseId when omitted', async () => {
+    const tmpBase = await fs.mkdtemp(join(tmpdir(), 'onyx-schema-api-no-id-'));
+    const emptyHome = await fs.mkdtemp(join(tmpdir(), 'onyx-home-no-id-'));
+    const typesPath = join(tmpBase, 'types.ts');
+    const prevCwd = process.cwd();
+    const prevEnv = {
+      id: process.env.ONYX_DATABASE_ID,
+      baseUrl: process.env.ONYX_DATABASE_BASE_URL,
+      apiKey: process.env.ONYX_DATABASE_API_KEY,
+      apiSecret: process.env.ONYX_DATABASE_API_SECRET,
+      configPath: process.env.ONYX_CONFIG_PATH,
+      home: process.env.HOME,
+    };
+    delete process.env.ONYX_DATABASE_ID;
+    process.env.ONYX_DATABASE_BASE_URL = 'https://api.test';
+    process.env.ONYX_DATABASE_API_KEY = 'key';
+    process.env.ONYX_DATABASE_API_SECRET = 'secret';
+    delete process.env.ONYX_CONFIG_PATH;
+    process.env.HOME = emptyHome;
+    process.chdir(tmpBase);
+
+    const getSchemaMock = vi.fn().mockResolvedValue({
+      entities: [
+        {
+          name: 'ApiNoId',
+          attributes: [{ name: 'amount', type: 'Long', isNullable: false }],
+        },
+      ],
+    });
+    const initSpy = vi.spyOn(onyx, 'init').mockImplementation((config) => {
+      expect(config?.databaseId).toBeUndefined();
+      return {
+        getSchema: getSchemaMock,
+      } as unknown as ReturnType<typeof onyx.init>;
+    });
+
+    try {
+      await generateTypes({
+        source: 'api',
+        typesOutFile: typesPath,
+        quiet: true,
+      });
+
+      const output = await fs.readFile(typesPath, 'utf8');
+      expect(getSchemaMock).toHaveBeenCalledTimes(1);
+      expect(output).toContain('export interface ApiNoId');
+      expect(output).toContain('amount?: number');
+    } finally {
+      process.chdir(prevCwd);
+      initSpy.mockRestore();
+      if (prevEnv.id === undefined) delete process.env.ONYX_DATABASE_ID;
+      else process.env.ONYX_DATABASE_ID = prevEnv.id;
+      if (prevEnv.baseUrl === undefined) delete process.env.ONYX_DATABASE_BASE_URL;
+      else process.env.ONYX_DATABASE_BASE_URL = prevEnv.baseUrl;
+      if (prevEnv.apiKey === undefined) delete process.env.ONYX_DATABASE_API_KEY;
+      else process.env.ONYX_DATABASE_API_KEY = prevEnv.apiKey;
+      if (prevEnv.apiSecret === undefined) delete process.env.ONYX_DATABASE_API_SECRET;
+      else process.env.ONYX_DATABASE_API_SECRET = prevEnv.apiSecret;
+      if (prevEnv.configPath === undefined) delete process.env.ONYX_CONFIG_PATH;
+      else process.env.ONYX_CONFIG_PATH = prevEnv.configPath;
+      if (prevEnv.home === undefined) delete process.env.HOME;
+      else process.env.HOME = prevEnv.home;
+      await fs.rm(tmpBase, { recursive: true, force: true });
+      await fs.rm(emptyHome, { recursive: true, force: true });
+    }
+  });
 });

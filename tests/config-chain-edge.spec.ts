@@ -43,6 +43,16 @@ describe('edge config chain', () => {
     await expect(resolveConfig()).rejects.toBeInstanceOf(OnyxConfigError);
   });
 
+  it('allows missing databaseId when api credentials are present', async () => {
+    vi.stubEnv('ONYX_DATABASE_ID', '');
+    vi.stubEnv('ONYX_DATABASE_API_KEY', 'edge-key');
+    vi.stubEnv('ONYX_DATABASE_API_SECRET', 'edge-secret');
+    const cfg = await resolveConfig();
+    expect(cfg.databaseId).toBe('');
+    expect(cfg.apiKey).toBe('edge-key');
+    expect(cfg.apiSecret).toBe('edge-secret');
+  });
+
   it('throws when fetch is invoked without a global fetch', async () => {
     const originalFetch = Object.getOwnPropertyDescriptor(globalThis, 'fetch');
     try {

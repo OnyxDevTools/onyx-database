@@ -56,7 +56,7 @@ This SDK resolves credentials automatically using the chain **explicit config âž
 
 Set the following environment variables for your database:
 
-- `ONYX_DATABASE_ID`
+- `ONYX_DATABASE_ID` (optional; omit to use file/profile/default context)
 - `ONYX_DATABASE_BASE_URL`
 - `ONYX_DATABASE_API_KEY`
 - `ONYX_DATABASE_API_SECRET`
@@ -71,7 +71,7 @@ const db = onyx.init({ databaseId: 'YOUR_DATABASE_ID' }); // uses env when ID ma
 
 ### Option B) Config file via `ONYX_CONFIG_PATH`
 
-Set `ONYX_CONFIG_PATH` to a relative or absolute path to a JSON file containing your `baseUrl`, `databaseId`, `apiKey`, and `apiSecret`. The resolver loads this file after environment variables. If any values are missing, project and home files are checked as fallbacks.
+Set `ONYX_CONFIG_PATH` to a relative or absolute path to a JSON file containing your `baseUrl`, `apiKey`, and `apiSecret` (and optional `databaseId`). The resolver loads this file after environment variables. If any values are missing, project and home files are checked as fallbacks.
 
 ### Option C) Project file (checked into *your app* repo)
 

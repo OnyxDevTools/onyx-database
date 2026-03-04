@@ -195,7 +195,7 @@ function normalizeIntrospection(raw: unknown): OnyxIntrospection {
 async function fetchSchemaFromApi(config: ResolvedConfig): Promise<OnyxIntrospection> {
   const db = onyx.init({
     baseUrl: config.baseUrl,
-    databaseId: config.databaseId,
+    ...(config.databaseId ? { databaseId: config.databaseId } : {}),
     apiKey: config.apiKey,
     apiSecret: config.apiSecret,
     fetch: config.fetch,
@@ -234,11 +234,10 @@ export async function generateTypes(
   if (!schemaInput) {
     if (opts.source === 'file') throw new Error('Failed to read schema from file');
     const cfg = await resolveConfig({});
-    if (!cfg.databaseId) {
-      throw new Error('Missing databaseId. Set ONYX_DATABASE_ID or pass to onyx.init().');
+    if (!opts.quiet) {
+      const target = cfg.databaseId ? `db ${cfg.databaseId}` : 'default database context';
+      process.stderr.write(`[onyx-gen] fetching schema from API for ${target}\n`);
     }
-    if (!opts.quiet)
-      process.stderr.write(`[onyx-gen] fetching schema from API for db ${cfg.databaseId}\n`);
     schemaInput = await fetchSchemaFromApi(cfg);
   }
 

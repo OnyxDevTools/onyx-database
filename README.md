@@ -91,7 +91,7 @@ Set these environment variables for your database:
 
 | Variable | Purpose | Default when unset |
 | --- | --- | --- |
-| `ONYX_DATABASE_ID` | Target database ID | required |
+| `ONYX_DATABASE_ID` | Optional database scope for env credentials; omit to use file/profile/default context | optional |
 | `ONYX_DATABASE_BASE_URL` | Base URL for DB API | `https://api.onyx.dev` |
 | `ONYX_DATABASE_API_KEY` | API key | required |
 | `ONYX_DATABASE_API_SECRET` | API secret | required |

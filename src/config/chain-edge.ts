@@ -106,7 +106,6 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   const retryInitialDelayMs = retryConfig.initialDelayMs ?? 300;
 
   const missing: string[] = [];
-  if (!databaseId) missing.push('databaseId');
   if (!apiKey) missing.push('apiKey');
   if (!apiSecret) missing.push('apiSecret');
   if (missing.length) {
