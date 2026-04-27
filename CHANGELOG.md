@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.3.1
+
+### Patch Changes
+
+- f361338: fixed release flow
+
 ## 2.3.0
 
 ### Minor Changes
