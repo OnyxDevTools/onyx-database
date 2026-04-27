@@ -19,6 +19,7 @@ TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-
 - [Install](#install)
 - [Initialize the client](#initialize-the-client)
 - [Onyx AI (chat & models)](#onyx-ai-chat--models)
+- [Published model predictions](#published-model-predictions)
 - [Generate schema types](#optional-generate-typescript-types-from-your-schema)
 - [Query helpers](#query-helpers-at-a-glance)
 - [Full-text search](#full-text-search-lucene)
@@ -313,6 +314,31 @@ const approval = await db.ai.requestScriptApproval({
 if (approval.requiresApproval) {
   console.log(`Requires approval until ${approval.expiresAtIso}`);
 }
+```
+
+---
+
+## Published model predictions
+
+Use a published model key with raw input rows, or let a saved script provide the
+input rows for prediction.
+
+```ts
+const rawPrediction = await db.predict('churn-model', [
+  { age: 42, country: 'US', usageScore: 0.87 },
+  { age: 31, country: 'CA', usageScore: 0.42 },
+]);
+
+console.log(rawPrediction.predictions);
+console.log(rawPrediction.rawPredictions);
+
+const scriptPrediction = await db.predictFromScript(
+  'churn-model',
+  'score-active-users',
+  { segment: 'enterprise' },
+);
+
+console.log(scriptPrediction.inputCount);
 ```
 
 ---

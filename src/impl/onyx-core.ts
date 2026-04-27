@@ -20,6 +20,8 @@ import type {
   AiScriptApprovalRequest,
   AiScriptApprovalResponse,
   AiRequestOptions,
+  PublishedModelPredictionInputs,
+  PublishedModelPredictionResponse,
 } from '../types/public';
 import type {
   IQueryBuilder,
@@ -377,6 +379,36 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async requestScriptApproval(input: AiScriptApprovalRequest): Promise<AiScriptApprovalResponse> {
     const { http } = await this.ensureAiClient();
     return http.request<AiScriptApprovalResponse>('POST', '/api/script-approvals', input);
+  }
+
+  async predict(
+    publishedModelId: string,
+    inputs: PublishedModelPredictionInputs,
+  ): Promise<PublishedModelPredictionResponse> {
+    const { http, databaseId } = await this.ensureClient();
+    const path = `/data/${encodeURIComponent(
+      databaseId,
+    )}/model-builder/published-model/${encodeURIComponent(publishedModelId)}/predict`;
+    return http.request<PublishedModelPredictionResponse>(
+      'POST',
+      path,
+      serializeDates({ inputs }),
+    );
+  }
+
+  async predictFromScript(
+    publishedModelId: string,
+    scriptId: string,
+    scriptParameters: Record<string, string> = {},
+  ): Promise<PublishedModelPredictionResponse> {
+    const { http, databaseId } = await this.ensureClient();
+    const path = `/data/${encodeURIComponent(
+      databaseId,
+    )}/model-builder/published-model/${encodeURIComponent(publishedModelId)}/predict/script`;
+    return http.request<PublishedModelPredictionResponse>('POST', path, {
+      scriptId,
+      scriptParameters,
+    });
   }
 
   from<Table extends keyof Schema & string>(table: Table): IQueryBuilder<Schema[Table]> {

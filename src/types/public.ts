@@ -233,6 +233,31 @@ export interface AiErrorResponse {
   error?: string | { message?: string; [key: string]: unknown } | null;
 }
 
+export type PublishedModelPredictionInput = Record<string, unknown>;
+export type PublishedModelPredictionInputs =
+  | PublishedModelPredictionInput
+  | PublishedModelPredictionInput[];
+
+export interface PublishedModelRawPredictionRequest {
+  inputs: PublishedModelPredictionInputs;
+}
+
+export interface PublishedModelScriptPredictionRequest {
+  scriptId: string;
+  scriptParameters?: Record<string, string>;
+}
+
+export interface PublishedModelPredictionResponse {
+  publishedModelId: string;
+  modelId: string;
+  inputCount: number;
+  inputs: PublishedModelPredictionInput[];
+  predictions: PublishedModelPredictionInput[];
+  rawPredictions: number[][];
+  scriptId?: string | null;
+  scriptParameters: Record<string, string>;
+}
+
 export interface AiClient {
   /**
    * Run a chat completion. Accepts shorthand strings or full requests.
@@ -405,6 +430,40 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
    * ```
    */
   requestScriptApproval(input: AiScriptApprovalRequest): Promise<AiScriptApprovalResponse>;
+
+  /**
+   * Predict with a published model using raw input data.
+   *
+   * @example
+   * ```ts
+   * const prediction = await db.predict('churn-model', {
+   *   age: 42,
+   *   country: 'US'
+   * });
+   * ```
+   */
+  predict(
+    publishedModelId: string,
+    inputs: PublishedModelPredictionInputs
+  ): Promise<PublishedModelPredictionResponse>;
+
+  /**
+   * Predict with a published model using rows returned from a saved script.
+   *
+   * @example
+   * ```ts
+   * const prediction = await db.predictFromScript(
+   *   'churn-model',
+   *   'score-active-users',
+   *   { segment: 'enterprise' }
+   * );
+   * ```
+   */
+  predictFromScript(
+    publishedModelId: string,
+    scriptId: string,
+    scriptParameters?: Record<string, string>
+  ): Promise<PublishedModelPredictionResponse>;
 
   /**
    * Begin a query against a table.

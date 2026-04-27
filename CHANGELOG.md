@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.2.0
+
+### Minor Changes
+
+- Added published model prediction helpers for raw input data and script-backed prediction inputs.
+
 ## 2.1.1
 
 ### Patch Changes

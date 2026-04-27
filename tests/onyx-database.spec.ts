@@ -146,6 +146,54 @@ describe('OnyxDatabaseImpl helpers', () => {
     expect(request).toHaveBeenNthCalledWith(4, 'DELETE', '/database/db/secret/api-key');
   });
 
+  it('calls published model prediction endpoints with expected payloads', async () => {
+    const db = onyx.init({
+      baseUrl: 'https://api.test',
+      databaseId: 'db id',
+      apiKey: 'k',
+      apiSecret: 's',
+      fetch: vi.fn(),
+    });
+    const response = {
+      publishedModelId: 'published/model',
+      modelId: 'model-1',
+      inputCount: 1,
+      inputs: [{ age: 42 }],
+      predictions: [{ score: 0.9 }],
+      rawPredictions: [[0.9]],
+      scriptId: null,
+      scriptParameters: {},
+    };
+    const request = vi.fn().mockResolvedValue(response);
+    vi.spyOn(db as any, 'ensureClient').mockResolvedValue({
+      http: { request },
+      databaseId: 'db id',
+      baseUrl: '',
+      fetchImpl: vi.fn(),
+    });
+
+    const observedAt = new Date('2026-01-02T03:04:05.000Z');
+    await expect(
+      db.predict('published/model', { age: 42, observedAt }),
+    ).resolves.toBe(response);
+    await db.predictFromScript('published/model', 'score-users', {
+      segment: 'enterprise',
+    });
+
+    expect(request).toHaveBeenNthCalledWith(
+      1,
+      'POST',
+      '/data/db%20id/model-builder/published-model/published%2Fmodel/predict',
+      { inputs: { age: 42, observedAt: observedAt.toISOString() } },
+    );
+    expect(request).toHaveBeenNthCalledWith(
+      2,
+      'POST',
+      '/data/db%20id/model-builder/published-model/published%2Fmodel/predict/script',
+      { scriptId: 'score-users', scriptParameters: { segment: 'enterprise' } },
+    );
+  });
+
   it('calls schema endpoints with expected paths', async () => {
     const db = onyx.init({
       baseUrl: 'https://api.test',
