@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.3.0
+
+### Minor Changes
+
+- ffa93cc: added support for predict endpoint
+
 ## 2.2.0
 
 ### Minor Changes
