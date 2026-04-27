@@ -51,6 +51,28 @@ async function publishSchemaWithRetry(
   }
 }
 
+async function waitForTablePresence(
+  db: ReturnType<typeof onyx.init>,
+  tableName: string,
+  shouldExist: boolean,
+  attempts = 20,
+  delayMs = 1500,
+): Promise<SchemaRevision> {
+  let lastSchema: SchemaRevision | null = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    lastSchema = await db.getSchema();
+    if (hasTable(lastSchema, tableName) === shouldExist) {
+      return lastSchema;
+    }
+    if (attempt < attempts - 1) {
+      await sleep(delayMs);
+    }
+  }
+
+  const state = shouldExist ? 'exist' : 'be removed';
+  throw new Error(`expected ${tableName} to ${state} after publish`);
+}
+
 function toRequest(schema: SchemaRevision): SchemaUpsertRequest {
   const { databaseId, ...rest } = schema;
   // meta is not part of the upsert payload
@@ -111,11 +133,7 @@ async function main(): Promise<void> {
     throw new Error(`schema validation failed before publish: ${JSON.stringify(addValidation.errors)}`);
   }
   await publishSchemaWithRetry(db, withTemp);
-  await sleep(1500); // give the service time to apply the revision
-  const afterAdd = await db.getSchema();
-  if (!hasTable(afterAdd, tempTable.name)) {
-    throw new Error(`expected ${tempTable.name} to exist after publish`);
-  }
+  const afterAdd = await waitForTablePresence(db, tempTable.name, true);
   console.log(`${tempTable.name} added and published.`);
 
   // Remove the table, validate, and publish to restore original shape.
@@ -129,11 +147,7 @@ async function main(): Promise<void> {
     throw new Error(`schema validation failed before cleanup: ${JSON.stringify(removeValidation.errors)}`);
   }
   await publishSchemaWithRetry(db, withoutTemp);
-  await sleep(1500); // give the service time to apply the revision
-  const finalSchema = await db.getSchema();
-  if (hasTable(finalSchema, tempTable.name)) {
-    throw new Error(`expected ${tempTable.name} to be removed after cleanup publish`);
-  }
+  await waitForTablePresence(db, tempTable.name, false);
 
   console.log('Schema add/validate/publish cycle completed and cleaned up.');
 }

@@ -31,6 +31,10 @@ async function findSchemaPath(): Promise<string> {
   );
 }
 
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function ensureSchema(db: IOnyxDatabase<Schema>): Promise<void> {
   const requiredTables = [
     tables.Role,
@@ -47,16 +51,24 @@ async function ensureSchema(db: IOnyxDatabase<Schema>): Promise<void> {
     return requiredTables.every((t) => existing.has(t));
   };
 
+  const waitForRequiredTables = async (attempts = 20, delayMs = 1500): Promise<void> => {
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      if (await hasAllTables()) return;
+      if (attempt < attempts - 1) {
+        await sleep(delayMs);
+      }
+    }
+
+    throw new Error('Required tables still missing after publishing root schema.');
+  };
+
   if (await hasAllTables()) return;
 
   const schemaPath = await findSchemaPath();
   const raw = await fs.readFile(schemaPath, 'utf8');
   const schema = JSON.parse(raw) as SchemaUpsertRequest;
   await db.updateSchema(schema, { publish: true });
-
-  if (!(await hasAllTables())) {
-    throw new Error('Required tables still missing after publishing root schema.');
-  }
+  await waitForRequiredTables();
 }
 
 export async function seed(): Promise<User> {
