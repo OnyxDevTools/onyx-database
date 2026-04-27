@@ -1017,7 +1017,8 @@ This repository uses [Changesets](https://github.com/changesets/changesets) for 
 
 1. Run `npm run changeset` to create a changeset entry.
 2. Push to `main` and the **Release** workflow opens a version PR.
-3. Tag the release to trigger `npm run release -- --dry-run` in CI.
+3. Push the version commit and create a `v*` tag to trigger the publish job.
+4. The publish job uses npm trusted publishing from GitHub Actions (OIDC), so npm must be configured with a trusted publisher for `OnyxDevTools/onyx-database` and the `Release` workflow file.
 
 ---
 

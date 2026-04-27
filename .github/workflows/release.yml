@@ -22,10 +22,10 @@ jobs:
       ONYX_DATABASE_API_SECRET: ${{ secrets.ONYX_DATABASE_API_SECRET }}
       ONYX_DEBUG: "true"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: 'npm'
@@ -50,10 +50,10 @@ jobs:
       ONYX_DATABASE_API_SECRET: ${{ secrets.ONYX_DATABASE_API_SECRET }}
       ONYX_DEBUG: "true"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -62,7 +62,5 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run test:smoke
-      - name: Publish to npm (with provenance)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance --access public
+      - name: Publish to npm (trusted publishing)
+        run: npm publish --access public
