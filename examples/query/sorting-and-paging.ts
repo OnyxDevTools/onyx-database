@@ -10,7 +10,7 @@ async function main(): Promise<void> {
 
   await db.save(
     tables.User,
-    usernames.map((username, index) => ({
+    usernames.map((username) => ({
       id: `${username}-id`,
       username,
       email: `${username}@example.com`,
