@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.4.1
+
+### Patch Changes
+
+- d996446: upgrade ci npm
+
 ## 2.4.0
 
 ### Minor Changes
