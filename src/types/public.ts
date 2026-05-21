@@ -8,6 +8,12 @@ import type {
   QueryResults,
   QueryResultsPromise,
 } from './builders';
+export type {
+  CsvFormatOptions,
+  JsonFormatOptions,
+  TableFormatOptions,
+  TreeFormatOptions,
+} from './formatters';
 
 export type { QueryResults, QueryResultsPromise, FullTextQuery };
 

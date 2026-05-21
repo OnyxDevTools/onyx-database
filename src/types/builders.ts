@@ -2,6 +2,12 @@
 import type { Sort, StreamAction } from './common';
 import type { QueryCondition, QueryCriteria } from './protocol';
 import type { QueryResultsPromise } from '../builders/query-results';
+import type {
+  CsvFormatOptions,
+  JsonFormatOptions,
+  TableFormatOptions,
+  TreeFormatOptions,
+} from './formatters';
 
 /**
  * Builder used to compose query conditions.
@@ -195,6 +201,42 @@ export interface IQueryBuilder<T = unknown> {
    * ```
    */
   page(options?: { pageSize?: number; nextPage?: string }): Promise<{ records: T[]; nextPage?: string | null }>;
+  /**
+   * Executes the query and renders all matching results as a table string.
+   * @example
+   * ```ts
+   * const output = await db.from('User').select('id', 'email').table();
+   * console.log(output);
+   * ```
+   */
+  table(options?: TableFormatOptions): Promise<string>;
+  /**
+   * Executes the query and renders all matching results as a tree string.
+   * @example
+   * ```ts
+   * const output = await db.from('User').select('id', 'email').tree();
+   * console.log(output);
+   * ```
+   */
+  tree(options?: TreeFormatOptions): Promise<string>;
+  /**
+   * Executes the query and renders all matching results as CSV.
+   * @example
+   * ```ts
+   * const output = await db.from('User').select('id', 'email').csv();
+   * console.log(output);
+   * ```
+   */
+  csv(options?: CsvFormatOptions): Promise<string>;
+  /**
+   * Executes the query and renders all matching results as JSON.
+   * @example
+   * ```ts
+   * const output = await db.from('User').select('id', 'email').json();
+   * console.log(output);
+   * ```
+   */
+  json(options?: JsonFormatOptions): Promise<string>;
 
   /**
    * Sets field updates for an update query.

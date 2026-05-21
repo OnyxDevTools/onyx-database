@@ -73,6 +73,7 @@ async function ensureSchema(db: IOnyxDatabase<Schema>): Promise<void> {
 
 export async function seed(): Promise<User> {
   const db = onyx.init<Schema>();
+  const formatterExampleBio = 'Seeded admin profile for formatter examples';
 
   await ensureSchema(db);
 
@@ -130,9 +131,13 @@ export async function seed(): Promise<User> {
     userId: user.id,
     firstName: 'Example',
     lastName: 'Admin',
-    bio: 'Seeded admin profile',
+    bio: formatterExampleBio,
     phone: null,
-    address: null,
+    address: {
+      city: 'Del Mar',
+      state: 'CA',
+      country: 'USA',
+    },
     avatarUrl: null,
     updatedAt: null,
     deletedAt: null,

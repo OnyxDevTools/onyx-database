@@ -4,6 +4,19 @@ import { QueryResults, QueryResultsPromise } from './query-results';
 import type { QueryCondition, QueryCriteria, SelectQuery, UpdateQuery, QueryPage } from '../types/protocol';
 import type { Sort, StreamAction } from '../types/common';
 import { normalizeCondition } from '../helpers/condition-normalizer';
+import type {
+  CsvFormatOptions,
+  JsonFormatOptions,
+  TableFormatOptions,
+  TreeFormatOptions,
+} from '../types/formatters';
+import {
+  collectAllQueryRecords,
+  formatQueryResultsAsCsv,
+  formatQueryResultsAsJson,
+  formatQueryResultsAsTable,
+  formatQueryResultsAsTree,
+} from '../helpers/query-formatters';
 
 /**
  * Internal adapter the QueryBuilder uses to execute operations.
@@ -144,7 +157,7 @@ function toCondition(input: IConditionBuilder | QueryCriteria): QueryCondition {
  */
 export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
   private readonly exec: QueryExecutor;
-  private table: string | null;
+  private tableName: string | null;
 
   private fields: string[] | null = null;
   private resolvers: string[] | null = null;
@@ -178,7 +191,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    */
   constructor(executor: QueryExecutor, table: string | null, partition?: string) {
     this.exec = executor;
-    this.table = table;
+    this.tableName = table;
     this.partitionValue = partition;
   }
 
@@ -192,8 +205,8 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * ```
    */
   private ensureTable(): string {
-    if (!this.table) throw new Error('Table is not defined. Call from(<table>) first.');
-    return this.table;
+    if (!this.tableName) throw new Error('Table is not defined. Call from(<table>) first.');
+    return this.tableName;
   }
 
   /**
@@ -214,7 +227,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
   private toSelectQuery(): SelectQuery {
     return {
       type: 'SelectQuery',
-      table: this.table,
+      table: this.tableName,
       fields: this.fields,
       conditions: this.serializableConditions(),
       sort: this.sort,
@@ -246,6 +259,21 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
     return { ...payload, table };
   }
 
+  private async getAllRecordsForFormatting(): Promise<T[]> {
+    if (this.mode !== 'select') throw new Error('Formatting is only applicable in select mode.');
+    const table = this.ensureTable();
+    const select = this.toSelectQuery();
+    const pageSize = this.pageSizeValue ?? undefined;
+    const initialNextPage = this.nextPageValue ?? undefined;
+    return collectAllQueryRecords<T>((nextPage?: string) => (
+      this.exec.queryPage<T>(table, select, {
+        pageSize,
+        nextPage,
+        partition: this.partitionValue,
+      })
+    ), initialNextPage);
+  }
+
   /** ----------------- IQueryBuilder API ----------------- */
 
   /**
@@ -258,7 +286,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * ```
    */
   from(table: string): IQueryBuilder<T> {
-    this.table = table;
+    this.tableName = table;
     return this;
   }
 
@@ -568,6 +596,30 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    */
   async one(): Promise<T | null> {
     return this.firstOrNull();
+  }
+
+  async table(options?: TableFormatOptions): Promise<string> {
+    return formatQueryResultsAsTable(
+      await this.getAllRecordsForFormatting(),
+      options,
+      this.fields ?? undefined,
+    );
+  }
+
+  async tree(options?: TreeFormatOptions): Promise<string> {
+    return formatQueryResultsAsTree(await this.getAllRecordsForFormatting(), options);
+  }
+
+  async csv(options?: CsvFormatOptions): Promise<string> {
+    return formatQueryResultsAsCsv(
+      await this.getAllRecordsForFormatting(),
+      options,
+      this.fields ?? undefined,
+    );
+  }
+
+  async json(options?: JsonFormatOptions): Promise<string> {
+    return formatQueryResultsAsJson(await this.getAllRecordsForFormatting(), options);
   }
 
   /**

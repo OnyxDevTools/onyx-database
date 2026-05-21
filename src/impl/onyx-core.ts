@@ -55,6 +55,19 @@ import type {
 import { CascadeRelationshipBuilder } from '../builders/cascade-relationship-builder';
 import { OnyxHttpError } from '../errors/http-error';
 import { computeSchemaDiff } from '../helpers/schema-diff';
+import {
+  collectAllQueryRecords,
+  formatQueryResultsAsCsv,
+  formatQueryResultsAsJson,
+  formatQueryResultsAsTable,
+  formatQueryResultsAsTree,
+} from '../helpers/query-formatters';
+import type {
+  CsvFormatOptions,
+  JsonFormatOptions,
+  TableFormatOptions,
+  TreeFormatOptions,
+} from '../types/formatters';
 
 export type ResolveConfig = (config?: OnyxConfig) => Promise<ResolvedConfig>;
 
@@ -785,7 +798,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
  * --------------------------*/
 class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQueryBuilder<T> {
   private readonly db: OnyxDatabaseImpl<S>;
-  private table: string | null;
+  private tableName: string | null;
 
   private fields: string[] | null = null;
   private resolvers: string[] | null = null;
@@ -809,13 +822,13 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
 
   constructor(db: OnyxDatabaseImpl<S>, table: string | null, partition?: string) {
     this.db = db;
-    this.table = table;
+    this.tableName = table;
     this.partitionValue = partition;
   }
 
   private ensureTable(): string {
-    if (!this.table) throw new Error('Table is not defined. Call from(<table>) first.');
-    return this.table;
+    if (!this.tableName) throw new Error('Table is not defined. Call from(<table>) first.');
+    return this.tableName;
   }
 
   private serializableConditions(): QueryCondition | null {
@@ -825,7 +838,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   private toSelectQuery(): SelectQuery {
     return {
       type: 'SelectQuery',
-      table: this.table,
+      table: this.tableName,
       fields: this.fields,
       conditions: this.serializableConditions(),
       sort: this.sort,
@@ -848,6 +861,21 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     };
   }
 
+  private async getAllRecordsForFormatting(): Promise<T[]> {
+    if (this.mode !== 'select') throw new Error('Formatting is only applicable in select mode.');
+    const table = this.ensureTable();
+    const select = this.toSelectQuery();
+    const pageSize = this.pageSizeValue ?? undefined;
+    const initialNextPage = this.nextPageValue ?? undefined;
+    return collectAllQueryRecords<T>((nextPage?: string) => (
+      this.db._queryPage<T>(table, select, {
+        pageSize,
+        nextPage,
+        partition: this.partitionValue,
+      })
+    ), initialNextPage);
+  }
+
   private toSerializableQueryObject(): (SelectQuery | UpdateQuery) & { table: string } {
     const table = this.ensureTable();
     const payload = this.mode === 'update' ? this.toUpdateQuery() : this.toSelectQuery();
@@ -855,7 +883,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   }
 
   from(table: string): IQueryBuilder<T> {
-    this.table = table;
+    this.tableName = table;
     return this;
   }
 
@@ -1016,6 +1044,30 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
 
   async one(): Promise<T | null> {
     return this.firstOrNull();
+  }
+
+  async table(options?: TableFormatOptions): Promise<string> {
+    return formatQueryResultsAsTable(
+      await this.getAllRecordsForFormatting(),
+      options,
+      this.fields ?? undefined,
+    );
+  }
+
+  async tree(options?: TreeFormatOptions): Promise<string> {
+    return formatQueryResultsAsTree(await this.getAllRecordsForFormatting(), options);
+  }
+
+  async csv(options?: CsvFormatOptions): Promise<string> {
+    return formatQueryResultsAsCsv(
+      await this.getAllRecordsForFormatting(),
+      options,
+      this.fields ?? undefined,
+    );
+  }
+
+  async json(options?: JsonFormatOptions): Promise<string> {
+    return formatQueryResultsAsJson(await this.getAllRecordsForFormatting(), options);
   }
 
   async delete(): Promise<number> {

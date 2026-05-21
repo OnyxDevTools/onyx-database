@@ -723,6 +723,22 @@ const maybeUser = await db
   .firstOrNull(); // or .one()
 ```
 
+### 1c) Terminal formatters
+
+```ts
+const table = await db.from('User').select('id', 'email').table();
+const tree = await db.from('User').select('id', 'email').tree({ rootLabel: 'users' });
+const csv = await db.from('User').select('id', 'email').csv({ headers: false });
+const json = await db.from('User').select('id', 'email').json();
+
+console.log(table);
+console.log(tree);
+console.log(csv);
+console.log(json);
+```
+
+`table()` renders readable box-drawing output, `tree()` expands nested objects hierarchically, `csv()` flattens nested objects with dot notation by default, and `json()` preserves the original nested structure.
+
 ### 2) Save (create/update)
 
 ```ts
