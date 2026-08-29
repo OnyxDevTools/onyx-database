@@ -23,7 +23,7 @@ TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-
 - [Published model predictions](#published-model-predictions)
 - [Generate schema types](#optional-generate-typescript-types-from-your-schema)
 - [Query helpers](#query-helpers-at-a-glance)
-- [Full-text search](#full-text-search-lucene)
+- [Native vector-managed and bounded candidate search](#native-vector-managed-and-bounded-candidate-search)
 - [Examples](#usage-examples-with-user-role-permission)
 - [Error handling](#error-handling)
 - [HTTP retries](#http-retries)
@@ -632,6 +632,7 @@ import {
   gt, gte, lt, lte,
   like, notLike, contains, notContains,
   startsWith, notStartsWith, matches, notMatches, search,
+  approximateSearch, hnswCandidates, approximateCandidates,
   isNull, notNull,
   asc, desc
 } from '@onyx.dev/onyx-database';
@@ -639,7 +640,8 @@ import {
 
 - Prefer `within`/`notWithin` for inclusion checks (supports arrays, comma-separated strings, or inner queries).  
 - `inOp`/`notIn` remain available for backward compatibility and are exact aliases.
-- `search(text, minScore?)` builds a Lucene `MATCHES` predicate on `__full_text__` and always serializes `minScore` (null when omitted).
+- `search(text, minScore?)` builds a native vector-managed `MATCHES` predicate on `__full_text__` and always serializes `minScore` (null when omitted).
+- `approximateSearch`, `hnswCandidates`, and `approximateCandidates` build physically bounded, read-only candidate criteria. They must be the sole root criterion; query builders reject compound conditions and update/delete execution before transport.
 
 ### Aggregate helpers
 
@@ -695,12 +697,20 @@ const rolesMissingPermission = await db
 
 ---
 
-## Full-text search (Lucene)
+## Native vector-managed and bounded candidate search
 
 Use `.search(text, minScore?)` on a query builder for table-level full-text search, or call `db.search(...)` to target **all** tables (`table = "ALL"` in the request body). The search value always includes `minScore` and falls back to `null` when you omit it.
 
 ```ts
-import { desc, eq, onyx, search, tables, type Schema } from '@onyx.dev/onyx-database';
+import {
+  desc,
+  eq,
+  onyx,
+  search,
+  semanticVectorSignature,
+  tables,
+  type Schema,
+} from '@onyx.dev/onyx-database';
 
 const db = onyx.init<Schema>();
 
@@ -721,13 +731,74 @@ const activeMatch = await db
   .where(search('user bio text'))
   .and(eq('isActive', true))
   .firstOrNull();
+
+// Semantic or hybrid MATCHES search. The helper validates the routing signature
+// and preserves each 64-bit identifier/fingerprint word losslessly on the wire.
+const semantic = semanticVectorSignature({
+  calibrationId: 73n,
+  bucketId: 6,
+  cells: [1, 2],
+  cellCounts: [4, 4],
+  fingerprint: ['0xfedcba9876543210'],
+  boundaryConfidence: 0.75,
+});
+const hybridMatches = await db
+  .from('ActiveDocumentChunk')
+  .search({
+    text: 'customer success',
+    semantic,
+    minScore: 0.42,
+    nearbyBucketRadius: 2,
+    maxCandidates: 321,
+    requireAllTerms: false,
+  })
+  .list();
+
+// Bounded lexical admission. For a partitioned table, select one partition.
+const lexicalCandidates = await db
+  .from('ActiveDocumentChunk')
+  .approximateSearch('customer success', { maxCandidates: 128 })
+  .inPartition('revision-7')
+  .limit(20)
+  .list();
+
+// Native HNSW admission. The calibration id is text to preserve signed int64 values.
+const semanticCandidates = await db
+  .from('ChunkAttentionHash')
+  .hnswCandidates({
+    calibrationId: '73',
+    vector: promptEmbedding,
+    maxCandidates: 256,
+    efSearch: 1024,
+  })
+  .inPartition('revision-7')
+  .limit(20)
+  .list();
+
+// Bounded admission from one ordinary secondary index.
+const hashCandidates = await db
+  .from('ChunkAttentionHash')
+  .approximateCandidates('bucketId', [1201, 1202, 1203], 1024)
+  .inPartition('revision-7')
+  .list();
 ```
 
+Candidate helpers enforce the public server bounds: at most 5,000 admitted rows,
+at most 20,000 HNSW distance evaluations, at most 16,384 vector dimensions, and
+at most 5,000 ordinary-index route values. Candidate results are approximate;
+rerank them when exact ordering matters.
+
+Omitted vector-search options use the server contract defaults: `nearbyBucketRadius = 1`,
+`maxCandidates = 1000`, and `requireAllTerms = true`. HNSW defaults to
+`maxCandidates = 1000`, `efSearch = max(1000, maxCandidates)`, `minScore = null`,
+and `formatVersion = 1`. `SEARCH_CANDIDATES` is deliberately text-only; semantic and
+hybrid searches use `MATCHES` through `.search({...})`.
+
 **Examples**
-- Table search (minScore null): `examples/query/lucine-table-search.ts`
-- Table search (minScore 4.4): `examples/query/lucine-table-search-min-score.ts`
-- ALL tables search (minScore null): `examples/query/lucine-search-all-tables.ts`
-- ALL tables search (minScore 4.4): `examples/query/lucine-search-all-tables-min-score.ts`
+- Table search (minScore null): `examples/query/vector-table-search.ts`
+- Table search (minScore 4.4): `examples/query/vector-table-search-min-score.ts`
+- ALL tables search (minScore null): `examples/query/vector-search-all-tables.ts`
+- ALL tables search (minScore 4.4): `examples/query/vector-search-all-tables-min-score.ts`
 
 ---
 

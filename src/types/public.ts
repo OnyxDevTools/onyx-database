@@ -1,5 +1,18 @@
 // filename: src/types/public.ts
-import type { OnyxDocument, FetchImpl, FullTextQuery } from './common';
+import type {
+  ApproximateIndexCandidateQuery,
+  ApproximateSearchOptions,
+  FetchImpl,
+  FullTextQuery,
+  HnswSearchQuery,
+  HnswSearchQueryInput,
+  Int64WireInput,
+  OnyxDocument,
+  SemanticVectorSignature,
+  SemanticVectorSignatureInput,
+  VectorSearchQuery,
+  VectorSearchQueryInput,
+} from './common';
 import type {
   IQueryBuilder,
   ICascadeBuilder,
@@ -15,7 +28,20 @@ export type {
   TreeFormatOptions,
 } from './formatters';
 
-export type { QueryResults, QueryResultsPromise, FullTextQuery };
+export type {
+  ApproximateIndexCandidateQuery,
+  ApproximateSearchOptions,
+  FullTextQuery,
+  HnswSearchQuery,
+  HnswSearchQueryInput,
+  Int64WireInput,
+  QueryResults,
+  QueryResultsPromise,
+  SemanticVectorSignature,
+  SemanticVectorSignatureInput,
+  VectorSearchQuery,
+  VectorSearchQueryInput,
+};
 
 export interface RetryOptions {
   /**
@@ -519,7 +545,7 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   select(...fields: string[]): IQueryBuilder<Record<string, unknown>>;
 
   /**
-   * Run a Lucene full-text search across all tables.
+   * Run native vector-managed full-text search across all searchable tables.
    *
    * @example
    * ```ts
@@ -883,11 +909,12 @@ export interface SchemaAttribute {
   isNullable?: boolean;
 }
 
-export type SchemaIndexType = 'DEFAULT' | 'LUCENE' | string;
+export type SchemaIndexType = 'DEFAULT' | 'VECTOR';
 
 export interface SchemaIndex {
   name: string;
   type?: SchemaIndexType;
+  /** @deprecated Score thresholds are query-time controls and the server ignores this field. */
   minimumScore?: number;
   [key: string]: unknown;
 }
@@ -918,6 +945,7 @@ export interface SchemaTrigger {
 
 export interface SchemaEntity {
   name: string;
+  type?: 'DEFAULT' | 'SEARCHABLE';
   identifier?: SchemaIdentifier;
   partition?: string;
   attributes?: SchemaAttribute[];

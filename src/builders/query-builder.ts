@@ -2,8 +2,23 @@
 import type { IQueryBuilder, IConditionBuilder } from '../types/builders';
 import { QueryResults, QueryResultsPromise } from './query-results';
 import type { QueryCondition, QueryCriteria, SelectQuery, UpdateQuery, QueryPage } from '../types/protocol';
-import type { Sort, StreamAction } from '../types/common';
+import type {
+  ApproximateSearchOptions,
+  HnswSearchQueryInput,
+  Sort,
+  StreamAction,
+  VectorSearchQueryInput,
+} from '../types/common';
 import { normalizeCondition } from '../helpers/condition-normalizer';
+import {
+  assertCandidateConditionIsReadOnly,
+  assertCandidateConditionIsSoleRoot,
+} from '../helpers/candidate-condition';
+import {
+  approximateIndexCandidateQuery,
+  hnswSearchQuery,
+  vectorSearchQuery,
+} from '../helpers/candidate-search';
 import type {
   CsvFormatOptions,
   JsonFormatOptions,
@@ -240,6 +255,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
   }
 
   private toUpdateQuery(): UpdateQuery {
+    assertCandidateConditionIsReadOnly(this.conditions);
     return {
       type: 'UpdateQuery',
       conditions: this.serializableConditions(),
@@ -298,7 +314,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * ```ts
    * builder.select('id', 'name');
    * ```
-  */
+   */
   select(...fields: Array<string | string[]>): IQueryBuilder<T> {
     const flat = flattenStrings(fields);
     this.fields = flat.length > 0 ? flat : null;
@@ -313,7 +329,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * ```ts
    * builder.resolve('owner', 'profile');
    * ```
-  */
+   */
   resolve(...values: Array<string | string[]>): IQueryBuilder<T> {
     const flat = flattenStrings(values);
     this.resolvers = flat.length > 0 ? flat : null;
@@ -321,7 +337,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
   }
 
   /**
-   * Add a Lucene full-text search predicate.
+   * Add a native vector-managed full-text search predicate.
    *
    * @param queryText Search text to match.
    * @param minScore Minimum score threshold; serialized as null when omitted.
@@ -330,12 +346,68 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * builder.search('hello world', 4.4);
    * ```
    */
-  search(queryText: string, minScore?: number | null): IQueryBuilder<T> {
+  search(queryText: string, minScore?: number | null): IQueryBuilder<T>;
+  search(searchQuery: VectorSearchQueryInput): IQueryBuilder<T>;
+  search(
+    queryTextOrSearch: string | VectorSearchQueryInput,
+    minScore?: number | null,
+  ): IQueryBuilder<T> {
+    const value = typeof queryTextOrSearch === 'string'
+      ? { queryText: queryTextOrSearch, minScore: minScore ?? null }
+      : vectorSearchQuery(queryTextOrSearch);
     return this.and({
       field: '__full_text__',
       operator: 'MATCHES',
-      value: { queryText, minScore: minScore ?? null },
+      value,
     });
+  }
+
+  approximateSearch(searchQuery: VectorSearchQueryInput): IQueryBuilder<T>;
+  approximateSearch(queryText: string, options?: ApproximateSearchOptions): IQueryBuilder<T>;
+  approximateSearch(
+    queryTextOrSearch: string | VectorSearchQueryInput,
+    options: ApproximateSearchOptions = {},
+  ): IQueryBuilder<T> {
+    if (this.conditions !== null) throw new Error('SEARCH_CANDIDATES must be the sole root criterion');
+    const searchQuery = vectorSearchQuery(
+      typeof queryTextOrSearch === 'string'
+        ? { text: queryTextOrSearch, ...options }
+        : queryTextOrSearch,
+    );
+    if (searchQuery.text === null || searchQuery.semantic !== null) {
+      throw new Error('SEARCH_CANDIDATES supports text-only VectorSearchQuery values');
+    }
+    this.conditions = toSingleCondition({
+      field: '__full_text__',
+      operator: 'SEARCH_CANDIDATES',
+      value: searchQuery,
+    });
+    return this;
+  }
+
+  hnswCandidates(searchQuery: HnswSearchQueryInput): IQueryBuilder<T> {
+    if (this.conditions !== null) throw new Error('HNSW_CANDIDATES must be the sole root criterion');
+    this.conditions = toSingleCondition({
+      field: '__full_text__',
+      operator: 'HNSW_CANDIDATES',
+      value: hnswSearchQuery(searchQuery),
+    });
+    return this;
+  }
+
+  approximateCandidates(
+    attribute: string,
+    valueOrValues: unknown | readonly unknown[],
+    maxCandidates?: number,
+  ): IQueryBuilder<T> {
+    if (this.conditions !== null) throw new Error('CANDIDATES must be the sole root criterion');
+    if (attribute.trim().length === 0) throw new TypeError('candidate attribute must not be blank');
+    this.conditions = toSingleCondition({
+      field: attribute,
+      operator: 'CANDIDATES',
+      value: approximateIndexCandidateQuery(valueOrValues, maxCandidates),
+    });
+    return this;
   }
 
   /**
@@ -349,6 +421,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    */
   where(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
     const c = toCondition(condition);
+    assertCandidateConditionIsSoleRoot(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else {
@@ -372,6 +445,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    */
   and(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
     const c = toCondition(condition);
+    assertCandidateConditionIsSoleRoot(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else if (this.conditions.conditionType === 'CompoundCondition' && this.conditions.operator === 'AND') {
@@ -393,6 +467,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    */
   or(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
     const c = toCondition(condition);
+    assertCandidateConditionIsSoleRoot(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else if (this.conditions.conditionType === 'CompoundCondition' && this.conditions.operator === 'OR') {
@@ -510,6 +585,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * ```
    */
   setUpdates(updates: Partial<T>): IQueryBuilder<T> {
+    assertCandidateConditionIsReadOnly(this.conditions);
     this.mode = 'update';
     this.updates = updates;
     return this;
@@ -633,6 +709,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    */
   async delete(): Promise<number> {
     if (this.mode !== 'select') throw new Error('delete() is only applicable in select mode.');
+    assertCandidateConditionIsReadOnly(this.conditions);
     const table = this.ensureTable();
     return this.exec.deleteByQuery(table, this.toSelectQuery(), this.partitionValue);
   }

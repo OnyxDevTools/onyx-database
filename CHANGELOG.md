@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.6.0
+
+### Minor Changes
+
+- Add typed, hard-bounded native `CANDIDATES`, `SEARCH_CANDIDATES`, and `HNSW_CANDIDATES` request helpers and query-builder methods, enforce sole-root/read-only use, and restore `NOT_BETWEEN` operator parity. Replace retired Lucene schema typing and documentation with `VECTOR`/`SEARCHABLE` native search contracts.
+
 ## 2.5.0
 
 ### Minor Changes

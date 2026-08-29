@@ -12,17 +12,101 @@ export type QueryCriteriaOperator =
   | 'GREATER_THAN' | 'GREATER_THAN_EQUAL'
   | 'LESS_THAN' | 'LESS_THAN_EQUAL'
   | 'MATCHES' | 'NOT_MATCHES'
-  | 'BETWEEN'
+  | 'BETWEEN' | 'NOT_BETWEEN'
   | 'LIKE' | 'NOT_LIKE'
- | 'CONTAINS' | 'CONTAINS_IGNORE_CASE'
+  | 'CONTAINS' | 'CONTAINS_IGNORE_CASE'
   | 'NOT_CONTAINS' | 'NOT_CONTAINS_IGNORE_CASE'
   | 'STARTS_WITH' | 'NOT_STARTS_WITH'
-  | 'IS_NULL' | 'NOT_NULL';
+  | 'IS_NULL' | 'NOT_NULL'
+  /** Explicitly approximate, bounded admission from an ordinary secondary index. */
+  | 'CANDIDATES'
+  /** Explicitly approximate, bounded lexical admission from a searchable table. */
+  | 'SEARCH_CANDIDATES'
+  /** Explicitly approximate, bounded native-HNSW nearest-neighbor admission. */
+  | 'HNSW_CANDIDATES';
 
-/** Value payload for full-text (Lucene) searches. */
+/** Value payload for native vector-managed full-text searches. */
 export interface FullTextQuery {
   queryText: string;
   minScore: number | null;
+}
+
+/** Lossless signed 64-bit value accepted by native semantic search helpers. */
+export type Int64WireInput = string | bigint | number;
+
+/** Lossless semantic routing signature used by native vector-managed search. */
+export interface SemanticVectorSignature {
+  calibrationId: string;
+  bucketId: number;
+  cells: number[];
+  cellCounts: number[];
+  fingerprint: string[];
+  bands: string[];
+  boundaryConfidence: number;
+}
+
+/** Input accepted by {@link semanticVectorSignature}. */
+export interface SemanticVectorSignatureInput {
+  calibrationId: Int64WireInput;
+  bucketId: number;
+  cells: readonly number[];
+  cellCounts: readonly number[];
+  fingerprint: readonly Int64WireInput[];
+  bands?: readonly Int64WireInput[];
+  boundaryConfidence?: number;
+}
+
+/** Native lexical, semantic, or hybrid vector-managed search value. */
+export interface VectorSearchQuery {
+  text: string | null;
+  semantic: SemanticVectorSignature | null;
+  minScore: number | null;
+  nearbyBucketRadius: number;
+  maxCandidates: number;
+  requireAllTerms: boolean;
+}
+
+/** Input accepted by {@link vectorSearchQuery}. */
+export interface VectorSearchQueryInput {
+  text?: string | null;
+  semantic?: SemanticVectorSignatureInput | SemanticVectorSignature | null;
+  minScore?: number | null;
+  nearbyBucketRadius?: number;
+  maxCandidates?: number;
+  requireAllTerms?: boolean;
+}
+
+/** Lossless bounded native-HNSW candidate request. */
+export interface HnswSearchQuery {
+  calibrationId: string;
+  vector: number[];
+  maxCandidates: number;
+  efSearch: number;
+  minScore: number | null;
+  formatVersion: 1;
+}
+
+/** Input accepted by {@link hnswSearchQuery}. */
+export interface HnswSearchQueryInput {
+  calibrationId: Int64WireInput;
+  vector: readonly number[];
+  maxCandidates?: number;
+  efSearch?: number;
+  minScore?: number | null;
+  formatVersion?: number;
+}
+
+/** Bounded ordinary-index candidate route. */
+export interface ApproximateIndexCandidateQuery {
+  values: unknown[];
+  maxCandidates: number;
+}
+
+/** Options for the text convenience overload of `approximateSearch`. */
+export interface ApproximateSearchOptions {
+  minScore?: number | null;
+  maxCandidates?: number;
+  requireAllTerms?: boolean;
 }
 
 /** Logical operator used to join conditions in a query. */

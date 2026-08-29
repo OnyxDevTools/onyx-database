@@ -87,7 +87,7 @@ describe('schema diff', () => {
           ],
           indexes: [
             { name: 'byStatus', type: 'DEFAULT', minimumScore: 1 },
-            { name: 'legacyIdx', type: 'DEFAULT', minimumScore: 0.5 },
+            { name: 'vectorIdx', type: 'DEFAULT', minimumScore: 0.5 },
           ],
           resolvers: [
             { name: 'profile', resolver: 'db.profile()' },
@@ -121,8 +121,8 @@ describe('schema diff', () => {
             { name: 'newAttrB', type: 'Int', isNullable: true },
           ],
           indexes: [
-            { name: 'byStatus', type: 'LUCENE', minimumScore: 2 },
-            { name: 'legacyIdx', type: 'LUCENE', minimumScore: 1 },
+            { name: 'byStatus', type: 'VECTOR', minimumScore: 2 },
+            { name: 'vectorIdx', type: 'VECTOR', minimumScore: 1 },
             { name: 'newIndex', type: 'DEFAULT' },
             { name: 'newIndexB', type: 'DEFAULT' },
           ],
@@ -163,8 +163,8 @@ describe('schema diff', () => {
       { name: 'status', from: { type: 'String', isNullable: true }, to: { type: 'String', isNullable: false } },
     ]);
     expect(table.indexes?.changed).toEqual([
-      { name: 'byStatus', from: { name: 'byStatus', type: 'DEFAULT', minimumScore: 1 }, to: { name: 'byStatus', type: 'LUCENE', minimumScore: 2 } },
-      { name: 'legacyIdx', from: { name: 'legacyIdx', type: 'DEFAULT', minimumScore: 0.5 }, to: { name: 'legacyIdx', type: 'LUCENE', minimumScore: 1 } },
+      { name: 'byStatus', from: { name: 'byStatus', type: 'DEFAULT', minimumScore: 1 }, to: { name: 'byStatus', type: 'VECTOR', minimumScore: 2 } },
+      { name: 'vectorIdx', from: { name: 'vectorIdx', type: 'DEFAULT', minimumScore: 0.5 }, to: { name: 'vectorIdx', type: 'VECTOR', minimumScore: 1 } },
     ]);
     expect(table.indexes?.added.map((idx) => idx.name).sort()).toEqual(['newIndex', 'newIndexB']);
     expect(table.resolvers?.added.map((r) => r.name).sort()).toEqual(['newResolver', 'newResolverB']);

@@ -144,7 +144,7 @@ describe('QueryBuilder', () => {
     );
   });
 
-  it('builds Lucene search payloads with optional minScore', async () => {
+  it('builds native vector-managed search payloads with optional minScore', async () => {
     const exec = {
       count: vi.fn(),
       queryPage: vi.fn().mockResolvedValue({ records: [], nextPage: null }),

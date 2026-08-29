@@ -1,5 +1,11 @@
 // filename: src/types/builders.ts
-import type { Sort, StreamAction } from './common';
+import type {
+  ApproximateSearchOptions,
+  HnswSearchQueryInput,
+  Sort,
+  StreamAction,
+  VectorSearchQueryInput,
+} from './common';
 import type { QueryCondition, QueryCriteria } from './protocol';
 import type { QueryResultsPromise } from '../builders/query-results';
 import type {
@@ -73,7 +79,7 @@ export interface IQueryBuilder<T = unknown> {
    */
   resolve(...values: Array<string | string[]>): IQueryBuilder<T>;
   /**
-   * Adds a Lucene full-text search predicate.
+   * Adds a native vector-managed full-text search predicate.
    * @example
    * ```ts
    * const results = await db.from('User').search('hello world', 4.4).list();
@@ -82,6 +88,26 @@ export interface IQueryBuilder<T = unknown> {
    * @param minScore - Optional minimum score; serializes as `null` when omitted.
    */
   search(queryText: string, minScore?: number | null): IQueryBuilder<T>;
+  /** Adds a typed native lexical, semantic, or hybrid search predicate. */
+  search(searchQuery: VectorSearchQueryInput): IQueryBuilder<T>;
+  /**
+   * Seeds a bounded lexical candidate request. This must be the sole root
+   * criterion and partitioned tables require one concrete partition.
+   */
+  approximateSearch(searchQuery: VectorSearchQueryInput): IQueryBuilder<T>;
+  /** Convenience overload for a text-only bounded lexical candidate request. */
+  approximateSearch(queryText: string, options?: ApproximateSearchOptions): IQueryBuilder<T>;
+  /** Seeds a bounded native-HNSW candidate request as the sole root criterion. */
+  hnswCandidates(searchQuery: HnswSearchQueryInput): IQueryBuilder<T>;
+  /**
+   * Seeds bounded `EQUAL`/`IN` admission from an ordinary secondary index as
+   * the sole root criterion.
+   */
+  approximateCandidates(
+    attribute: string,
+    valueOrValues: unknown | readonly unknown[],
+    maxCandidates?: number,
+  ): IQueryBuilder<T>;
   /**
    * Adds a filter condition.
    * @example

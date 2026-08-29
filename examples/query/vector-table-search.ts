@@ -1,5 +1,5 @@
-// filename: examples/query/lucine-table-search.ts
-// Table-specific Lucene search (minScore null).
+// filename: examples/query/vector-table-search.ts
+// Table-specific native vector-managed search (minScore null).
 
 import process from 'node:process';
 import { randomUUID } from 'node:crypto';
@@ -9,7 +9,7 @@ import { Schema, tables } from 'onyx/types';
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
   const id = randomUUID();
-  const luceneQuery = `"customer success" AND ${id}`;
+  const searchQuery = `customer success ${id}`;
 
   await db.save(tables.User, {
     id,
@@ -22,7 +22,7 @@ async function main(): Promise<void> {
 
   const matches = await db
     .from(tables.User)
-    .search(luceneQuery)
+    .search(searchQuery)
     .orderBy(desc('createdAt'))
     .limit(3)
     .list();

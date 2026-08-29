@@ -1,4 +1,4 @@
-// filename: examples/query/lucine-search-all-tables-min-score.ts
+// filename: examples/query/vector-search-all-tables-min-score.ts
 // Search across all tables with an explicit minScore.
 
 import process from 'node:process';
@@ -9,7 +9,7 @@ import { Schema, tables } from 'onyx/types';
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
   const id = randomUUID();
-  const luceneQuery = `"customer success" AND ${id}`;
+  const searchQuery = `customer success ${id}`;
 
   await db.save(tables.User, {
     id,
@@ -22,7 +22,7 @@ async function main(): Promise<void> {
     lastLoginAt: null,
   });
 
-  const scored = await db.search(luceneQuery, 4.4).limit(5).list();
+  const scored = await db.search(searchQuery, 4.4).limit(5).list();
   const hit = (scored[0] as any)?.entity ?? scored[0];
 
   if (!hit || hit.id !== id) {

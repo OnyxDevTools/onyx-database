@@ -1,4 +1,4 @@
-// filename: examples/query/lucine-search-all-tables.ts
+// filename: examples/query/vector-search-all-tables.ts
 // Learn how to search across all tables with db.search().
 
 import process from 'node:process';
@@ -9,7 +9,7 @@ import { Schema, tables } from 'onyx/types';
 async function main(): Promise<void> {
   const db = onyx.init<Schema>();
   const id = randomUUID();
-  const luceneQuery = `"customer success" AND ${id}`;
+  const searchQuery = `customer success ${id}`;
 
   // Seed a record so ALL-table search always has a match (two lines: create, save).
   await db.save(tables.User, {
@@ -24,7 +24,7 @@ async function main(): Promise<void> {
   });
 
   // Search across all tables; results include entity metadata
-  const allTables = await db.search(luceneQuery).limit(1).firstOrNull();
+  const allTables = await db.search(searchQuery).limit(1).firstOrNull();
   const first = (allTables as any)?.entity ?? allTables;
 
   if (!first || first.id !== id) {

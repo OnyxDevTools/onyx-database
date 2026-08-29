@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import pkg from '../package.json';
-import { onyx, sdkName, sdkVersion } from '../src/edge';
+import { hnswSearchQuery, onyx, sdkName, sdkVersion } from '../src/edge';
 import {
   decodeMessagePack,
   encodeMessagePack,
@@ -26,6 +26,7 @@ describe('edge entry', () => {
     expect(sdkVersion).toBe(pkg.version);
     const db = onyx.init(cfg);
     expect(db).toBeTruthy();
+    expect(hnswSearchQuery({ calibrationId: 1, vector: [1] }).formatVersion).toBe(1);
   });
 
   it('uses Web API byte primitives for MessagePack entity requests', async () => {

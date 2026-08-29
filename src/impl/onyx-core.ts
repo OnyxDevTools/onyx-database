@@ -40,8 +40,25 @@ import type {
   UpdateQuery,
   QueryPage,
 } from '../types/protocol';
-import type { Sort, StreamAction, OnyxDocument, FetchImpl } from '../types/common';
+import type {
+  ApproximateSearchOptions,
+  HnswSearchQueryInput,
+  Sort,
+  StreamAction,
+  OnyxDocument,
+  FetchImpl,
+  VectorSearchQueryInput,
+} from '../types/common';
 import { normalizeCondition } from '../helpers/condition-normalizer';
+import {
+  assertCandidateConditionIsReadOnly,
+  assertCandidateConditionIsSoleRoot,
+} from '../helpers/candidate-condition';
+import {
+  approximateIndexCandidateQuery,
+  hnswSearchQuery,
+  vectorSearchQuery,
+} from '../helpers/candidate-search';
 import type {
   SchemaDiff,
   SchemaEntity,
@@ -444,6 +461,9 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   }
 
   search(queryText: string, minScore?: number | null): IQueryBuilder<Record<string, unknown>> {
+    if (typeof queryText !== 'string') {
+      throw new TypeError('Database-wide search only supports lexical text queries');
+    }
     const qb = new QueryBuilderImpl<Record<string, unknown>, Schema>(
       this,
       'ALL',
@@ -872,6 +892,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   }
 
   private toUpdateQuery(): UpdateQuery {
+    assertCandidateConditionIsReadOnly(this.conditions);
     return {
       type: 'UpdateQuery',
       conditions: this.serializableConditions(),
@@ -920,16 +941,73 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this;
   }
 
-  search(queryText: string, minScore?: number | null): IQueryBuilder<T> {
+  search(queryText: string, minScore?: number | null): IQueryBuilder<T>;
+  search(searchQuery: VectorSearchQueryInput): IQueryBuilder<T>;
+  search(
+    queryTextOrSearch: string | VectorSearchQueryInput,
+    minScore?: number | null,
+  ): IQueryBuilder<T> {
+    const value = typeof queryTextOrSearch === 'string'
+      ? { queryText: queryTextOrSearch, minScore: minScore ?? null }
+      : vectorSearchQuery(queryTextOrSearch);
     return this.and({
       field: '__full_text__',
       operator: 'MATCHES',
-      value: { queryText, minScore: minScore ?? null },
+      value,
     });
+  }
+
+  approximateSearch(searchQuery: VectorSearchQueryInput): IQueryBuilder<T>;
+  approximateSearch(queryText: string, options?: ApproximateSearchOptions): IQueryBuilder<T>;
+  approximateSearch(
+    queryTextOrSearch: string | VectorSearchQueryInput,
+    options: ApproximateSearchOptions = {},
+  ): IQueryBuilder<T> {
+    if (this.conditions !== null) throw new Error('SEARCH_CANDIDATES must be the sole root criterion');
+    const searchQuery = vectorSearchQuery(
+      typeof queryTextOrSearch === 'string'
+        ? { text: queryTextOrSearch, ...options }
+        : queryTextOrSearch,
+    );
+    if (searchQuery.text === null || searchQuery.semantic !== null) {
+      throw new Error('SEARCH_CANDIDATES supports text-only VectorSearchQuery values');
+    }
+    this.conditions = toSingleCondition({
+      field: '__full_text__',
+      operator: 'SEARCH_CANDIDATES',
+      value: searchQuery,
+    });
+    return this;
+  }
+
+  hnswCandidates(searchQuery: HnswSearchQueryInput): IQueryBuilder<T> {
+    if (this.conditions !== null) throw new Error('HNSW_CANDIDATES must be the sole root criterion');
+    this.conditions = toSingleCondition({
+      field: '__full_text__',
+      operator: 'HNSW_CANDIDATES',
+      value: hnswSearchQuery(searchQuery),
+    });
+    return this;
+  }
+
+  approximateCandidates(
+    attribute: string,
+    valueOrValues: unknown | readonly unknown[],
+    maxCandidates?: number,
+  ): IQueryBuilder<T> {
+    if (this.conditions !== null) throw new Error('CANDIDATES must be the sole root criterion');
+    if (attribute.trim().length === 0) throw new TypeError('candidate attribute must not be blank');
+    this.conditions = toSingleCondition({
+      field: attribute,
+      operator: 'CANDIDATES',
+      value: approximateIndexCandidateQuery(valueOrValues, maxCandidates),
+    });
+    return this;
   }
 
   where(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
     const c = toCondition(condition);
+    assertCandidateConditionIsSoleRoot(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else {
@@ -944,6 +1022,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
 
   and(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
     const c = toCondition(condition);
+    assertCandidateConditionIsSoleRoot(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else if (
@@ -963,6 +1042,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
 
   or(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
     const c = toCondition(condition);
+    assertCandidateConditionIsSoleRoot(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else if (
@@ -1016,6 +1096,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   }
 
   setUpdates(updates: Partial<T>): IQueryBuilder<T> {
+    assertCandidateConditionIsReadOnly(this.conditions);
     this.mode = 'update';
     this.updates = updates;
     return this;
@@ -1093,6 +1174,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
 
   async delete(): Promise<number> {
     if (this.mode !== 'select') throw new Error('delete() is only applicable in select mode.');
+    assertCandidateConditionIsReadOnly(this.conditions);
     const table = this.ensureTable();
     return this.db._deleteByQuery(table, this.toSelectQuery(), this.partitionValue);
   }

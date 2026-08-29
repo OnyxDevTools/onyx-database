@@ -41,7 +41,16 @@ describe('helper utilities', () => {
     expect(cond.notIn('a', 'd, e ').toCondition().criteria.value).toEqual(['d', 'e']);
     expect(cond.within('a', [9]).toCondition().criteria.value).toEqual([9]);
     expect(cond.notWithin('a', [10]).toCondition().criteria.value).toEqual([10]);
-    cond.between('a', 1, 2);
+    expect(cond.between('a', 1, 2).toCondition().criteria).toEqual({
+      field: 'a',
+      operator: 'BETWEEN',
+      value: [1, 2],
+    });
+    expect(cond.notBetween('a', 1, 2).toCondition().criteria).toEqual({
+      field: 'a',
+      operator: 'NOT_BETWEEN',
+      value: [1, 2],
+    });
     cond.gt('a', 1);
     cond.gte('a', 1);
     cond.lt('a', 1);

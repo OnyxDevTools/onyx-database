@@ -10,6 +10,7 @@ export { onyx } from './impl/onyx-edge';
 // Helpers (make these available at top-level)
 export * from './helpers/sort';        // asc, desc
 export * from './helpers/conditions';  // eq, neq, inOp, ...
+export * from './helpers/candidate-search';
 export * from './helpers/aggregates';  // avg, sum, count, ...
 
 // Query result helper
