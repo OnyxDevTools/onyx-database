@@ -2,12 +2,14 @@
 import type { ResolvedConfig } from '../config/types';
 import { DEFAULT_AI_MODEL } from '../config/defaults';
 import { HttpClient, parseJsonAllowNaN } from '../core/http';
-import { openJsonLinesStream } from '../core/stream';
+import { openJsonLinesStream, openMessagePackStream } from '../core/stream';
+import { encodeMessagePack, MESSAGEPACK_ACCEPT, MESSAGEPACK_MEDIA_TYPE } from '../core/msgpack';
 
 import type {
   OnyxFacade,
   IOnyxDatabase,
   OnyxConfig,
+  WireFormat,
   AiChatOptions,
   AiClient,
   AiChatClient,
@@ -229,6 +231,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     baseUrl: string;
     databaseId: string;
     defaultModel: string;
+    wireFormat: WireFormat;
   }> {
     const cfg = await this.resolveConfig();
     if (!this.http) {
@@ -242,6 +245,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
         retryEnabled: cfg.retryEnabled,
         maxRetries: cfg.maxRetries,
         retryInitialDelayMs: cfg.retryInitialDelayMs,
+        wireFormat: cfg.wireFormat,
       });
     }
     return {
@@ -250,6 +254,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
       baseUrl: cfg.baseUrl,
       databaseId: cfg.databaseId,
       defaultModel: cfg.defaultModel ?? DEFAULT_AI_MODEL,
+      wireFormat: cfg.wireFormat,
     };
   }
 
@@ -505,7 +510,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
       String(table),
     )}/${encodeURIComponent(primaryKey)}${params.toString() ? `?${params.toString()}` : ''}`;
     try {
-      return await http.request<T>('GET', path);
+      return await http.requestEntity<T>('GET', path);
     } catch (err) {
       if (err instanceof OnyxHttpError && err.status === 404) return null;
       throw err;
@@ -527,7 +532,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/${encodeURIComponent(
       table,
     )}/${encodeURIComponent(primaryKey)}${params.toString() ? `?${params.toString()}` : ''}`;
-    await http.request<unknown>('DELETE', path);
+    await http.requestEntity<unknown>('DELETE', path);
     return true;
   }
 
@@ -698,7 +703,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/query/count/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request<number>('PUT', path, serializeDates(select));
+    return http.requestEntity<number>('PUT', path, serializeDates(select));
   }
 
   async _queryPage<T>(
@@ -715,7 +720,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/query/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request<QueryPage<T>>('PUT', path, serializeDates(select));
+    return http.requestEntity<QueryPage<T>>('PUT', path, serializeDates(select));
   }
 
   async _update(table: string, update: UpdateQuery, partition?: string): Promise<unknown> {
@@ -726,7 +731,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/query/update/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request('PUT', path, serializeDates(update));
+    return http.requestEntity('PUT', path, serializeDates(update));
   }
 
   async _deleteByQuery(table: string, select: SelectQuery, partition?: string): Promise<number> {
@@ -737,7 +742,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/query/delete/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
-    return http.request<number>('PUT', path, serializeDates(select));
+    return http.requestEntity<number>('PUT', path, serializeDates(select));
   }
 
   async _stream<T>(
@@ -752,7 +757,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
       onItem?: (e: T | null, a: StreamAction) => void;
     },
   ): Promise<{ cancel: () => void }> {
-    const { http, baseUrl, databaseId, fetchImpl } = await this.ensureClient();
+    const { http, baseUrl, databaseId, fetchImpl, wireFormat } = await this.ensureClient();
     const params = new URLSearchParams();
     if (includeQueryResults) params.append('includeQueryResults', 'true');
     if (keepAlive) params.append('keepAlive', 'true');
@@ -760,19 +765,35 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const url = `${baseUrl}/data/${encodeURIComponent(databaseId)}/query/stream/${encodeURIComponent(
       table,
     )}${params.toString() ? `?${params.toString()}` : ''}`;
-    const handle = await openJsonLinesStream<T>(
-      fetchImpl,
-      url,
-      {
-        method: 'PUT',
-        headers: http.headers({
-          Accept: 'application/x-ndjson',
-          'Content-Type': 'application/json',
-        }),
-        body: JSON.stringify(serializeDates(select)),
-      },
-      handlers,
-    );
+    const serializedSelect = serializeDates(select);
+    const handle =
+      wireFormat === 'msgpack'
+        ? await openMessagePackStream<T>(
+            fetchImpl,
+            url,
+            {
+              method: 'PUT',
+              headers: http.headers({
+                Accept: MESSAGEPACK_ACCEPT,
+                'Content-Type': MESSAGEPACK_MEDIA_TYPE,
+              }),
+              body: encodeMessagePack(serializedSelect),
+            },
+            handlers,
+          )
+        : await openJsonLinesStream<T>(
+            fetchImpl,
+            url,
+            {
+              method: 'PUT',
+              headers: http.headers({
+                Accept: 'application/x-ndjson',
+                'Content-Type': 'application/json',
+              }),
+              body: JSON.stringify(serializedSelect),
+            },
+            handlers,
+          );
     return this.registerStream(handle);
   }
 
@@ -789,7 +810,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const path = `/data/${encodeURIComponent(databaseId)}/${encodeURIComponent(table)}${
       params.toString() ? `?${params.toString()}` : ''
     }`;
-    return http.request('PUT', path, serializeDates(entityOrEntities));
+    return http.requestEntity('PUT', path, serializeDates(entityOrEntities));
   }
 }
 
@@ -1397,16 +1418,22 @@ class AiChatClientImpl implements AiChatClient {
 export function createOnyxFacade(resolveConfig: ResolveConfig): OnyxFacade {
   const cachedCfgs = new Map<string, { promise: Promise<ResolvedConfig>; expires: number }>();
 
-  const cacheKey = (databaseId?: string, apiKey?: string): string | null => {
+  const cacheKey = (
+    databaseId?: string,
+    apiKey?: string,
+    wireFormat: OnyxConfig['wireFormat'] = 'json',
+  ): string | null => {
     const id = typeof databaseId === 'string' && databaseId.trim() !== '' ? databaseId.trim() : null;
     const key = typeof apiKey === 'string' && apiKey.trim() !== '' ? apiKey.trim() : null;
-    return id && key ? `${id}-${key}` : null;
+    return id && key ? `${id}-${key}-${wireFormat ?? 'json'}` : null;
   };
 
   function resolveConfigWithCache(config?: OnyxConfig): Promise<ResolvedConfig> {
     const ttl = config?.ttl ?? DEFAULT_CACHE_TTL;
     const now = Date.now();
-    const hintKey = cacheKey(config?.databaseId, config?.apiKey) ?? '__default__';
+    const hintKey =
+      cacheKey(config?.databaseId, config?.apiKey, config?.wireFormat) ??
+      `__default__-${config?.wireFormat ?? 'json'}`;
 
     const existing = cachedCfgs.get(hintKey);
     if (existing && existing.expires > now) {
@@ -1421,7 +1448,8 @@ export function createOnyxFacade(resolveConfig: ResolveConfig): OnyxFacade {
     const expires = now + ttl;
 
     const promise = resolveConfig(rest).then((resolved) => {
-      const resolvedKey = cacheKey(resolved.databaseId, resolved.apiKey) ?? hintKey;
+      const resolvedKey =
+        cacheKey(resolved.databaseId, resolved.apiKey, resolved.wireFormat) ?? hintKey;
       const nextExpires = Date.now() + ttl;
       cachedCfgs.set(resolvedKey, { promise, expires: nextExpires });
       if (resolvedKey !== hintKey) {

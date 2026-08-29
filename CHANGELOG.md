@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.5.0
+
+### Minor Changes
+
+- Add opt-in MessagePack transport for entity CRUD, queries, and query streams while preserving JSON defaults and fallback responses. Signed 64-bit values outside JavaScript's safe-number range round-trip losslessly as `bigint`.
+
 ## 2.4.1
 
 ### Patch Changes

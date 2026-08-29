@@ -92,6 +92,10 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   const databaseId = merged.databaseId ?? '';
   const apiKey = merged.apiKey ?? '';
   const apiSecret = merged.apiSecret ?? '';
+  const wireFormat = merged.wireFormat ?? 'json';
+  if (wireFormat !== 'json' && wireFormat !== 'msgpack') {
+    throw new OnyxConfigError('wireFormat must be either json or msgpack');
+  }
   const gfetch = (globalThis as { fetch?: FetchImpl }).fetch;
   const fetchImpl: FetchImpl =
     merged.fetch ??
@@ -124,6 +128,7 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
     apiKey,
     apiSecret,
     fetch: fetchImpl,
+    wireFormat,
     retryEnabled,
     maxRetries,
     retryInitialDelayMs,

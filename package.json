@@ -1,6 +1,6 @@
 {
   "name": "@onyx.dev/onyx-database",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "TypeScript client SDK for Onyx Database",
   "keywords": [
     "database",
@@ -45,6 +45,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "audit": "npm audit --audit-level=high",
+    "benchmark:entity-wire": "vitest bench benchmarks/entity-wire.bench.ts --run --no-color",
     "test": "vitest run --exclude tests/smoke.spec.ts",
     "test:watch": "vitest",
     "test:smoke": "export ONYX_DEBUG=\"true\" && vitest run tests/smoke.spec.ts --coverage=false",

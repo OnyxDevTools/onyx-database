@@ -18,6 +18,7 @@ TypeScript client SDK for **Onyx Cloud Database** â€” a zero-dependency, strict-
 - [Getting started](#getting-started-cloud--keys--connect)
 - [Install](#install)
 - [Initialize the client](#initialize-the-client)
+- [MessagePack entity transport](#optional-messagepack-entity-transport)
 - [Onyx AI (chat & models)](#onyx-ai-chat--models)
 - [Published model predictions](#published-model-predictions)
 - [Generate schema types](#optional-generate-typescript-types-from-your-schema)
@@ -84,7 +85,7 @@ This SDK resolves credentials automatically using the chain **explicit config âž
 
 **Reliability defaults (read this):**
 - **Retries:** GET/query calls auto-retry up to 3 times with Fibonacci backoff starting at 300ms (honors `Retry-After`); writes never retry.
-- **Config cache:** Resolved config is cached per `${databaseId}-${apiKey}` for 5 minutes; tune with `ttl`, clear via `onyx.clearCacheConfig()`.
+- **Config cache:** Resolved config is cached per `${databaseId}-${apiKey}-${wireFormat}` for 5 minutes; tune with `ttl`, clear via `onyx.clearCacheConfig()`.
 
 ### Option A) Environment variables (recommended for production)
 
@@ -122,6 +123,7 @@ const db = onyx.init({
   apiKey: 'YOUR_KEY',
   apiSecret: 'YOUR_SECRET',
   partition: 'tenantA',
+  wireFormat: 'json', // optional: use 'msgpack' for entity routes
   requestLoggingEnabled: true, // logs HTTP requests
   responseLoggingEnabled: true, // logs HTTP responses
 });
@@ -134,6 +136,56 @@ console. Enable `responseLoggingEnabled` to log responses and bodies. Setting
 the `ONYX_DEBUG=true` environment variable enables both request and response
 logging even if these flags are not set. It also logs the source of resolved
 credentials (explicit config, env vars, config path file, project file, or home profile).
+
+### Optional MessagePack entity transport
+
+JSON remains the default wire format. To opt in to the zero-dependency binary
+transport, set `wireFormat: 'msgpack'`:
+
+```ts
+import { onyx } from '@onyx.dev/onyx-database';
+
+const db = onyx.init({
+  databaseId: 'YOUR_DATABASE_ID',
+  apiKey: 'YOUR_KEY',
+  apiSecret: 'YOUR_SECRET',
+  wireFormat: 'msgpack',
+});
+
+await db.save('User', {
+  id: 'user-1',
+  profile: { displayName: 'Ada', roles: ['admin'] },
+});
+
+const users = await db.from('User').resolve('profile').list();
+```
+
+MessagePack applies only to entity saves, reads, deletes, queries, and query
+streams. Documents, schemas, secrets, AI, and model-builder requests continue
+to use JSON. The client sends `application/vnd.msgpack` and advertises JSON as
+a lower-priority response fallback; it always decodes the actual response
+`Content-Type`, so JSON errors and fallback responses continue to work.
+
+Nested objects, arrays, strings, booleans, nulls, JavaScript-safe numbers, and
+signed 64-bit `bigint` values are supported. Dates are normalized to ISO strings
+as they are for JSON. Integer `number` inputs must remain within JavaScript's safe
+range; use `bigint` for larger signed values. Decoded integers outside the safe
+range are returned as `bigint`, while unsigned wire values above
+`9223372036854775807` are rejected. Because JSON cannot serialize `bigint`, use
+these values only with `wireFormat: 'msgpack'`.
+Object properties containing `undefined` are omitted, while undefined array
+entries and non-finite numbers become `null`, matching `JSON.stringify`.
+
+MessagePack streams contain concatenated, self-delimiting values rather than
+newline framing. The client tolerates values split across network chunks,
+skips the server's optional initial nil flush frame, and can consume a
+JSON-lines fallback when indicated by the response content type.
+
+When supplying a custom `fetch`, request bodies may be `string | Uint8Array`.
+Its response object must implement `arrayBuffer()` when it returns
+`application/vnd.msgpack`; existing JSON-only fetch mocks only need `text()`.
+Opt-in clients do not automatically retry mutations as JSON, so enable this
+format only after the target Onyx Cloud deployment supports it.
 
 ### Option C) Node-only config files
 
@@ -181,7 +233,7 @@ export default {
 ### Connection & config caching
 
 Calling `onyx.init()` returns a lightweight client. Configuration is resolved once
-and cached **per `${databaseId}-${apiKey}` pair** for 5 minutes to avoid repeated
+and cached **per `${databaseId}-${apiKey}-${wireFormat}` tuple** for 5 minutes to avoid repeated
 env/file lookups (override with `ttl` or reset via `onyx.clearCacheConfig()`).
 Each database instance keeps a single internal `HttpClient`. Requests use the
 runtime's global `fetch`, which already reuses connections and pools them for
@@ -800,8 +852,8 @@ await db.cascade(permissionsCascade).save('Role', {
 import { onyx } from '@onyx.dev/onyx-database';
 const db = onyx.init();
 
-// Simple delete returns the removed record
-await db.delete('User', 'user_125');
+// Simple delete returns true when the request succeeds
+const deleted = await db.delete('User', 'user_125');
 
 // Delete cascading relationships (example)
 await db.delete('Role', 'role_temp', { relationships: ['rolePermissions'] });

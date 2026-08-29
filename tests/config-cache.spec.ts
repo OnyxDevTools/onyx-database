@@ -40,4 +40,13 @@ describe('config cache', () => {
     onyx.init(cfg);
     expect(spy).toHaveBeenCalledTimes(2);
   });
+
+  it('does not share resolved config across wire formats', () => {
+    const spy = vi.spyOn(chain, 'resolveConfig');
+
+    onyx.init({ ...cfg, wireFormat: 'json' });
+    onyx.init({ ...cfg, wireFormat: 'msgpack' });
+
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
 });

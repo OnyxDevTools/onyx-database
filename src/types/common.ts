@@ -78,6 +78,8 @@ export interface FetchResponse {
   headers: { get(name: string): string | null };
   /** Reads the body as text. */
   text(): Promise<string>;
+  /** Reads the body as bytes when the response uses a binary wire format. */
+  arrayBuffer?(): Promise<ArrayBuffer>;
   /** Raw body for streams; left as unknown to avoid DOM typings */
   body?: unknown;
 }
@@ -94,5 +96,5 @@ export interface FetchResponse {
  */
 export type FetchImpl = (
   url: string,
-  init?: { method?: string; headers?: Record<string, string>; body?: string }
+  init?: { method?: string; headers?: Record<string, string>; body?: string | Uint8Array }
 ) => Promise<FetchResponse>;

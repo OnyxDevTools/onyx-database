@@ -27,6 +27,25 @@ afterEach(() => {
 });
 
 describe('config chain database selection', () => {
+  it('defaults wireFormat to json and accepts explicit msgpack', async () => {
+    const base = { databaseId: 'db', apiKey: 'k', apiSecret: 's' };
+    await expect(resolveConfig(base)).resolves.toMatchObject({ wireFormat: 'json' });
+    await expect(resolveConfig({ ...base, wireFormat: 'msgpack' })).resolves.toMatchObject({
+      wireFormat: 'msgpack',
+    });
+  });
+
+  it('rejects invalid wireFormat values loaded at runtime', async () => {
+    await expect(
+      resolveConfig({
+        databaseId: 'db',
+        apiKey: 'k',
+        apiSecret: 's',
+        wireFormat: 'cbor',
+      } as unknown as import('../src/types/public').OnyxConfig),
+    ).rejects.toThrow('wireFormat must be either json or msgpack');
+  });
+
   it('uses env when database id matches', async () => {
     vi.stubEnv('ONYX_DATABASE_ID', 'envdb');
     vi.stubEnv('ONYX_DATABASE_BASE_URL', 'http://env');
@@ -57,6 +76,17 @@ describe('config chain database selection', () => {
     const cfg = await resolveConfig({ databaseId: 'idb' });
     expect(cfg.baseUrl).toBe('http://proj');
     expect(cfg.apiKey).toBe('pk');
+  });
+
+  it('loads wireFormat from a project config file', async () => {
+    const project = await mkdtemp(path.join(tmpdir(), 'wire-format-'));
+    process.chdir(project);
+    await writeFile(
+      path.join(project, 'onyx-database.json'),
+      JSON.stringify({ databaseId: 'db', apiKey: 'k', apiSecret: 's', wireFormat: 'msgpack' }),
+    );
+
+    await expect(resolveConfig()).resolves.toMatchObject({ wireFormat: 'msgpack' });
   });
 
   it('supplements env with home profile when database id missing', async () => {

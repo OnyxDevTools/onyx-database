@@ -1,0 +1,41 @@
+[
+  { "name": "null", "value": null, "hex": "c0" },
+  { "name": "false", "value": false, "hex": "c2" },
+  { "name": "true", "value": true, "hex": "c3" },
+  { "name": "positive-fixint", "value": 127, "hex": "7f" },
+  { "name": "uint8", "value": 128, "hex": "cc80" },
+  { "name": "uint16", "value": 256, "hex": "cd0100" },
+  { "name": "uint32", "value": 65536, "hex": "ce00010000" },
+  { "name": "negative-fixint", "value": -32, "hex": "e0" },
+  { "name": "int8", "value": -33, "hex": "d0df" },
+  { "name": "int16", "value": -129, "hex": "d1ff7f" },
+  { "name": "float64", "value": 1.5, "hex": "cb3ff8000000000000" },
+  { "name": "empty-string", "value": "", "hex": "a0" },
+  { "name": "utf8-string", "value": "雪", "hex": "a3e99baa" },
+  { "name": "array", "value": [1, true, null], "hex": "9301c3c0" },
+  {
+    "name": "map",
+    "value": { "id": 1, "name": "Ada" },
+    "hex": "82a2696401a46e616d65a3416461"
+  },
+  {
+    "name": "nested-page",
+    "value": { "records": [{ "id": 1 }], "nextPage": null },
+    "hex": "82a77265636f7264739181a2696401a86e65787450616765c0"
+  },
+  {
+    "name": "canonical-entity-page",
+    "value": {
+      "entity": {
+        "id": -7,
+        "name": "Møøse 🚀",
+        "active": true,
+        "score": 12.5,
+        "nullable": null,
+        "tags": ["alpha", "β"]
+      },
+      "page": 2
+    },
+    "hex": "82a6656e7469747986a26964f9a46e616d65ac4dc3b8c3b8736520f09f9a80a6616374697665c3a573636f7265cb4029000000000000a86e756c6c61626c65c0a47461677392a5616c706861a2ceb2a47061676502"
+  }
+]

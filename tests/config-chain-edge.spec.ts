@@ -21,6 +21,20 @@ afterEach(() => {
 });
 
 describe('edge config chain', () => {
+  it('defaults wireFormat to json and accepts explicit msgpack', async () => {
+    const base = { databaseId: 'edge-db', apiKey: 'edge-key', apiSecret: 'edge-secret' };
+    await expect(resolveConfig(base)).resolves.toMatchObject({ wireFormat: 'json' });
+    await expect(resolveConfig({ ...base, wireFormat: 'msgpack' })).resolves.toMatchObject({
+      wireFormat: 'msgpack',
+    });
+  });
+
+  it('rejects invalid wireFormat values loaded at runtime', async () => {
+    await expect(
+      resolveConfig({ ...({ databaseId: 'db', apiKey: 'k', apiSecret: 's' }), wireFormat: 'cbor' } as unknown as OnyxConfig),
+    ).rejects.toThrow('wireFormat must be either json or msgpack');
+  });
+
   it('reads env configuration only', async () => {
     vi.stubEnv('ONYX_DATABASE_ID', 'edge-db');
     vi.stubEnv('ONYX_DATABASE_BASE_URL', 'http://edge');

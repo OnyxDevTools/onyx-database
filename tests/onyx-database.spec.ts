@@ -51,15 +51,15 @@ describe('OnyxDatabaseImpl helpers', () => {
     await db.save('User', { id: 1 });
     expect(saveSpy).toHaveBeenCalledWith('User', { id: 1 }, undefined);
 
-    const request = vi.fn().mockResolvedValue({});
+    const requestEntity = vi.fn().mockResolvedValue({});
     vi.spyOn(db as any, 'ensureClient').mockResolvedValue({
-      http: { request },
+      http: { requestEntity },
       databaseId: 'db',
       baseUrl: '',
       fetchImpl: vi.fn(),
     });
     await db.findById('User', '1');
-    expect(request).toHaveBeenCalledWith(
+    expect(requestEntity).toHaveBeenCalledWith(
       'GET',
       expect.stringContaining('/data/db/User/1?partition=p1'),
     );

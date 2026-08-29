@@ -32,6 +32,9 @@ export interface RetryOptions {
   initialDelayMs?: number;
 }
 
+/** Wire format used by entity CRUD and query requests. */
+export type WireFormat = 'json' | 'msgpack';
+
 export interface OnyxConfig {
   baseUrl?: string;
   /**
@@ -42,6 +45,12 @@ export interface OnyxConfig {
   apiKey?: string;
   apiSecret?: string;
   fetch?: FetchImpl;
+  /**
+   * Wire format for entity CRUD and query routes. Defaults to `json`.
+   * Documents, schemas, and AI calls remain JSON. Query streams use the
+   * selected format and can accept a JSON-lines fallback.
+   */
+  wireFormat?: WireFormat;
   /**
    * Default AI model when using shorthand chat calls (`db.chat('...')`). Defaults to `onyx`.
    */

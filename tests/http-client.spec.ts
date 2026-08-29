@@ -2,6 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { inspect } from 'node:util';
 import { HttpClient, parseJsonAllowNaN } from '../src/core/http';
 import { OnyxHttpError } from '../src/errors/http-error';
+import {
+  decodeMessagePack,
+  encodeMessagePack,
+  MESSAGEPACK_ACCEPT,
+  MESSAGEPACK_MEDIA_TYPE,
+} from '../src/core/msgpack';
+import type { FetchResponse } from '../src/types/common';
 
 // filename: tests/http-client.spec.ts
 
@@ -72,6 +79,179 @@ describe('HttpClient', () => {
       body: JSON.stringify({ a: 1 })
     });
     expect(res).toEqual({ ok: true });
+  });
+
+  it('uses MessagePack for configured entity requests', async () => {
+    const responseBytes = encodeMessagePack({ id: 7, nested: { active: true } });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: (name: string) => name.toLowerCase() === 'content-type' ? MESSAGEPACK_MEDIA_TYPE : null },
+      text: vi.fn().mockRejectedValue(new Error('text should not be read')),
+      arrayBuffer: () => Promise.resolve(responseBytes.slice().buffer as ArrayBuffer),
+    } satisfies FetchResponse);
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      wireFormat: 'msgpack',
+    });
+
+    const result = await client.requestEntity('PUT', '/data/db/User', {
+      id: 7,
+      created: '2026-08-29T12:00:00.000Z',
+    });
+
+    expect(result).toEqual({ id: 7, nested: { active: true } });
+    const init = fetchMock.mock.calls[0][1];
+    expect(init.headers).toEqual({
+      'x-onyx-key': creds.apiKey,
+      'x-onyx-secret': creds.apiSecret,
+      Accept: MESSAGEPACK_ACCEPT,
+      'Content-Type': MESSAGEPACK_MEDIA_TYPE,
+    });
+    expect(init.body).toBeInstanceOf(Uint8Array);
+    expect(decodeMessagePack(init.body as Uint8Array)).toEqual({
+      id: 7,
+      created: '2026-08-29T12:00:00.000Z',
+    });
+  });
+
+  it('negotiates MessagePack responses for body-less entity requests', async () => {
+    const responseBytes = encodeMessagePack({ id: 1 });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => `${MESSAGEPACK_MEDIA_TYPE}; version=1` },
+      text: () => Promise.resolve('unused'),
+      arrayBuffer: () => Promise.resolve(responseBytes.slice().buffer as ArrayBuffer),
+    } satisfies FetchResponse);
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      wireFormat: 'msgpack',
+    });
+
+    await expect(client.requestEntity('GET', '/data/db/User/1')).resolves.toEqual({ id: 1 });
+    expect(fetchMock).toHaveBeenCalledWith(`${base}/data/db/User/1`, {
+      method: 'GET',
+      headers: {
+        'x-onyx-key': creds.apiKey,
+        'x-onyx-secret': creds.apiSecret,
+        Accept: MESSAGEPACK_ACCEPT,
+      },
+      body: undefined,
+    });
+  });
+
+  it('keeps ordinary requests on JSON when MessagePack is configured', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ valid: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      wireFormat: 'msgpack',
+    });
+
+    await client.request('POST', '/schemas/db/validate', { entities: [] });
+    expect(fetchMock).toHaveBeenCalledWith(`${base}/schemas/db/validate`, {
+      method: 'POST',
+      headers: {
+        'x-onyx-key': creds.apiKey,
+        'x-onyx-secret': creds.apiSecret,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ entities: [] }),
+    });
+  });
+
+  it('accepts JSON fallback and JSON errors for MessagePack entity requests', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: 1 }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: { message: 'invalid query' } }), {
+          status: 400,
+          statusText: 'Bad Request',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      wireFormat: 'msgpack',
+    });
+
+    await expect(client.requestEntity('GET', '/data/db/User/1')).resolves.toEqual({ id: 1 });
+    await expect(
+      client.requestEntity('PUT', '/data/db/query/User', { type: 'SelectQuery' }),
+    ).rejects.toMatchObject({
+      name: 'OnyxHttpError',
+      message: 'invalid query',
+      body: { error: { message: 'invalid query' } },
+    });
+  });
+
+  it('decodes MessagePack error responses', async () => {
+    const responseBytes = encodeMessagePack({ error: { message: 'binary query error' } });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      statusText: 'Bad Request',
+      headers: { get: () => MESSAGEPACK_MEDIA_TYPE },
+      text: () => Promise.resolve('unused'),
+      arrayBuffer: () => Promise.resolve(responseBytes.slice().buffer as ArrayBuffer),
+    } satisfies FetchResponse);
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      wireFormat: 'msgpack',
+    });
+
+    await expect(
+      client.requestEntity('PUT', '/data/db/query/User', { type: 'SelectQuery' }),
+    ).rejects.toMatchObject({
+      name: 'OnyxHttpError',
+      message: 'binary query error',
+      body: { error: { message: 'binary query error' } },
+      rawBody: `<MessagePack ${responseBytes.byteLength} bytes>`,
+    });
+  });
+
+  it('fails clearly when a custom fetch cannot expose MessagePack bytes', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => MESSAGEPACK_MEDIA_TYPE },
+      text: () => Promise.resolve('not binary safe'),
+    } satisfies FetchResponse);
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      wireFormat: 'msgpack',
+    });
+
+    await expect(client.requestEntity('GET', '/data/db/User/1')).rejects.toThrow(
+      'MessagePack response requires FetchResponse.arrayBuffer()',
+    );
   });
 
   it('passes through string bodies untouched', async () => {
@@ -149,6 +329,55 @@ describe('HttpClient', () => {
     logSpy.mockRestore();
   });
 
+  it('logs MessagePack bigint request and response values safely', async () => {
+    const responseBytes = encodeMessagePack({ id: 0x7fffffffffffffffn, ok: true });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => MESSAGEPACK_MEDIA_TYPE },
+      text: () => Promise.resolve('unused'),
+      arrayBuffer: () => Promise.resolve(responseBytes.slice().buffer as ArrayBuffer),
+    } satisfies FetchResponse);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      wireFormat: 'msgpack',
+      requestLoggingEnabled: true,
+      responseLoggingEnabled: true,
+    });
+
+    await expect(
+      client.requestEntity('PUT', '/data/db/User', {
+        id: -0x8000000000000000n,
+        version: 1,
+      }),
+    ).resolves.toEqual({ id: 0x7fffffffffffffffn, ok: true });
+
+    expect(logSpy).toHaveBeenNthCalledWith(1, `PUT ${base}/data/db/User`);
+    expect(logSpy).toHaveBeenNthCalledWith(
+      2,
+      '{"id":"-9223372036854775808n","version":1}',
+    );
+    expect(logSpy).toHaveBeenNthCalledWith(3, 'Headers:', {
+      Accept: MESSAGEPACK_ACCEPT,
+      'Content-Type': MESSAGEPACK_MEDIA_TYPE,
+      'x-onyx-key': creds.apiKey,
+      'x-onyx-secret': '[REDACTED]',
+    });
+    expect(logSpy).toHaveBeenNthCalledWith(4, '200 OK');
+    expect(logSpy).toHaveBeenNthCalledWith(
+      5,
+      '{"id":"9223372036854775807n","ok":true}',
+    );
+    expect(
+      decodeMessagePack(fetchMock.mock.calls[0][1].body as Uint8Array),
+    ).toEqual({ id: -0x8000000000000000n, version: 1 });
+    logSpy.mockRestore();
+  });
+
   it('logs responses and bodies when responseLoggingEnabled', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
@@ -168,6 +397,51 @@ describe('HttpClient', () => {
     expect(logSpy).toHaveBeenNthCalledWith(1, '200 OK');
     expect(logSpy).toHaveBeenNthCalledWith(2, JSON.stringify({ ok: true }));
     logSpy.mockRestore();
+  });
+
+  it('logs decoded MessagePack responses without treating bytes as text', async () => {
+    const responseBytes = encodeMessagePack({ ok: true });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => MESSAGEPACK_MEDIA_TYPE },
+      text: () => Promise.resolve('unused'),
+      arrayBuffer: () => Promise.resolve(responseBytes.slice().buffer as ArrayBuffer),
+    } satisfies FetchResponse);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      wireFormat: 'msgpack',
+      responseLoggingEnabled: true,
+    });
+
+    await client.requestEntity('GET', '/data/db/User/1');
+
+    expect(logSpy).toHaveBeenNthCalledWith(1, '200 OK');
+    expect(logSpy).toHaveBeenNthCalledWith(2, JSON.stringify({ ok: true }));
+    logSpy.mockRestore();
+  });
+
+  it('accepts empty MessagePack responses', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 204,
+      statusText: 'No Content',
+      headers: { get: () => MESSAGEPACK_MEDIA_TYPE },
+      text: () => Promise.resolve('unused'),
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+    } satisfies FetchResponse);
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      wireFormat: 'msgpack',
+    });
+
+    await expect(client.requestEntity('DELETE', '/data/db/User/1')).resolves.toBe('');
   });
 
   it('logs response line without body when enabled and body absent', async () => {
@@ -422,6 +696,18 @@ describe('HttpClient', () => {
     expect(() => new HttpClient({ baseUrl: '', ...creds, fetchImpl: vi.fn() })).toThrow(
       'baseUrl is required'
     );
+  });
+
+  it('rejects an invalid wire format provided at runtime', () => {
+    expect(
+      () =>
+        new HttpClient({
+          baseUrl: base,
+          ...creds,
+          fetchImpl: vi.fn(),
+          wireFormat: 'cbor',
+        } as unknown as ConstructorParameters<typeof HttpClient>[0]),
+    ).toThrow('wireFormat must be either json or msgpack');
   });
 
   it('throws when baseUrl lacks protocol', () => {

@@ -2,6 +2,14 @@
 import { OnyxHttpError } from '../errors/http-error';
 import { OnyxConfigError } from '../errors/config-error';
 import type { FetchImpl } from '../types/common';
+import type { WireFormat } from '../types/public';
+import {
+  decodeMessagePack,
+  encodeMessagePack,
+  isMessagePackContentType,
+  MESSAGEPACK_ACCEPT,
+  MESSAGEPACK_MEDIA_TYPE,
+} from './msgpack';
 
 export function parseJsonAllowNaN(txt: string): unknown {
   try {
@@ -10,6 +18,12 @@ export function parseJsonAllowNaN(txt: string): unknown {
     const fixed = txt.replace(/(:\s*)(NaN|Infinity|-Infinity)(\s*[,}])/g, '$1null$3');
     return JSON.parse(fixed);
   }
+}
+
+function stringifyBigIntSafe(value: unknown): string | undefined {
+  return JSON.stringify(value, (_key, item: unknown) =>
+    typeof item === 'bigint' ? `${item}n` : item,
+  );
 }
 
 export interface HttpClientOptions {
@@ -23,6 +37,7 @@ export interface HttpClientOptions {
   retryEnabled?: boolean;
   maxRetries?: number;
   retryInitialDelayMs?: number;
+  wireFormat?: WireFormat;
 }
 
 export class HttpClient {
@@ -36,6 +51,7 @@ export class HttpClient {
   private readonly retryEnabled: boolean;
   private readonly maxRetries: number;
   private readonly retryInitialDelayMs: number;
+  private readonly wireFormat: WireFormat;
   private readonly shouldRetry: (method: string, path: string) => boolean;
 
   private static parseRetryAfter(header: string | null): number | null {
@@ -84,6 +100,10 @@ export class HttpClient {
     this.retryEnabled = opts.retryEnabled ?? true;
     this.maxRetries = Math.max(0, opts.maxRetries ?? 2);
     this.retryInitialDelayMs = Math.max(0, opts.retryInitialDelayMs ?? 100);
+    this.wireFormat = opts.wireFormat ?? 'json';
+    if (this.wireFormat !== 'json' && this.wireFormat !== 'msgpack') {
+      throw new OnyxConfigError('wireFormat must be either json or msgpack');
+    }
     this.shouldRetry = (method: string, path: string) =>
       method === 'GET' || path.startsWith('/query/');
   }
@@ -108,6 +128,26 @@ export class HttpClient {
     body?: unknown,
     extraHeaders?: Record<string, string>
   ): Promise<T> {
+    return this.requestWithWireFormat<T>(method, path, body, extraHeaders, 'json');
+  }
+
+  /** Sends a request using the configured entity wire format. */
+  async requestEntity<T = unknown>(
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+    path: string,
+    body?: unknown,
+    extraHeaders?: Record<string, string>,
+  ): Promise<T> {
+    return this.requestWithWireFormat<T>(method, path, body, extraHeaders, this.wireFormat);
+  }
+
+  private async requestWithWireFormat<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+    path: string,
+    body: unknown,
+    extraHeaders: Record<string, string> | undefined,
+    wireFormat: WireFormat,
+  ): Promise<T> {
     if (!path.startsWith('/')) {
       throw new OnyxConfigError('path must start with /');
     }
@@ -115,22 +155,38 @@ export class HttpClient {
     const headers = this.headers({
       ...(method === 'DELETE' ? { Prefer: 'return=representation' } : {}),
       ...(extraHeaders ?? {}),
+      ...(wireFormat === 'msgpack'
+        ? { Accept: MESSAGEPACK_ACCEPT, 'Content-Type': MESSAGEPACK_MEDIA_TYPE }
+        : {}),
     });
     const hasExplicitContentType =
       (extraHeaders && 'Content-Type' in extraHeaders) ||
       Object.prototype.hasOwnProperty.call(this.defaults, 'Content-Type');
-    if (body == null && !hasExplicitContentType) delete headers['Content-Type'];
+    if (body == null && (wireFormat === 'msgpack' || !hasExplicitContentType)) {
+      delete headers['Content-Type'];
+    }
     if (this.requestLoggingEnabled) {
       console.log(`${method} ${url}`);
       if (body != null) {
-        const logBody = typeof body === 'string' ? body : JSON.stringify(body);
+        const logBody =
+          typeof body === 'string'
+            ? body
+            : wireFormat === 'msgpack'
+              ? stringifyBigIntSafe(body)
+              : JSON.stringify(body);
         console.log(logBody);
       }
       const headerLog = { ...headers, 'x-onyx-secret': '[REDACTED]' };
       console.log('Headers:', headerLog);
     }
     const payload =
-      body == null ? undefined : typeof body === 'string' ? body : JSON.stringify(body);
+      body == null
+        ? undefined
+        : wireFormat === 'msgpack'
+          ? encodeMessagePack(body)
+          : typeof body === 'string'
+            ? body
+            : JSON.stringify(body);
     const init = {
       method,
       headers,
@@ -144,18 +200,34 @@ export class HttpClient {
       try {
         const res = await this.fetchImpl(url, init);
         const contentType = res.headers.get('Content-Type') || '';
-        const raw = await res.text();
+        let raw: string;
+        let data: unknown;
+        if (isMessagePackContentType(contentType)) {
+          if (typeof res.arrayBuffer !== 'function') {
+            throw new Error('MessagePack response requires FetchResponse.arrayBuffer()');
+          }
+          const bytes = new Uint8Array(await res.arrayBuffer());
+          raw = bytes.byteLength === 0 ? '' : `<MessagePack ${bytes.byteLength} bytes>`;
+          data = bytes.byteLength === 0 ? '' : decodeMessagePack(bytes);
+        } else {
+          raw = await res.text();
+          const isJson =
+            raw.trim().length > 0 &&
+            (contentType.includes('application/json') || /^[\[{]/.test(raw.trim()));
+          data = isJson ? parseJsonAllowNaN(raw) : raw;
+        }
         if (this.responseLoggingEnabled) {
           const statusLine = `${res.status} ${res.statusText}`.trim();
           console.log(statusLine);
+          const isMessagePack = isMessagePackContentType(contentType);
           if (raw.trim().length > 0) {
-            console.log(raw);
+            if (isMessagePack) {
+              console.log(stringifyBigIntSafe(data));
+            } else {
+              console.log(raw);
+            }
           }
         }
-        const isJson =
-          raw.trim().length > 0 &&
-          (contentType.includes('application/json') || /^[\[{]/.test(raw.trim()));
-        const data = isJson ? parseJsonAllowNaN(raw) : raw;
         if (!res.ok) {
           const msg =
             typeof data === 'object' &&

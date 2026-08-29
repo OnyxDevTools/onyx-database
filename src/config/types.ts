@@ -1,5 +1,6 @@
 // filename: src/config/types.ts
 import type { FetchImpl } from '../types/common';
+import type { WireFormat } from '../types/public';
 
 export interface ResolvedConfig {
   baseUrl: string;
@@ -9,6 +10,7 @@ export interface ResolvedConfig {
   apiKey: string;
   apiSecret: string;
   fetch: FetchImpl;
+  wireFormat: WireFormat;
   retryEnabled: boolean;
   maxRetries: number;
   retryInitialDelayMs: number;
