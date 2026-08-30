@@ -55,7 +55,7 @@ import type {
 import { normalizeCondition } from '../helpers/condition-normalizer';
 import {
   assertCandidateConditionIsReadOnly,
-  assertCandidateConditionIsSoleRoot,
+  assertCandidateConditionIsComposable,
   assertSearchConditionIsComposable,
   assertSearchConditionSupportsStreaming,
 } from '../helpers/candidate-condition';
@@ -1028,24 +1028,23 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this;
   }
 
+  /** @deprecated Prefer `where(approximateCandidates(...))`. */
   approximateCandidates(
     attribute: string,
     valueOrValues: unknown | readonly unknown[],
     maxCandidates?: number,
   ): IQueryBuilder<T> {
-    if (this.conditions !== null) throw new Error('CANDIDATES must be the sole root criterion');
     if (attribute.trim().length === 0) throw new TypeError('candidate attribute must not be blank');
-    this.conditions = toSingleCondition({
+    return this.and({
       field: attribute,
       operator: 'CANDIDATES',
       value: approximateIndexCandidateQuery(valueOrValues, maxCandidates),
     });
-    return this;
   }
 
   where(condition: ConditionInput): IQueryBuilder<T> {
     const c = toCondition(condition);
-    assertCandidateConditionIsSoleRoot(this.conditions, c);
+    assertCandidateConditionIsComposable(this.conditions, c, 'AND');
     assertSearchConditionIsComposable(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
@@ -1061,7 +1060,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
 
   and(condition: ConditionInput): IQueryBuilder<T> {
     const c = toCondition(condition);
-    assertCandidateConditionIsSoleRoot(this.conditions, c);
+    assertCandidateConditionIsComposable(this.conditions, c, 'AND');
     assertSearchConditionIsComposable(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
@@ -1082,7 +1081,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
 
   or(condition: ConditionInput): IQueryBuilder<T> {
     const c = toCondition(condition);
-    assertCandidateConditionIsSoleRoot(this.conditions, c);
+    assertCandidateConditionIsComposable(this.conditions, c, 'OR');
     assertSearchConditionIsComposable(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;

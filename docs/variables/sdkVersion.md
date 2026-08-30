@@ -6,6 +6,6 @@
 
 # Variable: sdkVersion
 
-> `const` **sdkVersion**: `"2.8.0"` = `'2.8.0'`
+> `const` **sdkVersion**: `"2.8.1"` = `'2.8.1'`
 
 Defined in: index.ts:3

@@ -106,8 +106,10 @@ export interface IQueryBuilder<T = unknown> {
   /** Seeds a bounded native-HNSW candidate request as the sole root criterion. */
   hnswCandidates(searchQuery: HnswSearchQueryInput): IQueryBuilder<T>;
   /**
-   * Seeds bounded `EQUAL`/`IN` admission from an ordinary secondary index as
-   * the sole root criterion.
+   * Compatibility shortcut for bounded ordinary-index admission.
+   * @deprecated Prefer `where(approximateCandidates(...))`, matching every
+   * other condition operator. Additional non-negated `AND` predicates filter
+   * the admitted set.
    */
   approximateCandidates(
     attribute: string,

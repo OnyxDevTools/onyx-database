@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.8.1
+
+### Patch Changes
+
+- Allow bounded `CANDIDATES` conditions to compose with additional predicates in recursively pure `AND` queries while retaining the deprecated query-builder shortcut for compatibility.
+
 ## 2.8.0
 
 ### Minor Changes

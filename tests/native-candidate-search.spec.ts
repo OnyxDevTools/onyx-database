@@ -167,7 +167,7 @@ describe('native bounded candidate search', () => {
       .list();
     await new QueryBuilder(exec as any, 'ChunkAttentionHash')
       .inPartition('revision-7')
-      .approximateCandidates('bucketId', [6, 7], 17)
+      .where(approximateCandidates('bucketId', [6, 7], 17))
       .list();
 
     const vector = exec.queryPage.mock.calls[0][1].conditions.criteria;
@@ -237,25 +237,29 @@ describe('native bounded candidate search', () => {
       .inPartition('revision-7')
       .list();
     await db.from('ChunkAttentionHash')
-      .approximateCandidates('bucketId', [6, 7], 17)
+      .where(approximateCandidates('bucketId', [6, 7], 17))
+      .list();
+    await db.from('ChunkAttentionHash')
+      .where(approximateCandidates('bucketId', 6))
+      .and({ field: 'active', operator: 'EQUAL', value: true })
       .list();
 
     expect(() => (db.search as any)({ text: 'must remain table-scoped' }))
       .toThrow(/requires text as its first argument/);
 
-    expect(queryPage.mock.calls.map(call => call[1].conditions.criteria.operator)).toEqual([
+    expect(queryPage.mock.calls.slice(0, 4).map(call => call[1].conditions.criteria.operator)).toEqual([
       'MATCHES',
       'SEARCH_CANDIDATES',
       'HNSW_CANDIDATES',
       'CANDIDATES',
     ]);
-    expect(() => db.from('ChunkAttentionHash')
-      .approximateCandidates('bucketId', 6)
-      .and({ field: 'active', operator: 'EQUAL', value: true }))
-      .toThrow(/CANDIDATES must be the sole root/);
+    expect(queryPage.mock.calls[4][1].conditions).toMatchObject({
+      conditionType: 'CompoundCondition',
+      operator: 'AND',
+    });
   });
 
-  it('rejects compound admission and invalid vector or route work before transport', () => {
+  it('keeps lexical and HNSW admission sole-root and validates candidate inputs', () => {
     const exec = executor();
     expect(() => new QueryBuilder(exec as any, 't')
       .search('existing')
@@ -267,8 +271,8 @@ describe('native bounded candidate search', () => {
       .toThrow(/sole root/);
     expect(() => new QueryBuilder(exec as any, 't')
       .search('existing')
-      .approximateCandidates('bucketId', 1))
-      .toThrow(/sole root/);
+      .and(approximateCandidates('bucketId', 1)))
+      .not.toThrow();
     expect(() => new QueryBuilder(exec as any, 't')
       .approximateSearch('bounded')
       .search('must not be appended'))
@@ -278,9 +282,9 @@ describe('native bounded candidate search', () => {
       .where({ field: 'active', operator: 'EQUAL', value: true }))
       .toThrow(/HNSW_CANDIDATES must be the sole root/);
     expect(() => new QueryBuilder(exec as any, 't')
-      .approximateCandidates('bucketId', 1)
+      .where(approximateCandidates('bucketId', 1))
       .or({ field: 'active', operator: 'EQUAL', value: true }))
-      .toThrow(/CANDIDATES must be the sole root/);
+      .toThrow(/non-negated AND/);
     expect(() => hnswSearchQuery({ calibrationId: 0, vector: [1] })).toThrow(/non-zero/);
     expect(() => hnswSearchQuery({ calibrationId: 1, vector: [0, 0] })).toThrow(/non-zero finite norm/);
     expect(() => hnswSearchQuery({
@@ -331,16 +335,43 @@ describe('native bounded candidate search', () => {
     })).toThrow(/mixed-radix/);
   });
 
-  it('rejects candidate operators on either side of a compound or nested condition', () => {
+  it('composes CANDIDATES with AND in either order and rejects OR trees', async () => {
     const exec = executor();
     const candidate = () => approximateCandidates('bucketId', [6, 7], 17);
 
-    expect(() => new QueryBuilder(exec as any, 't').where(eq('status', 'ready')).and(candidate()))
-      .toThrow(/CANDIDATES must be the sole root/);
-    expect(() => new QueryBuilder(exec as any, 't').where(candidate()).or(eq('status', 'ready')))
-      .toThrow(/CANDIDATES must be the sole root/);
+    await new QueryBuilder(exec as any, 't')
+      .where(eq('status', 'ready'))
+      .and(candidate())
+      .list();
+    await new QueryBuilder(exec as any, 't')
+      .where(candidate())
+      .and(eq('status', 'ready'))
+      .list();
+
+    for (const call of exec.queryPage.mock.calls) {
+      expect(call[1].conditions).toMatchObject({
+        conditionType: 'CompoundCondition',
+        operator: 'AND',
+      });
+      const operators = call[1].conditions.conditions.map(
+        (condition: QueryCondition) => condition.conditionType === 'SingleCondition'
+          ? condition.criteria.operator
+          : condition.operator,
+      );
+      expect(operators).toEqual(expect.arrayContaining(['CANDIDATES', 'EQUAL']));
+    }
+
     expect(() => new QueryBuilder(exec as any, 't').where(eq('status', 'ready').and(candidate())))
-      .toThrow(/CANDIDATES must be the sole root/);
+      .not.toThrow();
+    expect(() => new QueryBuilder(exec as any, 't').where(candidate()).or(eq('status', 'ready')))
+      .toThrow(/non-negated AND/);
+    expect(() => new QueryBuilder(exec as any, 't').where(
+      eq('status', 'ready').or(candidate()),
+    )).toThrow(/non-negated AND/);
+    expect(() => new QueryBuilder(exec as any, 't')
+      .where(approximateCandidates('bucketId', 6))
+      .and(candidate()))
+      .toThrow(/only one CANDIDATES/);
 
     expect(() => new QueryBuilder(exec as any, 't').where(candidate())).not.toThrow();
     expect(() => new QueryBuilder(exec as any, 't').where(eq('status', 'ready')).and(eq('kind', 'x')))
@@ -481,6 +512,15 @@ describe('native bounded candidate search', () => {
       .toThrow(/blank/);
   });
 
+  it('retains the deprecated builder-level candidate shortcut for compatibility', async () => {
+    const exec = executor();
+    await new QueryBuilder(exec as any, 't')
+      .approximateCandidates('bucketId', [6, 7], 17)
+      .list();
+
+    expect(exec.queryPage.mock.calls[0][1].conditions.criteria.operator).toBe('CANDIDATES');
+  });
+
   it('rejects candidate-root updates and deletes in both builder implementations', async () => {
     const exec = executor();
     await expect(new QueryBuilder(exec as any, 't').approximateSearch('bounded').delete())
@@ -491,7 +531,7 @@ describe('native bounded candidate search', () => {
       .toThrow(/HNSW_CANDIDATES is a read-only/);
     await expect(new QueryBuilder(exec as any, 't')
       .setUpdates({ active: false })
-      .approximateCandidates('bucketId', 6)
+      .where(approximateCandidates('bucketId', 6))
       .update())
       .rejects.toThrow(/CANDIDATES is a read-only/);
     expect(exec.deleteByQuery).not.toHaveBeenCalled();
@@ -505,7 +545,7 @@ describe('native bounded candidate search', () => {
       fetch: vi.fn() as any,
     });
     await expect(db.from('ChunkAttentionHash')
-      .approximateCandidates('bucketId', 6)
+      .where(approximateCandidates('bucketId', 6))
       .delete())
       .rejects.toThrow(/CANDIDATES is a read-only/);
     expect(() => db.from('ChunkAttentionHash')
@@ -663,7 +703,8 @@ describe('native bounded candidate search', () => {
       new QueryBuilder(exec as any, 'Document').search('natural language', { mode: 'hybrid' }),
       new QueryBuilder(exec as any, 'Document').approximateSearch('lexical'),
       new QueryBuilder(exec as any, 'Document').hnswCandidates({ calibrationId: 73, vector: [1] }),
-      new QueryBuilder(exec as any, 'Document').approximateCandidates('tenantId', 'tenant-a'),
+      new QueryBuilder(exec as any, 'Document')
+        .where(approximateCandidates('tenantId', 'tenant-a')),
     ];
 
     for (const builder of builders) {

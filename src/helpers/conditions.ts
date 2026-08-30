@@ -113,7 +113,10 @@ export function approximateSearch(
 export const hnswCandidates = (query: HnswSearchQueryInput) =>
   c('__full_text__', 'HNSW_CANDIDATES', hnswSearchQuery(query));
 
-/** Sole-root condition for bounded ordinary-index candidate admission. */
+/**
+ * Bounded ordinary-index admission condition for
+ * `where(approximateCandidates(...))`, composable through `AND`.
+ */
 export const approximateCandidates = (
   attribute: string,
   valueOrValues: unknown | readonly unknown[],

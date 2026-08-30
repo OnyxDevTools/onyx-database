@@ -643,7 +643,7 @@ import {
 - `inOp`/`notIn` remain available for backward compatibility and are exact aliases.
 - `search(text, minScore?)` keeps the native vector-managed `MATCHES` predicate on `__full_text__` and always serializes `minScore` (null when omitted).
 - `search(text, { mode, ... })` builds the high-level `SEARCH` predicate for lexical, semantic, or hybrid retrieval. An empty options object defaults to hybrid mode and `match: "any"`.
-- `approximateSearch`, `hnswCandidates`, and `approximateCandidates` build physically bounded, read-only candidate criteria. They must be the sole root criterion; query builders reject compound conditions and update/delete execution before transport.
+- `approximateSearch`, `hnswCandidates`, and `approximateCandidates` build physically bounded, read-only candidate criteria. Pass the ordinary-index helper to `where(approximateCandidates(...))`, just like `where(eq(...))`. `approximateSearch` and `hnswCandidates` must be the sole root criterion. One `approximateCandidates` criterion may be combined with non-negated `AND` filters; query builders reject `OR`, negation, duplicate candidate admission, and update/delete execution before transport.
 
 ### Aggregate helpers
 
@@ -807,7 +807,9 @@ const semanticCandidates = await db
 // Bounded admission from one ordinary secondary index.
 const hashCandidates = await db
   .from('ChunkAttentionHash')
-  .approximateCandidates('bucketId', [1201, 1202, 1203], 1024)
+  .where(approximateCandidates('bucketId', [1201, 1202, 1203], 1024))
+  .and(eq('active', true))
+  .and(eq('corpusId', 'corpus-a'))
   .inPartition('revision-7')
   .list();
 ```
@@ -815,7 +817,10 @@ const hashCandidates = await db
 Candidate helpers enforce the public server bounds: at most 5,000 admitted rows,
 at most 20,000 HNSW distance evaluations, at most 16,384 vector dimensions, and
 at most 5,000 ordinary-index route values. Candidate results are approximate;
-rerank them when exact ordering matters.
+rerank them when exact ordering matters. One `CANDIDATES` condition may be combined
+with ordinary predicates through `AND` in either call order. The server admits the
+bounded route once and evaluates all predicates only over that set; `OR` trees remain
+invalid because they could expand beyond the admission bound.
 
 Omitted vector-search options use the server contract defaults: `nearbyBucketRadius = 1`,
 `maxCandidates = 1000`, and `requireAllTerms = true`. HNSW defaults to
@@ -828,11 +833,12 @@ defaults are `mode = "hybrid"`, `match = "any"`, `minScore = null`, and
 `maxCandidates = 1000`; a non-null high-level score must be between 0 and 1 inclusive.
 Hybrid search requires at least two candidates so both retrieval channels can run;
 lexical-only and semantic-only search allow one.
-`SEARCH` is read-only, but unlike the low-level candidate operators it can be combined
-with ordinary structured filters. It may appear only once and cannot be combined with
-another `__full_text__` predicate. High-level and candidate-admission queries cannot be
-used as live query streams. Existing one-argument `.search(text)`, `.search(text, minScore)`,
-and `.search(VectorSearchQueryInput)` calls retain their original `MATCHES` wire format.
+`SEARCH` is read-only and can be combined with ordinary structured filters. It may appear
+only once and cannot be combined with another `__full_text__` predicate. The lower-level
+`SEARCH_CANDIDATES` and `HNSW_CANDIDATES` operators remain sole-root operations. High-level
+and candidate-admission queries cannot be used as live query streams. Existing one-argument
+`.search(text)`, `.search(text, minScore)`, and `.search(VectorSearchQueryInput)` calls retain
+their original `MATCHES` wire format.
 
 A table-scoped high-level search spans that table's current partitions by default under
 one global candidate budget; call `.inPartition(...)` to constrain it. Low-level

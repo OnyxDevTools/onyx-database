@@ -2,13 +2,13 @@ import type { QueryCondition } from '../types/protocol';
 import type { QueryCriteriaOperator } from '../types/common';
 
 const SOLE_ROOT_CANDIDATE_OPERATORS = new Set<QueryCriteriaOperator>([
-  'CANDIDATES',
   'SEARCH_CANDIDATES',
   'HNSW_CANDIDATES',
 ]);
 
 const READ_ONLY_SEARCH_OPERATORS = new Set<QueryCriteriaOperator>([
   ...SOLE_ROOT_CANDIDATE_OPERATORS,
+  'CANDIDATES',
   'SEARCH',
 ]);
 
@@ -58,27 +58,47 @@ function summarizeFullTextSearch(condition: QueryCondition): FullTextSearchSumma
   );
 }
 
-/**
- * Enforce the wire contract that an approximate admission operator is the one
- * and only root criterion, including when a condition builder already contains
- * a nested compound tree.
- */
-export function assertCandidateConditionIsSoleRoot(
+function countOperator(condition: QueryCondition, operator: QueryCriteriaOperator): number {
+  if (condition.conditionType === 'SingleCondition') {
+    return condition.criteria.operator === operator ? 1 : 0;
+  }
+  return condition.conditions.reduce(
+    (count, child) => count + countOperator(child, operator),
+    0,
+  );
+}
+
+function isConjunction(condition: QueryCondition): boolean {
+  return condition.conditionType === 'SingleCondition' || (
+    condition.operator === 'AND' && condition.conditions.every(isConjunction)
+  );
+}
+
+function assertCandidateTreeIsValid(condition: QueryCondition): void {
+  const soleRootOperator = matchingOperator(condition, SOLE_ROOT_CANDIDATE_OPERATORS);
+  if (soleRootOperator !== null && condition.conditionType !== 'SingleCondition') {
+    throw new Error(`${soleRootOperator} must be the sole root criterion`);
+  }
+
+  const approximateCandidateCount = countOperator(condition, 'CANDIDATES');
+  if (approximateCandidateCount > 1) {
+    throw new Error('A query may contain only one CANDIDATES criterion');
+  }
+  if (approximateCandidateCount === 1 && !isConjunction(condition)) {
+    throw new Error('CANDIDATES can be combined only with non-negated AND predicates');
+  }
+}
+
+/** Validate a prospective composition containing a bounded candidate operator. */
+export function assertCandidateConditionIsComposable(
   existing: QueryCondition | null,
   incoming: QueryCondition,
+  operator: 'AND' | 'OR' = 'AND',
 ): void {
-  const existingCandidate = existing === null
-    ? null
-    : matchingOperator(existing, SOLE_ROOT_CANDIDATE_OPERATORS);
-  const incomingCandidate = matchingOperator(incoming, SOLE_ROOT_CANDIDATE_OPERATORS);
-  const incomingIsSoleCandidate =
-    existing === null &&
-    incoming.conditionType === 'SingleCondition' &&
-    incomingCandidate !== null;
-
-  if (!incomingIsSoleCandidate && (existingCandidate !== null || incomingCandidate !== null)) {
-    throw new Error(`${existingCandidate ?? incomingCandidate} must be the sole root criterion`);
-  }
+  const prospective: QueryCondition = existing === null
+    ? incoming
+    : { conditionType: 'CompoundCondition', operator, conditions: [existing, incoming] };
+  assertCandidateTreeIsValid(prospective);
 }
 
 /**
