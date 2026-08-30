@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.8.0
+
+### Minor Changes
+
+- Add typed per-entity lexical, semantic, and combined search capabilities to schema APIs and report effective capability changes in schema diffs. Existing schemas that omit `searchSupport` remain equivalent to `BOTH`.
+
 ## 2.7.0
 
 ### Minor Changes

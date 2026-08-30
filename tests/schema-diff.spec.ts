@@ -57,6 +57,41 @@ describe('schema diff', () => {
     expect(output.trim()).toBe('No differences found between API schema and ./onyx.schema.json.');
   });
 
+  it('captures searchable entity type and search capability changes', () => {
+    const apiSchema: SchemaRevision = {
+      databaseId: 'db',
+      entities: [
+        { name: 'LexicalOnly', type: 'SEARCHABLE', searchSupport: 'LEXICAL' },
+        { name: 'LegacySearchable', type: 'SEARCHABLE' },
+        { name: 'BecomingSearchable' },
+        { name: 'Ordinary', searchSupport: 'LEXICAL' },
+      ],
+    };
+    const localSchema: SchemaUpsertRequest = {
+      entities: [
+        { name: 'LexicalOnly', type: 'SEARCHABLE', searchSupport: 'SEMANTIC' },
+        { name: 'LegacySearchable', type: 'SEARCHABLE', searchSupport: 'BOTH' },
+        { name: 'BecomingSearchable', type: 'SEARCHABLE', searchSupport: 'LEXICAL' },
+        { name: 'Ordinary', searchSupport: 'SEMANTIC' },
+      ],
+    };
+
+    const diff = computeSchemaDiff(apiSchema, localSchema);
+
+    expect(diff.changedTables).toEqual([
+      {
+        name: 'BecomingSearchable',
+        type: { from: 'DEFAULT', to: 'SEARCHABLE' },
+        searchSupport: { from: 'BOTH', to: 'LEXICAL' },
+      },
+      {
+        name: 'LexicalOnly',
+        searchSupport: { from: 'LEXICAL', to: 'SEMANTIC' },
+      },
+    ]);
+    expect(formatSchemaDiff(diff)).toContain('searchSupport:');
+  });
+
   it('formats diff sections as yaml', () => {
     const apiSchema: SchemaRevision = {
       databaseId: 'db',

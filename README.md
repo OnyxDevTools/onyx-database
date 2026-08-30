@@ -1034,6 +1034,9 @@ await db.updateSchema(
     entities: [
       {
         name: 'Profile',
+        type: 'SEARCHABLE',
+        // LEXICAL, SEMANTIC, or BOTH (the backward-compatible default)
+        searchSupport: 'BOTH',
         identifier: { name: 'id', generator: 'UUID' },
         attributes: [
           { name: 'id', type: 'String', isNullable: false },
@@ -1045,6 +1048,12 @@ await db.updateSchema(
   { publish: true },
 );
 ```
+
+`searchSupport` controls which indexes a `SEARCHABLE` entity maintains and therefore
+which high-level search modes it accepts. Use `LEXICAL` for term matching,
+`SEMANTIC` for embedding/HNSW retrieval, or `BOTH` to allow lexical, semantic, and
+hybrid queries. The field is ignored for `DEFAULT` entities. Changing it rebuilds
+the entity's search indexes; existing schema JSON without the field behaves as `BOTH`.
 
 ### 6) Secrets API
 

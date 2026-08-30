@@ -963,9 +963,19 @@ export interface SchemaTrigger {
   [key: string]: unknown;
 }
 
+export type SchemaEntityType = 'DEFAULT' | 'SEARCHABLE';
+
+/**
+ * Search indexes maintained for a SEARCHABLE entity.
+ *
+ * Omitted values are interpreted as BOTH for backward compatibility.
+ */
+export type SchemaSearchSupport = 'LEXICAL' | 'SEMANTIC' | 'BOTH';
+
 export interface SchemaEntity {
   name: string;
-  type?: 'DEFAULT' | 'SEARCHABLE';
+  type?: SchemaEntityType;
+  searchSupport?: SchemaSearchSupport;
   identifier?: SchemaIdentifier;
   partition?: string;
   attributes?: SchemaAttribute[];
@@ -1029,6 +1039,8 @@ export interface SchemaTriggerChange {
 
 export interface SchemaTableDiff {
   name: string;
+  type?: { from: SchemaEntityType; to: SchemaEntityType } | null;
+  searchSupport?: { from: SchemaSearchSupport; to: SchemaSearchSupport } | null;
   partition?: { from: string | null; to: string | null } | null;
   identifier?: { from: SchemaIdentifier | null; to: SchemaIdentifier | null } | null;
   attributes?: {

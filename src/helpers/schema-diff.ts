@@ -4,10 +4,12 @@ import type {
   SchemaAttribute,
   SchemaDiff,
   SchemaEntity,
+  SchemaEntityType,
   SchemaIdentifier,
   SchemaIndex,
   SchemaResolver,
   SchemaRevision,
+  SchemaSearchSupport,
   SchemaTableDiff,
   SchemaTrigger,
   SchemaUpsertRequest,
@@ -64,6 +66,14 @@ function normalizePartition(partition?: string): string {
   if (partition == null) return '';
   const trimmed = partition.trim();
   return trimmed;
+}
+
+function normalizeEntityType(type?: SchemaEntityType): SchemaEntityType {
+  return type ?? 'DEFAULT';
+}
+
+function normalizeSearchSupport(searchSupport?: SchemaSearchSupport): SchemaSearchSupport {
+  return searchSupport ?? 'BOTH';
 }
 
 function identifiersEqual(a?: SchemaIdentifier, b?: SchemaIdentifier): boolean {
@@ -220,6 +230,20 @@ export function computeSchemaDiff(apiSchema: SchemaRevision, localSchema: Schema
     }
     const apiEntity = apiMap.get(name)!;
     const tableDiff: SchemaTableDiff = { name };
+    const typeFrom = normalizeEntityType(apiEntity.type);
+    const typeTo = normalizeEntityType(localEntity.type);
+    if (typeFrom !== typeTo) {
+      tableDiff.type = { from: typeFrom, to: typeTo };
+    }
+
+    if (typeFrom === 'SEARCHABLE' || typeTo === 'SEARCHABLE') {
+      const searchSupportFrom = normalizeSearchSupport(apiEntity.searchSupport);
+      const searchSupportTo = normalizeSearchSupport(localEntity.searchSupport);
+      if (searchSupportFrom !== searchSupportTo) {
+        tableDiff.searchSupport = { from: searchSupportFrom, to: searchSupportTo };
+      }
+    }
+
     const partitionFrom = normalizePartition(apiEntity.partition);
     const partitionTo = normalizePartition(localEntity.partition);
     if (partitionFrom !== partitionTo) {
@@ -246,6 +270,8 @@ export function computeSchemaDiff(apiSchema: SchemaRevision, localSchema: Schema
     if (triggers) tableDiff.triggers = triggers;
 
     const hasChange =
+      tableDiff.type ||
+      tableDiff.searchSupport ||
       tableDiff.partition ||
       tableDiff.identifier ||
       tableDiff.attributes ||
@@ -333,6 +359,12 @@ function toYamlLines(value: unknown, indent = 0): string[] {
 
 function pruneTableDiff(table: SchemaTableDiff): SchemaTableDiff | null {
   const pruned: SchemaTableDiff = { name: table.name };
+  if (table.type && table.type.from !== table.type.to) {
+    pruned.type = table.type;
+  }
+  if (table.searchSupport && table.searchSupport.from !== table.searchSupport.to) {
+    pruned.searchSupport = table.searchSupport;
+  }
   if (table.partition && (table.partition.from !== table.partition.to)) {
     pruned.partition = table.partition;
   }
@@ -365,6 +397,8 @@ function pruneTableDiff(table: SchemaTableDiff): SchemaTableDiff | null {
   }
 
   const hasChange =
+    pruned.type ||
+    pruned.searchSupport ||
     pruned.partition ||
     pruned.identifier ||
     (pruned.attributes && (pruned.attributes.added.length || pruned.attributes.removed.length || pruned.attributes.changed.length)) ||
