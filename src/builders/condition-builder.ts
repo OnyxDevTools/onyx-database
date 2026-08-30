@@ -1,5 +1,5 @@
 // filename: src/builders/condition-builder.ts
-import type { IConditionBuilder } from '../types/builders';
+import type { ConditionInput, IConditionBuilder } from '../types/builders';
 import type { QueryCondition, QueryCriteria } from '../types/protocol';
 import type { LogicalOperator } from '../types/common';
 
@@ -29,7 +29,7 @@ export class ConditionBuilderImpl implements IConditionBuilder {
    * builder.and({ field: 'name', operator: 'eq', value: 'Ada' });
    * ```
    */
-  and(condition: IConditionBuilder | QueryCriteria): IConditionBuilder {
+  and(condition: ConditionInput): IConditionBuilder {
     this.addCompound('AND', this.prepare(condition));
     return this;
   }
@@ -43,7 +43,7 @@ export class ConditionBuilderImpl implements IConditionBuilder {
    * builder.or({ field: 'status', operator: 'eq', value: 'active' });
    * ```
    */
-  or(condition: IConditionBuilder | QueryCriteria): IConditionBuilder {
+  or(condition: ConditionInput): IConditionBuilder {
     this.addCompound('OR', this.prepare(condition));
     return this;
   }
@@ -121,9 +121,16 @@ export class ConditionBuilderImpl implements IConditionBuilder {
    * const qc = builder['prepare']({ field: 'id', operator: 'eq', value: '1' });
    * ```
    */
-  private prepare(condition: IConditionBuilder | QueryCriteria): QueryCondition {
+  private prepare(condition: ConditionInput): QueryCondition {
     if (typeof (condition as IConditionBuilder).toCondition === 'function') {
       return (condition as IConditionBuilder).toCondition();
+    }
+    if (
+      condition &&
+      ((condition as QueryCondition).conditionType === 'SingleCondition' ||
+        (condition as QueryCondition).conditionType === 'CompoundCondition')
+    ) {
+      return condition as QueryCondition;
     }
     const c = condition as QueryCriteria;
     if (c && typeof c.field === 'string' && typeof c.operator === 'string') {

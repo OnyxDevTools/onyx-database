@@ -129,8 +129,9 @@ const db = onyx.init({
 });
 ```
 
-The `partition` option sets a default partition for queries, `findById`, and
-deletes by primary key. Save operations use the partition field on the entity
+The `partition` option sets a default partition for table-scoped queries,
+`findById`, and deletes by primary key; database-wide `db.search(...)` omits it.
+Save operations use the partition field on the entity
 itself. Enable `requestLoggingEnabled` to log each request and its body to the
 console. Enable `responseLoggingEnabled` to log responses and bodies. Setting
 the `ONYX_DEBUG=true` environment variable enables both request and response
@@ -640,7 +641,8 @@ import {
 
 - Prefer `within`/`notWithin` for inclusion checks (supports arrays, comma-separated strings, or inner queries).  
 - `inOp`/`notIn` remain available for backward compatibility and are exact aliases.
-- `search(text, minScore?)` builds a native vector-managed `MATCHES` predicate on `__full_text__` and always serializes `minScore` (null when omitted).
+- `search(text, minScore?)` keeps the native vector-managed `MATCHES` predicate on `__full_text__` and always serializes `minScore` (null when omitted).
+- `search(text, { mode, ... })` builds the high-level `SEARCH` predicate for lexical, semantic, or hybrid retrieval. An empty options object defaults to hybrid mode and `match: "any"`.
 - `approximateSearch`, `hnswCandidates`, and `approximateCandidates` build physically bounded, read-only candidate criteria. They must be the sole root criterion; query builders reject compound conditions and update/delete execution before transport.
 
 ### Aggregate helpers
@@ -699,7 +701,9 @@ const rolesMissingPermission = await db
 
 ## Native vector-managed and bounded candidate search
 
-Use `.search(text, minScore?)` on a query builder for table-level full-text search, or call `db.search(...)` to target **all** tables (`table = "ALL"` in the request body). The search value always includes `minScore` and falls back to `null` when you omit it.
+Use `.search(text, options)` on a query builder for high-level natural-language search, or call `db.search(text, options)` to target **all** tables (`table = "ALL"` in the request body). The options select lexical, semantic, or hybrid retrieval; `{}` selects hybrid with all canonical defaults.
+
+The existing one-argument `.search(text)` and numeric `.search(text, minScore)` forms remain the legacy `MATCHES` API for compatibility. The legacy value always includes `minScore` and falls back to `null` when omitted.
 
 ```ts
 import {
@@ -731,6 +735,31 @@ const activeMatch = await db
   .where(search('user bio text'))
   .and(eq('isActive', true))
   .firstOrNull();
+
+// Natural-language lexical search. Extra question words do not prevent a match
+// when any terms clear the requested score threshold.
+const lexical = await db
+  .from('ActiveDocumentChunk')
+  .search('how do i calculate cost per horse', {
+    mode: 'lexical',
+    match: 'any',
+    minScore: 0.4,
+    maxCandidates: 500,
+  })
+  .list();
+
+// Server-managed semantic search from ordinary text.
+const semanticMatches = await db
+  .from('ActiveDocumentChunk')
+  .search('how do i calculate cost per horse', { mode: 'semantic' })
+  .list();
+
+// Fuse lexical and semantic retrieval with the same clean API.
+const hybrid = await db
+  .from('ActiveDocumentChunk')
+  .search('how do i calculate cost per horse', {}) // mode defaults to hybrid
+  .and(eq('isActive', true))
+  .list();
 
 // Semantic or hybrid MATCHES search. The helper validates the routing signature
 // and preserves each 64-bit identifier/fingerprint word losslessly on the wire.
@@ -793,6 +822,30 @@ Omitted vector-search options use the server contract defaults: `nearbyBucketRad
 `maxCandidates = 1000`, `efSearch = max(1000, maxCandidates)`, `minScore = null`,
 and `formatVersion = 1`. `SEARCH_CANDIDATES` is deliberately text-only; semantic and
 hybrid searches use `MATCHES` through `.search({...})`.
+
+The high-level options overload emits a dedicated `SEARCH` criterion. Its canonical
+defaults are `mode = "hybrid"`, `match = "any"`, `minScore = null`, and
+`maxCandidates = 1000`; a non-null high-level score must be between 0 and 1 inclusive.
+Hybrid search requires at least two candidates so both retrieval channels can run;
+lexical-only and semantic-only search allow one.
+`SEARCH` is read-only, but unlike the low-level candidate operators it can be combined
+with ordinary structured filters. It may appear only once and cannot be combined with
+another `__full_text__` predicate. High-level and candidate-admission queries cannot be
+used as live query streams. Existing one-argument `.search(text)`, `.search(text, minScore)`,
+and `.search(VectorSearchQueryInput)` calls retain their original `MATCHES` wire format.
+
+A table-scoped high-level search spans that table's current partitions by default under
+one global candidate budget; call `.inPartition(...)` to constrain it. Low-level
+candidate APIs still require one concrete partition. Database-wide `db.search(text,
+options)` searches eligible unpartitioned tables only, never inherits the client's
+default partition, and returns typed `FullTextSearchResult` envelopes with `id`,
+`entityType`, `entity`, and a normalized nullable `score`.
+
+Semantic and hybrid modes require the database server to have a search embedding
+provider configured. Stored searchable text and query text must be embedded with the
+same model, calibration, and vector space. Records written before that integration was
+enabled need to be resaved or backfilled so their HNSW vectors exist; marking a table
+`SEARCHABLE` alone does not retroactively embed existing records.
 
 **Examples**
 - Table search (minScore null): `examples/query/vector-table-search.ts`

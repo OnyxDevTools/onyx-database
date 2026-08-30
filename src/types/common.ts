@@ -18,6 +18,8 @@ export type QueryCriteriaOperator =
   | 'NOT_CONTAINS' | 'NOT_CONTAINS_IGNORE_CASE'
   | 'STARTS_WITH' | 'NOT_STARTS_WITH'
   | 'IS_NULL' | 'NOT_NULL'
+  /** High-level lexical, semantic, or hybrid search using server-managed search integration. */
+  | 'SEARCH'
   /** Explicitly approximate, bounded admission from an ordinary secondary index. */
   | 'CANDIDATES'
   /** Explicitly approximate, bounded lexical admission from a searchable table. */
@@ -29,6 +31,24 @@ export type QueryCriteriaOperator =
 export interface FullTextQuery {
   queryText: string;
   minScore: number | null;
+}
+
+/** Search strategy used by the high-level {@link SearchOptions} API. */
+export type SearchMode = 'lexical' | 'semantic' | 'hybrid';
+
+/** Whether the lexical portion of a search may match any term or must match every term. */
+export type SearchMatch = 'all' | 'any';
+
+/** Options for natural-language lexical, semantic, or hybrid search. */
+export interface SearchOptions {
+  /** Search strategy. Defaults to `hybrid`. */
+  mode?: SearchMode;
+  /** Lexical term policy. Defaults to `any`. */
+  match?: SearchMatch;
+  /** Optional normalized minimum score threshold from 0 through 1. */
+  minScore?: number | null;
+  /** Maximum candidates considered. Defaults to 1,000; hybrid requires at least 2. */
+  maxCandidates?: number;
 }
 
 /** Lossless signed 64-bit value accepted by native semantic search helpers. */

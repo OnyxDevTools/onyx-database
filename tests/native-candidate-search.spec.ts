@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { QueryBuilder } from '../src/builders/query-builder';
-import type { QueryCriteriaOperator } from '../src';
+import type {
+  FullTextSearchResult,
+  IQueryBuilder,
+  QueryCondition,
+  QueryCriteriaOperator,
+} from '../src';
 import {
   MAX_APPROXIMATE_INDEX_CANDIDATES,
   MAX_APPROXIMATE_INDEX_ROUTE_VALUES,
@@ -64,6 +69,7 @@ const operatorMatrix = [
   'GREATER_THAN_EQUAL',
   'IN',
   'NOT_IN',
+  'SEARCH',
   'CANDIDATES',
   'SEARCH_CANDIDATES',
   'HNSW_CANDIDATES',
@@ -235,7 +241,7 @@ describe('native bounded candidate search', () => {
       .list();
 
     expect(() => (db.search as any)({ text: 'must remain table-scoped' }))
-      .toThrow(/only supports lexical text/);
+      .toThrow(/requires text as its first argument/);
 
     expect(queryPage.mock.calls.map(call => call[1].conditions.criteria.operator)).toEqual([
       'MATCHES',
@@ -511,5 +517,172 @@ describe('native bounded candidate search', () => {
       .approximateSearch('bounded')
       .update())
       .rejects.toThrow(/SEARCH_CANDIDATES is a read-only/);
+  });
+
+  it('keeps high-level search composable but rejects mutations', async () => {
+    const exec = executor();
+    await new QueryBuilder(exec as any, 'ActiveDocumentChunk')
+      .search('cost per horse', { mode: 'hybrid' })
+      .and({ field: 'active', operator: 'EQUAL', value: true })
+      .list();
+
+    expect(exec.queryPage.mock.calls[0][1].conditions).toMatchObject({
+      conditionType: 'CompoundCondition',
+      conditions: [
+        { criteria: { operator: 'SEARCH' } },
+        { criteria: { operator: 'EQUAL' } },
+      ],
+    });
+    await expect(new QueryBuilder(exec as any, 'ActiveDocumentChunk')
+      .search('cost per horse', { mode: 'semantic' })
+      .delete())
+      .rejects.toThrow(/SEARCH is a read-only/);
+    expect(() => new QueryBuilder(exec as any, 'ActiveDocumentChunk')
+      .search('cost per horse', { mode: 'lexical' })
+      .setUpdates({ active: false }))
+      .toThrow(/SEARCH is a read-only/);
+
+    const db = onyx.init({
+      baseUrl: 'http://example.test',
+      databaseId: 'db',
+      apiKey: 'key',
+      apiSecret: 'secret',
+      fetch: vi.fn() as any,
+    });
+    await expect(db.from('ActiveDocumentChunk')
+      .search('cost per horse', { mode: 'hybrid' })
+      .delete())
+      .rejects.toThrow(/SEARCH is a read-only/);
+
+    const typedAllTableBuilder: IQueryBuilder<FullTextSearchResult> = db.search(
+      'cost per horse',
+      { mode: 'hybrid' },
+    );
+    void typedAllTableBuilder;
+  });
+
+  it('recursively enforces the single high-level full-text criterion contract', () => {
+    const exec = executor();
+    const structured: QueryCondition = {
+      conditionType: 'CompoundCondition',
+      operator: 'OR',
+      conditions: [
+        {
+          conditionType: 'SingleCondition',
+          criteria: { field: 'active', operator: 'EQUAL', value: true },
+        },
+        {
+          conditionType: 'SingleCondition',
+          criteria: { field: 'tenantId', operator: 'EQUAL', value: 'tenant-a' },
+        },
+      ],
+    };
+    expect(() => new QueryBuilder(exec as any, 'Document')
+      .search('cost per horse', { mode: 'semantic' })
+      .and(structured))
+      .not.toThrow();
+
+    const twoSearches: QueryCondition = {
+      conditionType: 'CompoundCondition',
+      operator: 'AND',
+      conditions: [
+        {
+          conditionType: 'SingleCondition',
+          criteria: { field: '__full_text__', operator: 'SEARCH', value: {} },
+        },
+        {
+          conditionType: 'CompoundCondition',
+          operator: 'OR',
+          conditions: [{
+            conditionType: 'SingleCondition',
+            criteria: { field: '__full_text__', operator: 'SEARCH', value: {} },
+          }],
+        },
+      ],
+    };
+    expect(() => new QueryBuilder(exec as any, 'Document').where(twoSearches))
+      .toThrow(/at most once/);
+
+    const searchAndLegacy: QueryCondition = {
+      conditionType: 'CompoundCondition',
+      operator: 'AND',
+      conditions: [
+        {
+          conditionType: 'SingleCondition',
+          criteria: { field: '__full_text__', operator: 'SEARCH', value: {} },
+        },
+        {
+          conditionType: 'SingleCondition',
+          criteria: { field: '__full_text__', operator: 'MATCHES', value: 'legacy' },
+        },
+      ],
+    };
+    expect(() => new QueryBuilder(exec as any, 'Document').where(searchAndLegacy))
+      .toThrow(/another __full_text__/);
+    const wrongTarget: QueryCondition = {
+      conditionType: 'CompoundCondition',
+      operator: 'AND',
+      conditions: [{
+        conditionType: 'SingleCondition',
+        criteria: { field: 'body', operator: 'SEARCH', value: {} },
+      }],
+    };
+    expect(() => new QueryBuilder(exec as any, 'Document').where(wrongTarget))
+      .toThrow(/must target __full_text__/);
+    expect(() => new QueryBuilder(exec as any, 'Document')
+      .search('legacy')
+      .search('natural language', { mode: 'lexical' }))
+      .toThrow(/another __full_text__/);
+    expect(() => new QueryBuilder(exec as any, 'Document')
+      .search('natural language', { mode: 'lexical' })
+      .search('legacy'))
+      .toThrow(/another __full_text__/);
+    expect(() => new QueryBuilder(exec as any, 'Document')
+      .search('first', { mode: 'semantic' })
+      .search('second', { mode: 'hybrid' }))
+      .toThrow(/at most once/);
+
+    const db = onyx.init({
+      baseUrl: 'http://example.test',
+      databaseId: 'db',
+      apiKey: 'key',
+      apiSecret: 'secret',
+      fetch: vi.fn() as any,
+    });
+    expect(() => db.from('Document')
+      .search('legacy')
+      .search('natural language', { mode: 'semantic' }))
+      .toThrow(/another __full_text__/);
+    expect(() => db.from('Document').where(wrongTarget))
+      .toThrow(/must target __full_text__/);
+  });
+
+  it('rejects high-level and candidate-admission live streams locally', async () => {
+    const exec = executor();
+    const builders = [
+      new QueryBuilder(exec as any, 'Document').search('natural language', { mode: 'hybrid' }),
+      new QueryBuilder(exec as any, 'Document').approximateSearch('lexical'),
+      new QueryBuilder(exec as any, 'Document').hnswCandidates({ calibrationId: 73, vector: [1] }),
+      new QueryBuilder(exec as any, 'Document').approximateCandidates('tenantId', 'tenant-a'),
+    ];
+
+    for (const builder of builders) {
+      builder.onItemAdded(() => {});
+      await expect(builder.stream()).rejects.toThrow(/cannot be used with live query streams/);
+    }
+    expect(exec.stream).not.toHaveBeenCalled();
+
+    const db = onyx.init({
+      baseUrl: 'http://example.test',
+      databaseId: 'db',
+      apiKey: 'key',
+      apiSecret: 'secret',
+      fetch: vi.fn() as any,
+    });
+    await expect(db.from('Document')
+      .search('natural language', { mode: 'semantic' })
+      .onItem(() => {})
+      .streamEventsOnly())
+      .rejects.toThrow(/SEARCH cannot be used with live query streams/);
   });
 });

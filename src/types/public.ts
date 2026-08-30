@@ -8,6 +8,9 @@ import type {
   HnswSearchQueryInput,
   Int64WireInput,
   OnyxDocument,
+  SearchMatch,
+  SearchMode,
+  SearchOptions,
   SemanticVectorSignature,
   SemanticVectorSignatureInput,
   VectorSearchQuery,
@@ -37,11 +40,26 @@ export type {
   Int64WireInput,
   QueryResults,
   QueryResultsPromise,
+  SearchMatch,
+  SearchMode,
+  SearchOptions,
   SemanticVectorSignature,
   SemanticVectorSignatureInput,
   VectorSearchQuery,
   VectorSearchQueryInput,
 };
+
+/** Result envelope returned by high-level database-wide (`table = "ALL"`) search. */
+export interface FullTextSearchResult {
+  /** Unique identifier of the matched entity. */
+  id: unknown;
+  /** Table/entity type containing the match. */
+  entityType: string;
+  /** Matched entity payload. */
+  entity: Record<string, unknown>;
+  /** Normalized relevance score in `[0, 1]`, or `null` when unavailable. */
+  score: number | null;
+}
 
 export interface RetryOptions {
   /**
@@ -545,7 +563,7 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
   select(...fields: string[]): IQueryBuilder<Record<string, unknown>>;
 
   /**
-   * Run native vector-managed full-text search across all searchable tables.
+   * Run legacy native vector-managed full-text search across all searchable tables.
    *
    * @example
    * ```ts
@@ -556,6 +574,8 @@ export interface IOnyxDatabase<Schema = Record<string, unknown>> {
    * @param minScore Optional minimum score; serialized as `null` when omitted.
    */
   search(queryText: string, minScore?: number | null): IQueryBuilder<Record<string, unknown>>;
+  /** Run high-level lexical, semantic, or hybrid search; an empty object defaults to hybrid. */
+  search(queryText: string, options: SearchOptions): IQueryBuilder<FullTextSearchResult>;
 
   /**
    * Include related records in the next save or delete.

@@ -4,7 +4,6 @@ import { resolveConfig, type ResolvedConfig } from '../src/config/chain';
 import { emitTypes, type OnyxIntrospection, type EmitOptions, type OptionalStrategy } from './emit';
 import { onyx } from '../src';
 import type { SchemaEntity } from '../src/types/public';
-import type { SchemaEntity } from '../src/types/public';
 
 export interface GenerateOptions {
   /** Where to read schema from. */

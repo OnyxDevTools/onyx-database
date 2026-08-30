@@ -78,6 +78,30 @@ describe('QueryBuilder', () => {
     );
   });
 
+  it('does not apply a default partition to database-wide search', async () => {
+    const db = onyx.init({
+      baseUrl: 'http://x',
+      databaseId: 'd',
+      apiKey: 'k',
+      apiSecret: 's',
+      fetch: vi.fn() as any,
+      partition: 'p1',
+    });
+    const requestEntity = vi.fn().mockResolvedValue({ records: [], nextPage: null });
+    vi.spyOn(db as any, 'ensureClient').mockResolvedValue({
+      http: { requestEntity },
+      databaseId: 'd',
+    });
+
+    await db.search('cost per horse', { mode: 'lexical' }).list();
+
+    expect(requestEntity).toHaveBeenCalledWith(
+      'PUT',
+      '/data/d/query/ALL',
+      expect.objectContaining({ partition: null }),
+    );
+  });
+
   it('covers and/or branches', () => {
     const exec = makeExec();
     const a = new QueryBuilder(exec as any, 't');
@@ -202,6 +226,70 @@ describe('QueryBuilder', () => {
       }),
       { pageSize: undefined, nextPage: undefined, partition: undefined },
     );
+
+    await new QueryBuilder(exec as any, 'Table')
+      .search('how do i calculate cost per horse', {
+        mode: 'lexical',
+        match: 'any',
+        minScore: 0.4,
+        maxCandidates: 500,
+      })
+      .list();
+    expect(exec.queryPage).toHaveBeenNthCalledWith(
+      3,
+      'Table',
+      expect.objectContaining({
+        conditions: {
+          conditionType: 'SingleCondition',
+          criteria: {
+            field: '__full_text__',
+            operator: 'SEARCH',
+            value: {
+              text: 'how do i calculate cost per horse',
+              mode: 'lexical',
+              match: 'any',
+              minScore: 0.4,
+              maxCandidates: 500,
+            },
+          },
+        },
+      }),
+      { pageSize: undefined, nextPage: undefined, partition: undefined },
+    );
+
+    await new QueryBuilder(exec as any, 'Table')
+      .search('cost for each animal', { mode: 'semantic' })
+      .list();
+    await new QueryBuilder(exec as any, 'Table')
+      .search('cost per horse', { mode: 'hybrid', match: 'all' })
+      .list();
+    expect(exec.queryPage.mock.calls[3][1].conditions.criteria.value).toEqual({
+      text: 'cost for each animal',
+      mode: 'semantic',
+      match: 'any',
+      minScore: null,
+      maxCandidates: 1_000,
+    });
+    expect(exec.queryPage.mock.calls[4][1].conditions.criteria.value).toEqual({
+      text: 'cost per horse',
+      mode: 'hybrid',
+      match: 'all',
+      minScore: null,
+      maxCandidates: 1_000,
+    });
+
+    await new QueryBuilder(exec as any, 'Table').search('default hybrid', {}).list();
+    expect(exec.queryPage.mock.calls[5][1].conditions.criteria).toEqual({
+      field: '__full_text__',
+      operator: 'SEARCH',
+      value: {
+        text: 'default hybrid',
+        mode: 'hybrid',
+        match: 'any',
+        minScore: null,
+        maxCandidates: 1_000,
+      },
+    });
   });
 
   it('defaults db.search() to table ALL with search criteria', async () => {
@@ -225,6 +313,29 @@ describe('QueryBuilder', () => {
             field: '__full_text__',
             operator: 'MATCHES',
             value: { queryText: 'needle', minScore: null },
+          },
+        },
+      }),
+      { pageSize: undefined, nextPage: undefined, partition: undefined },
+    );
+
+    await db.search('cost per horse', { maxCandidates: 250 }).list();
+    expect(qp).toHaveBeenLastCalledWith(
+      'ALL',
+      expect.objectContaining({
+        table: 'ALL',
+        conditions: {
+          conditionType: 'SingleCondition',
+          criteria: {
+            field: '__full_text__',
+            operator: 'SEARCH',
+            value: {
+              text: 'cost per horse',
+              mode: 'hybrid',
+              match: 'any',
+              minScore: null,
+              maxCandidates: 250,
+            },
           },
         },
       }),

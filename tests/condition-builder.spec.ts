@@ -34,4 +34,16 @@ describe('ConditionBuilderImpl', () => {
     expect(() => empty.toCondition()).toThrow('ConditionBuilder has no criteria.');
     expect(() => empty.and({} as any)).toThrow('Invalid condition');
   });
+
+  it('accepts a materialized recursive condition', () => {
+    const raw = {
+      conditionType: 'CompoundCondition' as const,
+      operator: 'AND' as const,
+      conditions: [{
+        conditionType: 'SingleCondition' as const,
+        criteria: { field: 'active', operator: 'EQUAL' as const, value: true },
+      }],
+    };
+    expect(new ConditionBuilderImpl().and(raw).toCondition()).toBe(raw);
+  });
 });

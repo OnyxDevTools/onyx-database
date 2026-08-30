@@ -2,6 +2,7 @@
 import type {
   ApproximateSearchOptions,
   HnswSearchQueryInput,
+  SearchOptions,
   Sort,
   StreamAction,
   VectorSearchQueryInput,
@@ -15,6 +16,9 @@ import type {
   TreeFormatOptions,
 } from './formatters';
 
+/** A condition builder, raw criterion, or fully materialized recursive condition. */
+export type ConditionInput = IConditionBuilder | QueryCriteria | QueryCondition;
+
 /**
  * Builder used to compose query conditions.
  */
@@ -27,7 +31,7 @@ export interface IConditionBuilder {
    * cb.and({ field: 'age', operator: 'GREATER_THAN', value: 18 });
    * ```
    */
-  and(condition: IConditionBuilder | QueryCriteria): IConditionBuilder;
+  and(condition: ConditionInput): IConditionBuilder;
   /**
    * Combines the current condition with another using `OR`.
    * @param condition - Additional condition or builder.
@@ -36,7 +40,7 @@ export interface IConditionBuilder {
    * cb.or({ field: 'status', operator: 'EQUAL', value: 'ACTIVE' });
    * ```
    */
-  or(condition: IConditionBuilder | QueryCriteria): IConditionBuilder;
+  or(condition: ConditionInput): IConditionBuilder;
   /**
    * Materializes the composed condition into a `QueryCondition` object.
    * @example
@@ -79,7 +83,7 @@ export interface IQueryBuilder<T = unknown> {
    */
   resolve(...values: Array<string | string[]>): IQueryBuilder<T>;
   /**
-   * Adds a native vector-managed full-text search predicate.
+   * Adds a legacy native vector-managed full-text search predicate.
    * @example
    * ```ts
    * const results = await db.from('User').search('hello world', 4.4).list();
@@ -88,6 +92,8 @@ export interface IQueryBuilder<T = unknown> {
    * @param minScore - Optional minimum score; serializes as `null` when omitted.
    */
   search(queryText: string, minScore?: number | null): IQueryBuilder<T>;
+  /** Runs high-level lexical, semantic, or hybrid search; an empty object defaults to hybrid. */
+  search(queryText: string, options: SearchOptions): IQueryBuilder<T>;
   /** Adds a typed native lexical, semantic, or hybrid search predicate. */
   search(searchQuery: VectorSearchQueryInput): IQueryBuilder<T>;
   /**
@@ -115,7 +121,7 @@ export interface IQueryBuilder<T = unknown> {
    * const active = await db.from('User').where(eq('status', 'active')).list();
    * ```
    */
-  where(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T>;
+  where(condition: ConditionInput): IQueryBuilder<T>;
   /**
    * Adds an additional filter with `AND`.
    * @example
@@ -123,7 +129,7 @@ export interface IQueryBuilder<T = unknown> {
    * qb.where(eq('status', 'active')).and(eq('role', 'admin'));
    * ```
    */
-  and(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T>;
+  and(condition: ConditionInput): IQueryBuilder<T>;
   /**
    * Adds an additional filter with `OR`.
    * @example
@@ -131,7 +137,7 @@ export interface IQueryBuilder<T = unknown> {
    * qb.where(eq('status', 'active')).or(eq('status', 'invited'));
    * ```
    */
-  or(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T>;
+  or(condition: ConditionInput): IQueryBuilder<T>;
   /**
    * Orders results by the provided fields.
    * @example

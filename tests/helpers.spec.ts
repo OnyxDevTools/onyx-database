@@ -4,6 +4,7 @@ import * as cond from '../src/helpers/conditions';
 import * as sort from '../src/helpers/sort';
 import { sanitizeBaseUrl } from '../src/config/defaults';
 import { normalizeCondition } from '../src/helpers/condition-normalizer';
+import { searchCriteriaValue } from '../src/helpers/search-options';
 import type { QueryCondition } from '../src/types/protocol';
 import { QueryBuilder } from '../src/builders/query-builder';
 
@@ -58,6 +59,28 @@ describe('helper utilities', () => {
     cond.matches('a', 're');
     expect(cond.search('query').toCondition().criteria.value).toEqual({ queryText: 'query', minScore: null });
     expect(cond.search('query', 1.1).toCondition().criteria.value).toEqual({ queryText: 'query', minScore: 1.1 });
+    expect(cond.search('query', {}).toCondition().criteria).toEqual({
+      field: '__full_text__',
+      operator: 'SEARCH',
+      value: {
+        text: 'query',
+        mode: 'hybrid',
+        match: 'any',
+        minScore: null,
+        maxCandidates: 1_000,
+      },
+    });
+    expect(cond.search('query', { mode: 'lexical' }).toCondition().criteria).toEqual({
+      field: '__full_text__',
+      operator: 'SEARCH',
+      value: {
+        text: 'query',
+        mode: 'lexical',
+        match: 'any',
+        minScore: null,
+        maxCandidates: 1_000,
+      },
+    });
     cond.notMatches('a', 're');
     cond.like('a', '%x%');
     cond.notLike('a', '%x%');
@@ -69,6 +92,45 @@ describe('helper utilities', () => {
     cond.notStartsWith('a', 'x');
     cond.isNull('a');
     cond.notNull('a');
+  });
+
+  it('validates high-level search options before transport', () => {
+    const invalidSearches = [
+      () => (searchCriteriaValue as any)('query', null),
+      () => (searchCriteriaValue as any)('query', 'not-options'),
+      () => cond.search('query', [] as any),
+      () => cond.search('query', new Date() as any),
+      () => cond.search('query', { unknown: true } as any),
+      () => cond.search('query', { mode: null } as any),
+      () => cond.search('query', { match: null } as any),
+      () => cond.search('query', { maxCandidates: null } as any),
+      () => cond.search(' ', { mode: 'lexical' }),
+      () => cond.search('query', { mode: 'semantic', minScore: Number.NaN }),
+      () => cond.search('query', { minScore: Number.POSITIVE_INFINITY }),
+      () => cond.search('query', { minScore: -0.001 }),
+      () => cond.search('query', { minScore: 1.001 }),
+      () => cond.search('query', { mode: 'hybrid', maxCandidates: 0 }),
+      () => cond.search('query', { mode: 'hybrid', maxCandidates: 1 }),
+      () => cond.search('query', { mode: 'hybrid', maxCandidates: 5_001 }),
+      () => cond.search('query', { mode: 'hybrid', maxCandidates: 1.5 }),
+      () => cond.search('query', { mode: 'invalid' } as any),
+      () => cond.search('query', { mode: 'lexical', match: 'invalid' } as any),
+    ];
+    invalidSearches.forEach(searchCall => expect(searchCall).toThrow());
+    expect(cond.search('query', { minScore: 0 }).toCondition().criteria.value).toMatchObject({
+      mode: 'hybrid',
+      minScore: 0,
+    });
+    expect(cond.search('query', { minScore: 1 }).toCondition().criteria.value).toMatchObject({
+      mode: 'hybrid',
+      minScore: 1,
+    });
+    expect(cond.search('query', { mode: 'semantic', minScore: null })
+      .toCondition().criteria.value).toMatchObject({ minScore: null });
+    expect(cond.search('query', { mode: 'lexical', maxCandidates: 1 })
+      .toCondition().criteria.value).toMatchObject({ maxCandidates: 1 });
+    expect(cond.search('query', { mode: 'semantic', maxCandidates: 1 })
+      .toCondition().criteria.value).toMatchObject({ maxCandidates: 1 });
   });
 
   it('creates sort helpers', () => {

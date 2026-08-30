@@ -7,6 +7,7 @@ import type {
   FullTextQuery,
   HnswSearchQueryInput,
   QueryCriteriaOperator,
+  SearchOptions,
   VectorSearchQueryInput,
 } from '../types/common';
 import {
@@ -14,6 +15,7 @@ import {
   hnswSearchQuery,
   vectorSearchQuery,
 } from './candidate-search';
+import { searchCriteriaValue } from './search-options';
 
 const c = (field: string, operator: QueryCriteriaOperator, value?: unknown) =>
   new ConditionBuilderImpl({ field, operator, value } as QueryCriteria);
@@ -64,16 +66,24 @@ export const lt = (field: string, value: unknown) => c(field, 'LESS_THAN', value
 export const lte = (field: string, value: unknown) => c(field, 'LESS_THAN_EQUAL', value);
 export const matches = (field: string, regex: string) => c(field, 'MATCHES', regex);
 export function search(queryText: string, minScore?: number | null): ConditionBuilderImpl;
+export function search(queryText: string, options: SearchOptions): ConditionBuilderImpl;
 export function search(searchQuery: VectorSearchQueryInput): ConditionBuilderImpl;
 export function search(
   queryTextOrSearch: string | VectorSearchQueryInput,
-  minScore?: number | null,
+  minScoreOrOptions?: number | null | SearchOptions,
 ): ConditionBuilderImpl {
+  if (
+    typeof queryTextOrSearch === 'string' &&
+    typeof minScoreOrOptions === 'object' &&
+    minScoreOrOptions !== null
+  ) {
+    return c('__full_text__', 'SEARCH', searchCriteriaValue(queryTextOrSearch, minScoreOrOptions));
+  }
   return c(
     '__full_text__',
     'MATCHES',
     typeof queryTextOrSearch === 'string'
-      ? fullText(queryTextOrSearch, minScore)
+      ? fullText(queryTextOrSearch, minScoreOrOptions as number | null | undefined)
       : vectorSearchQuery(queryTextOrSearch),
   );
 }

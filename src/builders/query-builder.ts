@@ -1,10 +1,11 @@
 // filename: src/builders/query-builder.ts
-import type { IQueryBuilder, IConditionBuilder } from '../types/builders';
+import type { ConditionInput, IQueryBuilder, IConditionBuilder } from '../types/builders';
 import { QueryResults, QueryResultsPromise } from './query-results';
 import type { QueryCondition, QueryCriteria, SelectQuery, UpdateQuery, QueryPage } from '../types/protocol';
 import type {
   ApproximateSearchOptions,
   HnswSearchQueryInput,
+  SearchOptions,
   Sort,
   StreamAction,
   VectorSearchQueryInput,
@@ -13,12 +14,15 @@ import { normalizeCondition } from '../helpers/condition-normalizer';
 import {
   assertCandidateConditionIsReadOnly,
   assertCandidateConditionIsSoleRoot,
+  assertSearchConditionIsComposable,
+  assertSearchConditionSupportsStreaming,
 } from '../helpers/candidate-condition';
 import {
   approximateIndexCandidateQuery,
   hnswSearchQuery,
   vectorSearchQuery,
 } from '../helpers/candidate-search';
+import { searchCriteriaValue } from '../helpers/search-options';
 import type {
   CsvFormatOptions,
   JsonFormatOptions,
@@ -155,9 +159,16 @@ function flattenStrings(values: Array<string | string[]>): string[] {
  * const c = toCondition({ field: 'name', operator: 'eq', value: 'Ada' });
  * ```
  */
-function toCondition(input: IConditionBuilder | QueryCriteria): QueryCondition {
+function toCondition(input: ConditionInput): QueryCondition {
   if (typeof (input as IConditionBuilder).toCondition === 'function') {
     return (input as IConditionBuilder).toCondition();
+  }
+  if (
+    input &&
+    ((input as QueryCondition).conditionType === 'SingleCondition' ||
+      (input as QueryCondition).conditionType === 'CompoundCondition')
+  ) {
+    return input as QueryCondition;
   }
   const c = input as QueryCriteria;
   if (c && typeof c.field === 'string' && typeof c.operator === 'string') {
@@ -347,13 +358,25 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * ```
    */
   search(queryText: string, minScore?: number | null): IQueryBuilder<T>;
+  search(queryText: string, options: SearchOptions): IQueryBuilder<T>;
   search(searchQuery: VectorSearchQueryInput): IQueryBuilder<T>;
   search(
     queryTextOrSearch: string | VectorSearchQueryInput,
-    minScore?: number | null,
+    minScoreOrOptions?: number | null | SearchOptions,
   ): IQueryBuilder<T> {
+    if (
+      typeof queryTextOrSearch === 'string' &&
+      typeof minScoreOrOptions === 'object' &&
+      minScoreOrOptions !== null
+    ) {
+      return this.and({
+        field: '__full_text__',
+        operator: 'SEARCH',
+        value: searchCriteriaValue(queryTextOrSearch, minScoreOrOptions),
+      });
+    }
     const value = typeof queryTextOrSearch === 'string'
-      ? { queryText: queryTextOrSearch, minScore: minScore ?? null }
+      ? { queryText: queryTextOrSearch, minScore: minScoreOrOptions ?? null }
       : vectorSearchQuery(queryTextOrSearch);
     return this.and({
       field: '__full_text__',
@@ -419,9 +442,10 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * builder.where({ field: 'id', operator: 'eq', value: '1' });
    * ```
    */
-  where(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
+  where(condition: ConditionInput): IQueryBuilder<T> {
     const c = toCondition(condition);
     assertCandidateConditionIsSoleRoot(this.conditions, c);
+    assertSearchConditionIsComposable(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else {
@@ -443,9 +467,10 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * builder.and({ field: 'age', operator: 'gt', value: 18 });
    * ```
    */
-  and(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
+  and(condition: ConditionInput): IQueryBuilder<T> {
     const c = toCondition(condition);
     assertCandidateConditionIsSoleRoot(this.conditions, c);
+    assertSearchConditionIsComposable(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else if (this.conditions.conditionType === 'CompoundCondition' && this.conditions.operator === 'AND') {
@@ -465,9 +490,10 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    * builder.or({ field: 'status', operator: 'eq', value: 'active' });
    * ```
    */
-  or(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
+  or(condition: ConditionInput): IQueryBuilder<T> {
     const c = toCondition(condition);
     assertCandidateConditionIsSoleRoot(this.conditions, c);
+    assertSearchConditionIsComposable(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else if (this.conditions.conditionType === 'CompoundCondition' && this.conditions.operator === 'OR') {
@@ -806,6 +832,7 @@ export class QueryBuilder<T = unknown> implements IQueryBuilder<T> {
    */
   async stream(includeQueryResults = true, keepAlive = false): Promise<{ cancel: () => void }> {
     if (this.mode !== 'select') throw new Error('Streaming is only applicable in select mode.');
+    assertSearchConditionSupportsStreaming(this.conditions);
     const table = this.ensureTable();
     return this.exec.stream<T>(table, this.toSelectQuery(), includeQueryResults, keepAlive, {
       onItemAdded: this.onItemAddedListener ?? undefined,

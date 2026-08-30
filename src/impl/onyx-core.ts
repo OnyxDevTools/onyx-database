@@ -22,10 +22,12 @@ import type {
   AiScriptApprovalRequest,
   AiScriptApprovalResponse,
   AiRequestOptions,
+  FullTextSearchResult,
   PublishedModelPredictionInputs,
   PublishedModelPredictionResponse,
 } from '../types/public';
 import type {
+  ConditionInput,
   IQueryBuilder,
   ISaveBuilder,
   ICascadeBuilder,
@@ -43,6 +45,7 @@ import type {
 import type {
   ApproximateSearchOptions,
   HnswSearchQueryInput,
+  SearchOptions,
   Sort,
   StreamAction,
   OnyxDocument,
@@ -53,12 +56,15 @@ import { normalizeCondition } from '../helpers/condition-normalizer';
 import {
   assertCandidateConditionIsReadOnly,
   assertCandidateConditionIsSoleRoot,
+  assertSearchConditionIsComposable,
+  assertSearchConditionSupportsStreaming,
 } from '../helpers/candidate-condition';
 import {
   approximateIndexCandidateQuery,
   hnswSearchQuery,
   vectorSearchQuery,
 } from '../helpers/candidate-search';
+import { searchCriteriaValue } from '../helpers/search-options';
 import type {
   SchemaDiff,
   SchemaEntity,
@@ -111,9 +117,16 @@ function flattenStrings(values: Array<string | string[]>): string[] {
   return flat;
 }
 
-function toCondition(input: IConditionBuilder | QueryCriteria): QueryCondition {
+function toCondition(input: ConditionInput): QueryCondition {
   if (typeof (input as IConditionBuilder).toCondition === 'function') {
     return (input as IConditionBuilder).toCondition();
+  }
+  if (
+    input &&
+    ((input as QueryCondition).conditionType === 'SingleCondition' ||
+      (input as QueryCondition).conditionType === 'CompoundCondition')
+  ) {
+    return input as QueryCondition;
   }
   const c = input as QueryCriteria;
   if (c && typeof c.field === 'string' && typeof c.operator === 'string') {
@@ -460,16 +473,29 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     return qb;
   }
 
-  search(queryText: string, minScore?: number | null): IQueryBuilder<Record<string, unknown>> {
+  search(
+    queryText: string,
+    minScore?: number | null,
+  ): IQueryBuilder<Record<string, unknown>>;
+  search(
+    queryText: string,
+    options: SearchOptions,
+  ): IQueryBuilder<FullTextSearchResult>;
+  search(
+    queryText: string,
+    minScoreOrOptions?: number | null | SearchOptions,
+  ): IQueryBuilder<any> {
     if (typeof queryText !== 'string') {
-      throw new TypeError('Database-wide search only supports lexical text queries');
+      throw new TypeError('Database-wide search requires text as its first argument');
     }
     const qb = new QueryBuilderImpl<Record<string, unknown>, Schema>(
       this,
       'ALL',
-      this.defaultPartition,
+      undefined,
     );
-    return qb.search(queryText, minScore);
+    return typeof minScoreOrOptions === 'object' && minScoreOrOptions !== null
+      ? qb.search(queryText, minScoreOrOptions)
+      : qb.search(queryText, minScoreOrOptions);
   }
 
   cascade(...relationships: Array<string | string[]>): ICascadeBuilder<Schema> {
@@ -718,7 +744,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async _count(table: string, select: SelectQuery, partition?: string): Promise<number> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
-    const p = partition ?? this.defaultPartition;
+    const p = table === 'ALL' ? undefined : partition ?? this.defaultPartition;
     if (p) params.append('partition', p);
     const path = `/data/${encodeURIComponent(databaseId)}/query/count/${encodeURIComponent(
       table,
@@ -735,7 +761,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
     const params = new URLSearchParams();
     if (opts.pageSize != null) params.append('pageSize', String(opts.pageSize));
     if (opts.nextPage) params.append('nextPage', opts.nextPage);
-    const p = opts.partition ?? this.defaultPartition;
+    const p = table === 'ALL' ? undefined : opts.partition ?? this.defaultPartition;
     if (p) params.append('partition', p);
     const path = `/data/${encodeURIComponent(databaseId)}/query/${encodeURIComponent(
       table,
@@ -746,7 +772,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async _update(table: string, update: UpdateQuery, partition?: string): Promise<unknown> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
-    const p = partition ?? this.defaultPartition;
+    const p = table === 'ALL' ? undefined : partition ?? this.defaultPartition;
     if (p) params.append('partition', p);
     const path = `/data/${encodeURIComponent(databaseId)}/query/update/${encodeURIComponent(
       table,
@@ -757,7 +783,7 @@ class OnyxDatabaseImpl<Schema = Record<string, unknown>> implements IOnyxDatabas
   async _deleteByQuery(table: string, select: SelectQuery, partition?: string): Promise<number> {
     const { http, databaseId } = await this.ensureClient();
     const params = new URLSearchParams();
-    const p = partition ?? this.defaultPartition;
+    const p = table === 'ALL' ? undefined : partition ?? this.defaultPartition;
     if (p) params.append('partition', p);
     const path = `/data/${encodeURIComponent(databaseId)}/query/delete/${encodeURIComponent(
       table,
@@ -942,13 +968,25 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
   }
 
   search(queryText: string, minScore?: number | null): IQueryBuilder<T>;
+  search(queryText: string, options: SearchOptions): IQueryBuilder<T>;
   search(searchQuery: VectorSearchQueryInput): IQueryBuilder<T>;
   search(
     queryTextOrSearch: string | VectorSearchQueryInput,
-    minScore?: number | null,
+    minScoreOrOptions?: number | null | SearchOptions,
   ): IQueryBuilder<T> {
+    if (
+      typeof queryTextOrSearch === 'string' &&
+      typeof minScoreOrOptions === 'object' &&
+      minScoreOrOptions !== null
+    ) {
+      return this.and({
+        field: '__full_text__',
+        operator: 'SEARCH',
+        value: searchCriteriaValue(queryTextOrSearch, minScoreOrOptions),
+      });
+    }
     const value = typeof queryTextOrSearch === 'string'
-      ? { queryText: queryTextOrSearch, minScore: minScore ?? null }
+      ? { queryText: queryTextOrSearch, minScore: minScoreOrOptions ?? null }
       : vectorSearchQuery(queryTextOrSearch);
     return this.and({
       field: '__full_text__',
@@ -1005,9 +1043,10 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this;
   }
 
-  where(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
+  where(condition: ConditionInput): IQueryBuilder<T> {
     const c = toCondition(condition);
     assertCandidateConditionIsSoleRoot(this.conditions, c);
+    assertSearchConditionIsComposable(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else {
@@ -1020,9 +1059,10 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this;
   }
 
-  and(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
+  and(condition: ConditionInput): IQueryBuilder<T> {
     const c = toCondition(condition);
     assertCandidateConditionIsSoleRoot(this.conditions, c);
+    assertSearchConditionIsComposable(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else if (
@@ -1040,9 +1080,10 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
     return this;
   }
 
-  or(condition: IConditionBuilder | QueryCriteria): IQueryBuilder<T> {
+  or(condition: ConditionInput): IQueryBuilder<T> {
     const c = toCondition(condition);
     assertCandidateConditionIsSoleRoot(this.conditions, c);
+    assertSearchConditionIsComposable(this.conditions, c);
     if (!this.conditions) {
       this.conditions = c;
     } else if (
@@ -1216,6 +1257,7 @@ class QueryBuilderImpl<T = unknown, S = Record<string, unknown>> implements IQue
 
   async stream(includeQueryResults = true, keepAlive = false): Promise<{ cancel: () => void }> {
     if (this.mode !== 'select') throw new Error('Streaming is only applicable in select mode.');
+    assertSearchConditionSupportsStreaming(this.conditions);
     const table = this.ensureTable();
     return this.db._stream<T>(table, this.toSelectQuery(), includeQueryResults, keepAlive, {
       onItemAdded: this.onItemAddedListener ?? undefined,

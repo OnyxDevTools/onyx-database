@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.7.0
+
+### Minor Changes
+
+- Add a clean, typed high-level search API for lexical, semantic, and hybrid retrieval. Search options support any/all lexical matching, normalized score thresholds, and bounded candidate budgets while preserving the existing search overloads and low-level candidate APIs.
+
 ## 2.6.0
 
 ### Minor Changes
