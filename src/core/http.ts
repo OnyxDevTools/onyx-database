@@ -100,7 +100,7 @@ export class HttpClient {
     this.retryEnabled = opts.retryEnabled ?? true;
     this.maxRetries = Math.max(0, opts.maxRetries ?? 2);
     this.retryInitialDelayMs = Math.max(0, opts.retryInitialDelayMs ?? 100);
-    this.wireFormat = opts.wireFormat ?? 'json';
+    this.wireFormat = opts.wireFormat ?? 'msgpack';
     if (this.wireFormat !== 'json' && this.wireFormat !== 'msgpack') {
       throw new OnyxConfigError('wireFormat must be either json or msgpack');
     }

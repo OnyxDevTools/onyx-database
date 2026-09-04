@@ -18,7 +18,7 @@ TypeScript client SDK for **Onyx Cloud Database** — a zero-dependency, strict-
 - [Getting started](#getting-started-cloud--keys--connect)
 - [Install](#install)
 - [Initialize the client](#initialize-the-client)
-- [MessagePack entity transport](#optional-messagepack-entity-transport)
+- [MessagePack entity transport](#messagepack-entity-transport)
 - [Onyx AI (chat & models)](#onyx-ai-chat--models)
 - [Published model predictions](#published-model-predictions)
 - [Generate schema types](#optional-generate-typescript-types-from-your-schema)
@@ -123,7 +123,7 @@ const db = onyx.init({
   apiKey: 'YOUR_KEY',
   apiSecret: 'YOUR_SECRET',
   partition: 'tenantA',
-  wireFormat: 'json', // optional: use 'msgpack' for entity routes
+  wireFormat: 'json', // optional: opt out of MessagePack for entity routes
   requestLoggingEnabled: true, // logs HTTP requests
   responseLoggingEnabled: true, // logs HTTP responses
 });
@@ -138,10 +138,11 @@ the `ONYX_DEBUG=true` environment variable enables both request and response
 logging even if these flags are not set. It also logs the source of resolved
 credentials (explicit config, env vars, config path file, project file, or home profile).
 
-### Optional MessagePack entity transport
+### MessagePack entity transport
 
-JSON remains the default wire format. To opt in to the zero-dependency binary
-transport, set `wireFormat: 'msgpack'`:
+MessagePack is the default wire format for entity routes. To use JSON with a
+legacy deployment that does not support the zero-dependency binary transport,
+set `wireFormat: 'json'`:
 
 ```ts
 import { onyx } from '@onyx.dev/onyx-database';
@@ -150,7 +151,7 @@ const db = onyx.init({
   databaseId: 'YOUR_DATABASE_ID',
   apiKey: 'YOUR_KEY',
   apiSecret: 'YOUR_SECRET',
-  wireFormat: 'msgpack',
+  wireFormat: 'json',
 });
 
 await db.save('User', {
@@ -161,11 +162,11 @@ await db.save('User', {
 const users = await db.from('User').resolve('profile').list();
 ```
 
-MessagePack applies only to entity saves, reads, deletes, queries, and query
-streams. Documents, schemas, secrets, AI, and model-builder requests continue
-to use JSON. The client sends `application/vnd.msgpack` and advertises JSON as
-a lower-priority response fallback; it always decodes the actual response
-`Content-Type`, so JSON errors and fallback responses continue to work.
+By default, MessagePack applies only to entity saves, reads, deletes, queries,
+and query streams. Documents, schemas, secrets, AI, and model-builder requests
+continue to use JSON. The client sends `application/vnd.msgpack` and advertises
+JSON as a lower-priority response fallback; it always decodes the actual
+response `Content-Type`, so JSON errors and fallback responses continue to work.
 
 Nested objects, arrays, strings, booleans, nulls, JavaScript-safe numbers, and
 signed 64-bit `bigint` values are supported. Dates are normalized to ISO strings
@@ -173,7 +174,8 @@ as they are for JSON. Integer `number` inputs must remain within JavaScript's sa
 range; use `bigint` for larger signed values. Decoded integers outside the safe
 range are returned as `bigint`, while unsigned wire values above
 `9223372036854775807` are rejected. Because JSON cannot serialize `bigint`, use
-these values only with `wireFormat: 'msgpack'`.
+these values only with MessagePack (the default), not an explicit
+`wireFormat: 'json'` override.
 Object properties containing `undefined` are omitted, while undefined array
 entries and non-finite numbers become `null`, matching `JSON.stringify`.
 
@@ -184,9 +186,10 @@ JSON-lines fallback when indicated by the response content type.
 
 When supplying a custom `fetch`, request bodies may be `string | Uint8Array`.
 Its response object must implement `arrayBuffer()` when it returns
-`application/vnd.msgpack`; existing JSON-only fetch mocks only need `text()`.
-Opt-in clients do not automatically retry mutations as JSON, so enable this
-format only after the target Onyx Cloud deployment supports it.
+`application/vnd.msgpack`; JSON-only fetch mocks only need `text()` when the
+client is explicitly configured with `wireFormat: 'json'`. The client does not
+automatically retry MessagePack mutations as JSON; configure JSON explicitly
+when targeting an Onyx Cloud deployment without MessagePack support.
 
 ### Option C) Node-only config files
 

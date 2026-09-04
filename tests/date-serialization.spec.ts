@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { onyx } from '../src/impl/onyx';
+import { decodeMessagePack } from '../src/core/msgpack';
 
 // filename: tests/date-serialization.spec.ts
 
@@ -23,12 +24,15 @@ describe('Date serialization', () => {
 
     const d = new Date('2024-01-02T03:04:05Z');
     await db.save('Users', { createdAt: d });
-    let body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    let body = decodeMessagePack(fetchMock.mock.calls[0][1].body as Uint8Array) as {
+      createdAt: string;
+      updates?: { createdAt: string };
+    };
     expect(body.createdAt).toBe(d.toISOString());
 
     fetchMock.mockClear();
     await db.from('Users').setUpdates({ createdAt: d }).update();
-    body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.updates.createdAt).toBe(d.toISOString());
+    body = decodeMessagePack(fetchMock.mock.calls[0][1].body as Uint8Array) as typeof body;
+    expect(body.updates?.createdAt).toBe(d.toISOString());
   });
 });

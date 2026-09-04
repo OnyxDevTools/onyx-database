@@ -41,7 +41,6 @@ describe('edge entry', () => {
     });
     const db = onyx.init({
       ...cfg,
-      wireFormat: 'msgpack',
       fetch: fetchMock,
     });
 

@@ -1,5 +1,11 @@
 # @onyx.dev/onyx-database
 
+## 2.8.2
+
+### Patch Changes
+
+- Use MessagePack by default for entity CRUD, queries, and query streams while retaining `wireFormat: 'json'` as an explicit compatibility override.
+
 ## 2.8.1
 
 ### Patch Changes

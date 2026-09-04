@@ -92,7 +92,7 @@ export async function resolveConfig(input?: OnyxConfig): Promise<ResolvedConfig>
   const databaseId = merged.databaseId ?? '';
   const apiKey = merged.apiKey ?? '';
   const apiSecret = merged.apiSecret ?? '';
-  const wireFormat = merged.wireFormat ?? 'json';
+  const wireFormat = merged.wireFormat ?? 'msgpack';
   if (wireFormat !== 'json' && wireFormat !== 'msgpack') {
     throw new OnyxConfigError('wireFormat must be either json or msgpack');
   }

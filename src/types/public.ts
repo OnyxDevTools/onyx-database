@@ -90,7 +90,7 @@ export interface OnyxConfig {
   apiSecret?: string;
   fetch?: FetchImpl;
   /**
-   * Wire format for entity CRUD and query routes. Defaults to `json`.
+   * Wire format for entity CRUD and query routes. Defaults to `msgpack`.
    * Documents, schemas, and AI calls remain JSON. Query streams use the
    * selected format and can accept a JSON-lines fallback.
    */

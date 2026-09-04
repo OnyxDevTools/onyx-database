@@ -44,7 +44,6 @@ describe('entity MessagePack integration', () => {
       databaseId: 'db',
       apiKey: 'k',
       apiSecret: 's',
-      wireFormat: 'msgpack',
       fetch: fetchMock,
     });
     const created = new Date('2026-08-29T12:34:56.789Z');
@@ -107,7 +106,6 @@ describe('entity MessagePack integration', () => {
       databaseId: 'db',
       apiKey: 'k',
       apiSecret: 's',
-      wireFormat: 'msgpack',
       fetch: fetchMock,
     });
 
@@ -148,7 +146,6 @@ describe('entity MessagePack integration', () => {
       databaseId: 'db',
       apiKey: 'k',
       apiSecret: 's',
-      wireFormat: 'msgpack',
       fetch: fetchMock,
     });
     const received: unknown[] = [];

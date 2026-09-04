@@ -27,11 +27,11 @@ afterEach(() => {
 });
 
 describe('config chain database selection', () => {
-  it('defaults wireFormat to json and accepts explicit msgpack', async () => {
+  it('defaults wireFormat to msgpack and accepts explicit json', async () => {
     const base = { databaseId: 'db', apiKey: 'k', apiSecret: 's' };
-    await expect(resolveConfig(base)).resolves.toMatchObject({ wireFormat: 'json' });
-    await expect(resolveConfig({ ...base, wireFormat: 'msgpack' })).resolves.toMatchObject({
-      wireFormat: 'msgpack',
+    await expect(resolveConfig(base)).resolves.toMatchObject({ wireFormat: 'msgpack' });
+    await expect(resolveConfig({ ...base, wireFormat: 'json' })).resolves.toMatchObject({
+      wireFormat: 'json',
     });
   });
 

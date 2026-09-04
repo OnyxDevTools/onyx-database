@@ -434,7 +434,8 @@ class Decoder {
       case 0xd8:
         throw new MessagePackError('MessagePack extension values are not supported');
       // Every possible byte marker is handled above.
-      /* v8 ignore next */
+      /* istanbul ignore next */
+      /* v8 ignore next 2 */
       default:
         throw new MessagePackError(`Unsupported MessagePack marker 0x${prefix.toString(16)}`);
     }

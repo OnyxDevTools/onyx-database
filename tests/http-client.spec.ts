@@ -81,7 +81,7 @@ describe('HttpClient', () => {
     expect(res).toEqual({ ok: true });
   });
 
-  it('uses MessagePack for configured entity requests', async () => {
+  it('uses MessagePack for entity requests by default', async () => {
     const responseBytes = encodeMessagePack({ id: 7, nested: { active: true } });
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -95,7 +95,6 @@ describe('HttpClient', () => {
       baseUrl: base,
       ...creds,
       fetchImpl: fetchMock,
-      wireFormat: 'msgpack',
     });
 
     const result = await client.requestEntity('PUT', '/data/db/User', {
@@ -115,6 +114,35 @@ describe('HttpClient', () => {
     expect(decodeMessagePack(init.body as Uint8Array)).toEqual({
       id: 7,
       created: '2026-08-29T12:00:00.000Z',
+    });
+  });
+
+  it('uses JSON for entity requests when explicitly configured', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: 7 }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const client = new HttpClient({
+      baseUrl: base,
+      ...creds,
+      fetchImpl: fetchMock,
+      wireFormat: 'json',
+    });
+
+    await expect(client.requestEntity('PUT', '/data/db/User', { id: 7 })).resolves.toEqual({
+      id: 7,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(`${base}/data/db/User`, {
+      method: 'PUT',
+      headers: {
+        'x-onyx-key': creds.apiKey,
+        'x-onyx-secret': creds.apiSecret,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id: 7 }),
     });
   });
 

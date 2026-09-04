@@ -49,4 +49,13 @@ describe('config cache', () => {
 
     expect(spy).toHaveBeenCalledTimes(2);
   });
+
+  it('shares resolved config between implicit and explicit MessagePack defaults', () => {
+    const spy = vi.spyOn(chain, 'resolveConfig');
+
+    onyx.init(cfg);
+    onyx.init({ ...cfg, wireFormat: 'msgpack' });
+
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 });

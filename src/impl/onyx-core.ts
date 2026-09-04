@@ -1544,11 +1544,11 @@ export function createOnyxFacade(resolveConfig: ResolveConfig): OnyxFacade {
   const cacheKey = (
     databaseId?: string,
     apiKey?: string,
-    wireFormat: OnyxConfig['wireFormat'] = 'json',
+    wireFormat: OnyxConfig['wireFormat'] = 'msgpack',
   ): string | null => {
     const id = typeof databaseId === 'string' && databaseId.trim() !== '' ? databaseId.trim() : null;
     const key = typeof apiKey === 'string' && apiKey.trim() !== '' ? apiKey.trim() : null;
-    return id && key ? `${id}-${key}-${wireFormat ?? 'json'}` : null;
+    return id && key ? `${id}-${key}-${wireFormat ?? 'msgpack'}` : null;
   };
 
   function resolveConfigWithCache(config?: OnyxConfig): Promise<ResolvedConfig> {
@@ -1556,7 +1556,7 @@ export function createOnyxFacade(resolveConfig: ResolveConfig): OnyxFacade {
     const now = Date.now();
     const hintKey =
       cacheKey(config?.databaseId, config?.apiKey, config?.wireFormat) ??
-      `__default__-${config?.wireFormat ?? 'json'}`;
+      `__default__-${config?.wireFormat ?? 'msgpack'}`;
 
     const existing = cachedCfgs.get(hintKey);
     if (existing && existing.expires > now) {
