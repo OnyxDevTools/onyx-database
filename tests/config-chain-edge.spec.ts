@@ -155,12 +155,12 @@ describe('edge config chain', () => {
   });
 
   it('handles missing process env', async () => {
-    const originalProcess = globalThis.process;
+    const originalEnv = globalThis.process.env;
     const originalFetch = globalThis.fetch;
     const fetchSpy = vi.fn(async () => new Response('ok'));
     try {
       // @ts-expect-error: simulate edge without process env
-      delete (globalThis as { process?: unknown }).process;
+      globalThis.process.env = undefined;
       globalThis.fetch = fetchSpy;
       vi.resetModules();
       const { resolveConfig: resolveConfigNoEnv } = await import('../src/config/chain-edge');
@@ -172,8 +172,7 @@ describe('edge config chain', () => {
       });
       expect(cfg.databaseId).toBe('edge-db');
     } finally {
-      // @ts-expect-error: restore process
-      globalThis.process = originalProcess;
+      globalThis.process.env = originalEnv;
       globalThis.fetch = originalFetch;
     }
   });
